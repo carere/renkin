@@ -1,11 +1,18 @@
 $schema: ./cache/schemas/toolchains.json
+
 javascript:
   packageManager: bun
+  syncPackageManagerField: false
   dependencyVersionFormat: workspace
   inferTasksFromScripts: false
   syncProjectWorkspaceDependencies: true
+
 bun:
-  version: "1.4.2"
+  versionFromPrototools: true
+
+node:
+  versionFromPrototools: true
+
 typescript:
   syncProjectReferences: true
   includeProjectReferenceSources: false

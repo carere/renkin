@@ -6,14 +6,4 @@ Before changing package ownership, dependencies, or public APIs, read
 implement capabilities only when a subsequent task asks for them.
 
 Use [README.md](README.md) for installation, checks and the current scaffolding
-limitations. Report zero-test runs and empty-project checks as such.
-
-## Local skills
-
-- Before adding or changing tests, read `.agents/skills/renkin-testing/SKILL.md`.
-- Before extracting upstream code or preparing a release, read
-  `.agents/skills/renkin-release/SKILL.md`.
-- Before editing agent instructions or skills, read
-  `.agents/skills/writing-for-agents/SKILL.md`.
-
-Keep reference checkouts unchanged. The GitHub repository is `carere/renkin`.
+limitations. Report zero-test runs and empty-project checks as such

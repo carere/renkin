@@ -1,3 +1,12 @@
 $schema: ../../.moon/cache/schemas/project.json
 language: typescript
 stack: backend
+tasks:
+  test-unit:
+    command: vitest run --project unit
+    options:
+      cache: false
+  test-integration:
+    command: vitest run --project integration
+    options:
+      cache: false

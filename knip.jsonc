@@ -3,7 +3,7 @@
   "workspaces": {
     ".": {
       "entry": [],
-      "project": ["*.ts"],
+      "project": [],
       // Reserved compatible Effect test tooling; consuming packages will declare their own dependencies.
       "ignoreDependencies": ["effect", "@effect/vitest"]
     }

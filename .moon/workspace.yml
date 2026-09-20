@@ -1,9 +1,20 @@
 $schema: ./cache/schemas/workspace.json
+
 projects:
-  - moon.yml
   - apps/*/moon.yml
   - packages/*/moon.yml
+
 vcs:
   defaultBranch: main
   provider: github
+
 telemetry: false
+
+remote:
+  api: "http"
+  host: "https://remoshu.carere.workers.dev"
+  auth:
+    token: "MOON_REMOTE_CACHE_TOKEN"
+  cache:
+    instanceName: "carere/renkin"
+    verifyIntegrity: true

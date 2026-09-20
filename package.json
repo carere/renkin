@@ -7,31 +7,18 @@
     "packages/*"
   ],
   "scripts": {
-    "check": "moon run workspace:check",
-    "format": "biome check --write . && sort-package-json package.json apps/*/package.json packages/*/package.json",
-    "lint": "biome check .",
-    "prepare": "effect-tsgo patch --typescript --no-oxlint",
-    "setup": "lefthook install && moon sync",
-    "test": "vitest run",
-    "test:scaffold": "vitest run --passWithNoTests",
-    "typecheck": "tsc --build"
+    "prepare": "effect-tsgo patch --typescript --no-oxlint"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.13",
-    "@effect/tsgo": "0.45.0",
-    "@effect/vitest": "4.0.0-rc.115",
-    "@moonrepo/cli": "2.5.4",
-    "@types/node": "24.10.1",
-    "effect": "4.0.0-rc.115",
-    "knip": "6.35.1",
-    "lefthook": "2.1.14",
-    "sort-package-json": "4.0.0",
-    "typescript": "7.0.2",
-    "vitest": "5.0.0"
-  },
-  "packageManager": "bun@1.4.2",
-  "engines": {
-    "bun": "1.4.2",
-    "node": ">=24.21.0 <25"
+    "@biomejs/biome": "^2.5.13",
+    "@effect/tsgo": "^0.45.0",
+    "@effect/vitest": "^4.0.0-rc.115",
+    "@moonrepo/cli": "^2.5.4",
+    "@types/node": "^24.10.1",
+    "effect": "^4.0.0-rc.115",
+    "knip": "^6.35.1",
+    "lefthook": "^2.1.14",
+    "sort-package-json": "^4.0.0",
+    "typescript": "^7.0.2"
   }
 }

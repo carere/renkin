@@ -1,4 +1,5 @@
 $schema: ../cache/schemas/tasks.json
+
 implicitInputs:
   - /bun.lock
   - /package.json
@@ -6,14 +7,17 @@ implicitInputs:
   - /.prototools
   - /biome.json
   - "{package,tsconfig}.json"
+
 tasks:
   lint:
     command: biome check --no-errors-on-unmatched .
     inputs: ["**/*"]
+
   fix:
     command: biome check --write --no-errors-on-unmatched .
     options:
       cache: false
+
   typecheck:
     command: tsc --build
     options:

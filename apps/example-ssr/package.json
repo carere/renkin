@@ -3,5 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "description": "TanStack Start with Solid SSR example and validation app.",
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "vitest": "^5.0.0"
+  }
 }

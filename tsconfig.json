@@ -38,5 +38,6 @@
     {
       "path": "./packages/renkin"
     }
-  ]
+  ],
+  "files": []
 }

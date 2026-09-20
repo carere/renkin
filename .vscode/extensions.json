@@ -1,0 +1,20 @@
+{
+  "recommendations": [
+    "biomejs.biome",
+    "streetsidesoftware.code-spell-checker",
+    "mikestead.dotenv",
+    "usernamehw.errorlens",
+    "streetsidesoftware.code-spell-checker-french",
+    "cardinal90.multi-cursor-case-preserve",
+    "ibm.output-colorizer",
+    "christian-kohler.path-intellisense",
+    "yoavbls.pretty-ts-errors",
+    "bradlc.vscode-tailwindcss",
+    "meganrogge.template-string-converter",
+    "typescriptteam.native-preview",
+    "vscode-icons-team.vscode-icons",
+    "redhat.vscode-yaml",
+    "moonrepo.moon-console",
+    "inlang.vs-code-extension"
+  ]
+}

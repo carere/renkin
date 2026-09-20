@@ -1,37 +1,67 @@
 name: Checks
+
 on:
   push:
     branches: [main]
   pull_request:
     types: [opened, synchronize, reopened, edited, ready_for_review]
+
 permissions:
   contents: read
+
 concurrency:
   group: checks-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+
 jobs:
   checks:
     runs-on: ubuntu-latest
+    env:
+      MOON_REMOTE_CACHE_TOKEN: ${{ secrets.MOON_REMOTE_CACHE_TOKEN }}
     steps:
-      - uses: actions/checkout@v5
+      - name: Check out repository
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '24.21.0'
-      - uses: oven-sh/setup-bun@v2
+          node-version: "lts/*"
+          check-latest: true
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          bun-version: '1.4.2'
-      - run: bun install --frozen-lockfile
-      - run: bun moon sync
-      - run: bun run check
+          bun-version: "latest"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Synchronize Moon workspace
+        run: bun moon sync
+
+      - name: Check TypeScript types
+        run: bun tsc --build
+
+      - name: Check formatting and lint rules
+        run: bun biome check .
+
+      - name: Check unused code and dependencies
+        run: bun knip
+
+      - name: Check package manifest sorting
+        run: bun sort-package-json --check package.json apps/*/package.json packages/*/package.json
+
       - name: Ensure checks leave tracked files unchanged
         run: git diff --exit-code
+
       - name: Check conventional commits
         uses: cocogitto/cocogitto-action@v4.1.0
         with:
           command: check
           args: --ignore-merge-commits
+
       - name: Check PR title
         if: github.event_name == 'pull_request'
         env:

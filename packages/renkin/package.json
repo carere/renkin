@@ -10,7 +10,10 @@
   "scripts": {
     "prepublishOnly": "bun -e 'throw new Error(\"Scaffold only: implement and validate the release build before publishing\")'"
   },
+  "devDependencies": {
+    "vitest": "^5.0.0"
+  },
   "peerDependencies": {
-    "effect": "4.0.0-rc.115"
+    "effect": "^4.0.0-rc.115"
   }
 }

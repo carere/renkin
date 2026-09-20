@@ -1,0 +1,52 @@
+# One release version covers the public package and all private implementation packages.
+# https://docs.cocogitto.io/reference/config.html
+branch_whitelist = ["main"]
+ignore_merge_commits = true
+from_latest_tag = false
+skip_untracked = false
+tag_prefix = "v"
+
+# {{version}} is the SemVer value without the Git tag prefix.
+pre_bump_hooks = [
+  "cog check",
+  "bun pm --cwd packages/renkin version {{version}} --no-git-tag-version",
+  "bun install --lockfile-only --ignore-scripts",
+  "git add packages/renkin/package.json bun.lock",
+]
+# Publishing and deployment will be handled by the eventual release pipeline.
+post_bump_hooks = []
+
+[changelog]
+path = "CHANGELOG.md"
+template = "remote"
+remote = "github.com"
+owner = "carere"
+repository = "renkin"
+
+[commit_types.build]
+bump_patch = true
+
+[commit_types.chore]
+bump_patch = true
+
+# `merge: <what was merged>` — for merge commits written by hand, which the
+# built-in types have no room for. No bump flag: a merge introduces no change
+# of its own, and every commit it brings in is already accounted for.
+[commit_types.merge]
+omit_from_changelog = true
+
+[commit_types.perf]
+bump_patch = true
+
+[commit_types.refactor]
+bump_patch = true
+
+[commit_types.revert]
+bump_patch = true
+
+[commit_types.style]
+bump_patch = true
+
+[[changelog.authors]]
+signature = "contact@carere.dev"
+username = "carere"

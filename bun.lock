@@ -5,65 +5,97 @@
     "": {
       "name": "renkin-workspace",
       "devDependencies": {
-        "@biomejs/biome": "2.5.13",
-        "@effect/tsgo": "0.45.0",
-        "@effect/vitest": "4.0.0-rc.115",
-        "@moonrepo/cli": "2.5.4",
-        "@types/node": "24.10.1",
-        "effect": "4.0.0-rc.115",
-        "knip": "6.35.1",
-        "lefthook": "2.1.14",
-        "sort-package-json": "4.0.0",
-        "typescript": "7.0.2",
-        "vitest": "5.0.0",
+        "@biomejs/biome": "^2.5.13",
+        "@effect/tsgo": "^0.45.0",
+        "@effect/vitest": "^4.0.0-rc.115",
+        "@moonrepo/cli": "^2.5.4",
+        "@types/node": "^24.10.1",
+        "effect": "^4.0.0-rc.115",
+        "knip": "^6.35.1",
+        "lefthook": "^2.1.14",
+        "sort-package-json": "^4.0.0",
+        "typescript": "^7.0.2",
       },
     },
     "apps/example-spa": {
       "name": "@renkin/example-spa",
       "version": "0.0.0",
+      "devDependencies": {
+        "vitest": "^5.0.0",
+      },
     },
     "apps/example-ssr": {
       "name": "@renkin/example-ssr",
       "version": "0.0.0",
+      "devDependencies": {
+        "vitest": "^5.0.0",
+      },
     },
     "apps/example-static": {
       "name": "@renkin/example-static",
       "version": "0.0.0",
+      "devDependencies": {
+        "vitest": "^5.0.0",
+      },
     },
     "apps/website": {
       "name": "@renkin/website",
       "version": "0.0.0",
+      "devDependencies": {
+        "vitest": "^5.0.0",
+      },
     },
     "packages/cloudflare": {
       "name": "@renkin/cloudflare",
       "version": "0.0.0",
+      "devDependencies": {
+        "vitest": "^5.0.0",
+      },
     },
     "packages/cloudflare-sdk": {
       "name": "@renkin/cloudflare-sdk",
       "version": "0.0.0",
+      "devDependencies": {
+        "vitest": "^5.0.0",
+      },
     },
     "packages/core": {
       "name": "@renkin/core",
       "version": "0.0.0",
+      "devDependencies": {
+        "vitest": "^5.0.0",
+      },
     },
     "packages/renkin": {
       "name": "renkin",
       "version": "0.0.0",
+      "devDependencies": {
+        "vitest": "^5.0.0",
+      },
       "peerDependencies": {
-        "effect": "4.0.0-rc.115",
+        "effect": "^4.0.0-rc.115",
       },
     },
     "packages/runtime": {
       "name": "@renkin/runtime",
       "version": "0.0.0",
+      "devDependencies": {
+        "vitest": "^5.0.0",
+      },
     },
     "packages/testing": {
       "name": "@renkin/testing",
       "version": "0.0.0",
+      "devDependencies": {
+        "vitest": "^5.0.0",
+      },
     },
     "packages/websites": {
       "name": "@renkin/websites",
       "version": "0.0.0",
+      "devDependencies": {
+        "vitest": "^5.0.0",
+      },
     },
   },
   "packages": {

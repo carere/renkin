@@ -1,0 +1,128 @@
+{
+  "css.validate": false,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.indentSize": "tabSize",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.biome": "always",
+    "source.organizeImports.biome": "always",
+    "source.removeUnusedImports": "always"
+  },
+  "files.associations": {
+    "*.prototools": "toml"
+  },
+  "files.watcherExclude": {
+    "**/routeTree.gen.ts": true,
+    "**/src/i18n/**": true
+  },
+  "search.exclude": {
+    "**/routeTree.gen.ts": true,
+    "**/src/i18n/**": true
+  },
+  "files.readonlyInclude": {
+    "**/routeTree.gen.ts": true,
+    "**/src/i18n/**": true
+  },
+  "[yaml,yml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "[toml]": {
+    "editor.defaultFormatter": "tamasfe.even-better-toml"
+  },
+  "[svg]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[css]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[html]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "cSpell.language": "en,fr",
+  "cSpell.words": [
+    "Abatan",
+    "btca",
+    "bunx",
+    "carere",
+    "cloudflare",
+    "cocogitto",
+    "codegen",
+    "corvu",
+    "delimoov",
+    "dotenv",
+    "endswith",
+    "eplightning",
+    "esnext",
+    "fontsource",
+    "fromjson",
+    "github",
+    "googleusercontent",
+    "httpapi",
+    "inlang",
+    "knip",
+    "kobalte",
+    "lightningcss",
+    "LLMS",
+    "Millis",
+    "miniflare",
+    "moonrepo",
+    "nativewind",
+    "oneline",
+    "openai",
+    "OPENAI",
+    "Otlp",
+    "outdir",
+    "paraglide",
+    "pipefail",
+    "posthog",
+    "preheader",
+    "prototools",
+    "renkin",
+    "reui",
+    "Reusables",
+    "shadcn",
+    "smol",
+    "solidjs",
+    "subsecond",
+    "tailwindcss",
+    "tanstack",
+    "uidx",
+    "unixepoch",
+    "vitest",
+    "wayfinder",
+    "wayfinding",
+    "Wayfinding",
+    "workstream",
+    "workstreams",
+    "worktree",
+    "worktrees",
+    "zstd"
+  ],
+  "js/ts.updateImportsOnFileMove.enabled": "always",
+  "js/ts.updateImportsOnPaste.enabled": true,
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
+  "tailwindCSS.classAttributes": ["class", "className", "contentContainerClassName"],
+  "tailwindCSS.classFunctions": ["cva", "clsx", "cn"],
+  "tailwindCSS.experimental.configFile": {
+    "apps/companion/src/styles/app.css": "apps/companion/src/**/*",
+    "packages/design-system/src/styles.css": "packages/design-system/**/*",
+    "apps/console/src/styles/app.css": "apps/console/src/**/*",
+    "apps/customer-hub/src/styles/app.css": "apps/customer-hub/src/**/*",
+    "apps/storefront/src/styles/app.css": "apps/storefront/src/**/*"
+  }
+}

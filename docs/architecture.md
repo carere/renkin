@@ -54,9 +54,9 @@ The build approach and supported output formats remain open. Publishing is guard
 until that build and consumer validation exist.
 
 Effect must be a compatible peer dependency of the published API, with a matching
-development dependency for tests. The foundation pins the same Effect release as
-its test adapter. Its exact prerelease peer pin is deliberately conservative;
-expand compatibility only after testing additional releases. Avoid bundling a
+development dependency for tests. The foundation uses matching caret ranges for Effect and
+its test adapter, with exact resolutions recorded in the lockfile. The public
+peer uses the same range; validate compatibility when updating prereleases. Avoid bundling a
 second Effect runtime into the public package.
 
 ## SDK sourcing: open decision
