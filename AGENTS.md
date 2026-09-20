@@ -7,3 +7,20 @@ implement capabilities only when a subsequent task asks for them.
 
 Use [README.md](README.md) for installation, checks and the current scaffolding
 limitations. Report zero-test runs and empty-project checks as such
+
+## Agent skills
+
+### Issue tracker
+
+Use GitHub Issues in `carere/renkin`. Before issue operations, read
+`docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the five canonical triage labels. Before triaging or labeling issues,
+read `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This repository uses a single-context layout. Before exploring domain
+behavior, read `docs/agents/domain.md`.
