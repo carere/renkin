@@ -5,7 +5,7 @@ commit-msg:
 pre-commit:
   commands:
     manifests:
-      glob: "**/package.json"
+      glob: "{package.json,**/package.json}"
       run: bun sort-package-json --check {staged_files}
     check:
       glob: "*.{js,jsx,ts,tsx,json,jsonc,html,css}"

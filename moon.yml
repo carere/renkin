@@ -3,6 +3,11 @@ id: workspace
 language: typescript
 project:
   name: Renkin tooling
+toolchains:
+  typescript:
+    # The root is the solution for every workspace, not a package dependency graph.
+    syncProjectReferences: false
+    routeOutDirToCache: false
 workspace:
   inheritedTasks:
     exclude: [lint, fix, typecheck]
