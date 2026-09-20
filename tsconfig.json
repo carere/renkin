@@ -1,0 +1,42 @@
+{
+  "extends": "./tsconfig.options.json",
+  "compilerOptions": {
+    "outDir": "./.moon/cache/types/workspace"
+  },
+  "include": ["*.ts", "scripts/**/*.ts"],
+  "references": [
+    {
+      "path": "./apps/website"
+    },
+    {
+      "path": "./apps/example-spa"
+    },
+    {
+      "path": "./apps/example-ssr"
+    },
+    {
+      "path": "./apps/example-static"
+    },
+    {
+      "path": "./packages/core"
+    },
+    {
+      "path": "./packages/cloudflare-sdk"
+    },
+    {
+      "path": "./packages/cloudflare"
+    },
+    {
+      "path": "./packages/runtime"
+    },
+    {
+      "path": "./packages/websites"
+    },
+    {
+      "path": "./packages/testing"
+    },
+    {
+      "path": "./packages/renkin"
+    }
+  ]
+}

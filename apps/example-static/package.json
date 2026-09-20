@@ -1,0 +1,7 @@
+{
+  "name": "@renkin/example-static",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Astro SSG example and validation app.",
+  "type": "module"
+}

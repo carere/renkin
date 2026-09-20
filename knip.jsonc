@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [],
+      "project": ["*.ts"],
+      // Reserved compatible Effect test tooling; consuming packages will declare their own dependencies.
+      "ignoreDependencies": ["effect", "@effect/vitest"]
+    }
+  }
+}

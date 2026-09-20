@@ -1,0 +1,16 @@
+{
+  "name": "renkin",
+  "version": "0.0.0",
+  "private": false,
+  "description": "The sole future published package: public API and CLI.",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "prepublishOnly": "bun -e 'throw new Error(\"Scaffold only: implement and validate the release build before publishing\")'"
+  },
+  "peerDependencies": {
+    "effect": "4.0.0-rc.115"
+  }
+}

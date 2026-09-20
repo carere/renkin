@@ -1,0 +1,12 @@
+commit-msg:
+  commands:
+    conventional-commit:
+      run: cog verify --file "{1}"
+pre-commit:
+  commands:
+    manifests:
+      glob: "**/package.json"
+      run: bun sort-package-json --check {staged_files}
+    check:
+      glob: "*.{js,jsx,ts,tsx,json,jsonc,html,css}"
+      run: bun biome check --no-errors-on-unmatched {staged_files}

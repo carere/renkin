@@ -1,0 +1,7 @@
+{
+  "name": "@renkin/core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Effect-based infrastructure engine, stacks, dependency graph, bindings, state and reconciliation.",
+  "type": "module"
+}

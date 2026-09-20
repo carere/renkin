@@ -1,0 +1,37 @@
+$schema: ./.moon/cache/schemas/project.json
+id: workspace
+language: typescript
+project:
+  name: Renkin tooling
+workspace:
+  inheritedTasks:
+    exclude: [lint, fix, typecheck]
+tasks:
+  lint:
+    command: biome check .
+    options:
+      cache: false
+  typecheck:
+    command: tsc --build
+    options:
+      cache: false
+  dependencies:
+    command: knip
+    options:
+      cache: false
+  manifests:
+    command: sort-package-json --check package.json apps/*/package.json packages/*/package.json
+    options:
+      cache: false
+  test:
+    command: vitest run
+    options:
+      cache: false
+  test-scaffold:
+    command: vitest run --passWithNoTests
+    options:
+      cache: false
+  check:
+    deps: [lint, typecheck, dependencies, manifests, test-scaffold]
+    options:
+      cache: false
