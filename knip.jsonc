@@ -7,7 +7,8 @@
     "packages/runtime": { "ignoreDependencies": ["cloudflare"] },
     "packages/websites": {
       "entry": ["tests/support/**/*.astro", "tests/support/**/src/pages/**/*.ts"],
-      "ignoreDependencies": ["cloudflare"]
+      // The scoped build bridge resolves these from the official plugin's own dependency tree.
+      "ignoreDependencies": ["cloudflare", "miniflare", "undici"]
     },
     "apps/example-static": { "entry": ["build.ts", "renkin.ts"] },
     "apps/website": { "entry": ["build.ts", "renkin.ts"], "ignoreDependencies": ["cloudflare"] },
