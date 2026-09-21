@@ -50,6 +50,10 @@ const bindings = (
       if (target?.definition.type !== "cloudflare.kv")
         throw new Error("KV binding target is not provisioned.");
       result.push({ type: "kv_namespace", name, namespaceId: target.physicalId });
+    } else if (requirement.type === "cloudflare.d1") {
+      if (target?.definition.type !== "cloudflare.d1")
+        throw new Error("D1 binding target is not provisioned.");
+      result.push({ type: "d1", name, databaseId: target.physicalId });
     } else if (requirement.type === "cloudflare.worker-reference") {
       const external = requirement.external ? object(requirement.external) : undefined;
       const service = external?.name ?? target?.physicalId;

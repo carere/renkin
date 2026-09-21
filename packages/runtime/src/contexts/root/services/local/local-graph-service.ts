@@ -4,6 +4,7 @@ import { type BuildContext, type BuildResult, context as buildContext } from "es
 import { Miniflare, type WorkerOptions } from "miniflare";
 import type { Requirements } from "../../models/binding.ts";
 import type { WorkerBuildResult } from "../../models/build-result.ts";
+import type { NativeD1 } from "../../models/d1.ts";
 import { inspectRequirements } from "../bundler/inspect-requirements.ts";
 import { readBuildResult } from "../bundler/read-build-result.ts";
 import { bundleOptions, readBundle } from "../bundler/worker-bundler.ts";
@@ -23,6 +24,7 @@ export interface LocalGraphOptions {
   readonly workers: readonly GraphWorker[];
   readonly namespaces: Readonly<Record<string, string>>;
   readonly persist: string;
+  readonly databases?: Readonly<Record<string, string>>;
   readonly watch?: boolean;
   readonly onReload?: (id: string) => void;
   readonly onError?: (message: string) => void;
@@ -39,6 +41,7 @@ const workerSettings = (
   options: LocalGraphOptions,
 ): WorkerOptions => {
   const kvNamespaces: Record<string, string> = {};
+  const d1Databases: Record<string, string> = {};
   const serviceBindings: Record<string, string | { name: string; entrypoint: string }> = {};
   for (const [binding, requirement] of Object.entries(prepared.requirements)) {
     if (requirement.type === "cloudflare.kv") {
@@ -46,6 +49,11 @@ const workerSettings = (
       if (!namespace)
         throw new Error(`KV requirement ${requirement.id} is not declared in the stack.`);
       kvNamespaces[binding] = namespace;
+    } else if (requirement.type === "cloudflare.d1") {
+      const database = options.databases?.[requirement.id];
+      if (!database)
+        throw new Error(`D1 requirement ${requirement.id} is not declared in the stack.`);
+      d1Databases[binding] = database;
     } else {
       const targetId = requirement.external
         ? `renkin-external-${requirement.external.name}`
@@ -88,6 +96,7 @@ const workerSettings = (
     compatibilityFlags: [...(worker.compatibilityFlags ?? ["nodejs_compat"])],
     bindings: { ...worker.bindings },
     kvNamespaces,
+    d1Databases,
     serviceBindings,
     unsafeDirectSockets: [{ host: "127.0.0.1", port: worker.port ?? 0 }],
   };
@@ -219,9 +228,38 @@ const prepareGraph = async (
   }
 };
 
+const watchGraph = async (
+  options: LocalGraphOptions,
+  contexts: Map<string, BuildContext>,
+  watchers: FSWatcher[],
+  session: GraphSession,
+) => {
+  if (options.watch) {
+    await Promise.all([...contexts.values()].map((context) => context.watch()));
+    for (const worker of options.workers)
+      if (worker.build)
+        for (const path of new Set([
+          dirname(worker.build.entry),
+          ...(worker.build.assets ? [worker.build.assets.directory] : []),
+        ]))
+          watchers.push(
+            watch(path, { recursive: true }, () => {
+              void reloadArtifact(worker, session).catch(() =>
+                options.onError?.("External build reload failed."),
+              );
+            }),
+          );
+  }
+};
+
 export const startLocalGraph = async (
   options: LocalGraphOptions,
-): Promise<{ workers: Record<string, LocalWorker>; close: () => Promise<void> }> => {
+): Promise<{
+  workers: Record<string, LocalWorker>;
+  database: (id: string) => Promise<NativeD1>;
+  bindings: (workerId: string) => Promise<Record<string, unknown>>;
+  close: () => Promise<void>;
+}> => {
   const graphWorkers = [...options.workers];
   options = { ...options, workers: graphWorkers };
   const contexts = new Map<string, BuildContext>();
@@ -233,11 +271,24 @@ export const startLocalGraph = async (
     host: "127.0.0.1",
     port: 0,
     defaultPersistRoot: options.persist,
-    workers: options.workers.map((worker) => {
-      const source = prepared[worker.id];
-      if (!source) throw new Error("Worker has not built.");
-      return workerSettings(worker, source, options);
-    }),
+    workers: [
+      ...options.workers.map((worker) => {
+        const source = prepared[worker.id];
+        if (!source) throw new Error("Worker has not built.");
+        return workerSettings(worker, source, options);
+      }),
+      ...(options.databases && Object.keys(options.databases).length
+        ? [
+            {
+              name: "__renkin_databases",
+              script: "export default {fetch(){return new Response(null,{status:404})}}",
+              modules: true as const,
+              compatibilityDate: "2026-07-30",
+              d1Databases: { ...options.databases },
+            },
+          ]
+        : []),
+    ],
   });
   const session: GraphSession = { runtime, prepared, pending, options, settings };
   const close = async () => {
@@ -265,23 +316,17 @@ export const startLocalGraph = async (
         close: async () => {},
       };
     }
-    if (options.watch) {
-      await Promise.all([...contexts.values()].map((context) => context.watch()));
-      for (const worker of options.workers)
-        if (worker.build)
-          for (const path of new Set([
-            dirname(worker.build.entry),
-            ...(worker.build.assets ? [worker.build.assets.directory] : []),
-          ]))
-            watchers.push(
-              watch(path, { recursive: true }, () => {
-                void reloadArtifact(worker, session).catch(() =>
-                  options.onError?.("External build reload failed."),
-                );
-              }),
-            );
-    }
-    return { workers, close };
+    await watchGraph(options, contexts, watchers, session);
+    const readyRuntime = runtime;
+    return {
+      workers,
+      close,
+      bindings: (workerId) => readyRuntime.getBindings(workerId),
+      database: async (id) => {
+        if (!options.databases?.[id]) throw new Error("D1 resource is not declared.");
+        return (await readyRuntime.getD1Database(id, "__renkin_databases")) as unknown as NativeD1;
+      },
+    };
   } catch (error) {
     await close();
     throw error;

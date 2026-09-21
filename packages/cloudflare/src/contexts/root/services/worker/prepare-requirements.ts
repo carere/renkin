@@ -25,7 +25,7 @@ export const prepareRequirements = async (
     ...new Set([
       ...(resource.dependencies ?? []),
       ...Object.values(requirements)
-        .filter((item) => item.type === "cloudflare.kv")
+        .filter((item) => item.type === "cloudflare.kv" || item.type === "cloudflare.d1")
         .map((item) => item.id),
     ]),
   ];

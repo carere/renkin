@@ -1,4 +1,5 @@
 import { Effect } from "effect";
+import { type D1Client, type D1Requirement, d1Client, type NativeD1 } from "./d1.ts";
 
 export interface KVRequirement {
   readonly type: "cloudflare.kv";
@@ -11,7 +12,7 @@ export interface WorkerRequirement<Service = { fetch(request: Request): Promise<
   readonly external?: { readonly name: string; readonly localEntry?: string };
   readonly serviceType?: Service;
 }
-export type BindingRequirement = KVRequirement | WorkerRequirement<unknown>;
+export type BindingRequirement = KVRequirement | D1Requirement | WorkerRequirement<unknown>;
 export type Requirements = Readonly<Record<string, BindingRequirement>>;
 export interface NativeKV {
   get(key: string, type?: "text"): Promise<string | null>;
@@ -70,9 +71,11 @@ export type WorkerClient<Service> = {
 export type Resolved<R extends Requirements> = {
   readonly [K in keyof R]: R[K] extends KVRequirement
     ? KVClient
-    : R[K] extends WorkerRequirement<infer Service>
-      ? WorkerClient<Service>
-      : never;
+    : R[K] extends D1Requirement
+      ? D1Client
+      : R[K] extends WorkerRequirement<infer Service>
+        ? WorkerClient<Service>
+        : never;
 };
 export const resolveBindings = <R extends Requirements>(
   requirements: R,
@@ -86,11 +89,13 @@ export const resolveBindings = <R extends Requirements>(
         name,
         requirement.type === "cloudflare.kv"
           ? kvClient(native as NativeKV, name)
-          : {
-              native,
-              call: <A>(operation: (service: unknown) => Promise<A>) =>
-                call(name, "rpc", () => operation(native)),
-            },
+          : requirement.type === "cloudflare.d1"
+            ? d1Client(native as NativeD1, name)
+            : {
+                native,
+                call: <A>(operation: (service: unknown) => Promise<A>) =>
+                  call(name, "rpc", () => operation(native)),
+              },
       ];
     }),
   ) as Resolved<R>;

@@ -7,8 +7,17 @@ export const cloudflareKVService = (
   token: string,
 ): ResourceService => ({
   apply: async (definition, allocationId, previous) => {
-    if (previous) {
+    if (previous && allocationId === previous.physicalId) {
       const observed = await Effect.runPromise(client.get(previous.physicalId));
+      const outputs = previous.outputs;
+      if (
+        !outputs ||
+        typeof outputs !== "object" ||
+        Array.isArray(outputs) ||
+        !("title" in outputs) ||
+        outputs.title !== observed.title
+      )
+        throw new Error("KV ownership does not match the recorded resource.");
       return { id: observed.id, title: observed.title };
     }
     // The cryptographically random, persisted allocation ID is the ownership marker,
