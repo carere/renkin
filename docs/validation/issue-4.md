@@ -24,7 +24,8 @@ versions in `bun.lock`. These results concern ticket #4, not the complete releas
   and one-command dev startup/reload with provider credentials absent.
 - The populated Moon tasks were executed. Untouched workspace projects still
   contain empty suites; they are not included in this behavioral claim.
-- Linux is configured in CI; no Linux execution is claimed by this local record.
+- [Linux CI](https://github.com/carere/renkin/actions/runs/35556343974) passed all
+  55 behavioral tests and static checks on checkpoint `d6a0819` (Ubuntu 24.04).
 
 ## Authorized Cloudflare checks
 
@@ -70,5 +71,5 @@ The parent task is resolving the required operator workflow for this ambiguous
 provider outcome; the current state is not a claim of unlimited automatic crash
 recovery. Ordinary deployment-client crashes are covered independently.
 
-This slice does not validate a packed package, Linux execution, additional
-resource adapters, framework integrations or the complete application graph.
+This slice does not validate a packed package, additional resource adapters,
+framework integrations or the complete application graph.

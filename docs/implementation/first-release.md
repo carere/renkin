@@ -28,7 +28,8 @@ Separate restricted-token checks passed and revoked both temporary tokens.
 
 The secured test state service remains account infrastructure. The superseded
 test service was removed after verifying ownership and the absence of temporary
-application Workers. Linux CI on the implementation is still pending.
+application Workers. [Linux CI](https://github.com/carere/renkin/actions/runs/35556343974)
+passed all 55 behavioral tests and static checks on checkpoint `d6a0819`.
 
 Ticket #4 is not yet complete: a cloud coordinator crash during an unobservable
 provider mutation can leave an ambiguous outcome. The implementation stops safely;
