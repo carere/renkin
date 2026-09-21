@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import type { createBackgroundClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/background-client";
 import type {
   createCloudflareClient,
   WorkerUpload,
@@ -16,6 +17,12 @@ import {
   observedDurableObjectClasses,
   prepareDurableObjectLedger,
 } from "../durable-object/worker-durable-objects.ts";
+import { backgroundBinding } from "./background-bindings.ts";
+import {
+  assertNoOwnedWorkflows,
+  backgroundOutputs,
+  reconcileWorkerBackground,
+} from "./worker-background.ts";
 import { finalizeWorkerPublication, prepareWorkerPublication } from "./worker-publication.ts";
 
 type Metadata = NonNullable<WorkerUpload["metadata"]>;
@@ -108,6 +115,12 @@ const bindings = (
         bucketName: target.physicalId,
         ...(typeof jurisdiction === "string" && jurisdiction !== "default" ? { jurisdiction } : {}),
       });
+    } else if (
+      ["cloudflare.queue", "cloudflare.workflow", "cloudflare.email"].includes(
+        String(requirement.type),
+      )
+    ) {
+      result.push(backgroundBinding(name, requirement, target));
     } else if (requirement.type === "cloudflare.worker-reference") {
       const external = requirement.external ? object(requirement.external) : undefined;
       if (!external && !target && ignoreRemovedWorkers) continue;
@@ -142,6 +155,7 @@ const stub = (definition: ResourceDefinition) => {
 
 interface WorkerServiceOptions {
   readonly client: ReturnType<typeof createCloudflareClient>;
+  readonly backgroundClient?: ReturnType<typeof createBackgroundClient>;
   readonly siteClient: ReturnType<typeof createSiteClient>;
   readonly durableObjectClient?: ReturnType<typeof createDurableObjectClient>;
   readonly desired?: readonly ResourceDefinition[];
@@ -277,6 +291,7 @@ const workerOutputs = async (
 ) => ({
   url: `https://${physicalId}.${options.subdomain}.workers.dev`,
   name: physicalId,
+  ...backgroundOutputs(definition, physicalId, previous, resources),
   ...(await prepareDurableObjectLedger(
     definition,
     previous,
@@ -286,9 +301,29 @@ const workerOutputs = async (
   )),
 });
 
-export const cloudflareWorkerService = (options: WorkerServiceOptions): ResourceService => {
-  const marker = (id: string) => `renkin:${options.stack}:${options.environment}:${id}`;
-  const verifyOwner = async (name: string, ownershipId: string) => {
+const precreateWorker = async (
+  options: WorkerServiceOptions,
+  definition: ResourceDefinition,
+  physicalId: string,
+  ownershipMarker: string,
+) => {
+  await Effect.runPromise(
+    options.client.putWorker(
+      {
+        scriptName: physicalId,
+        metadata: { ...input(definition), tags: [ownershipMarker] },
+        files: [
+          new File([stub(definition)], "worker.mjs", { type: "application/javascript+module" }),
+        ],
+      },
+      options.token,
+    ),
+  );
+};
+
+const workerOwnership =
+  (options: WorkerServiceOptions, marker: (id: string) => string) =>
+  async (name: string, ownershipId: string) => {
     const existing = await observeWorker(options, name);
     if (
       existing &&
@@ -297,6 +332,10 @@ export const cloudflareWorkerService = (options: WorkerServiceOptions): Resource
       throw new Error("Worker ownership does not match this environment.");
     return existing;
   };
+
+export const cloudflareWorkerService = (options: WorkerServiceOptions): ResourceService => {
+  const marker = (id: string) => `renkin:${options.stack}:${options.environment}:${id}`;
+  const verifyOwner = workerOwnership(options, marker);
   return {
     deferredBindings: true,
     refresh: true,
@@ -305,21 +344,7 @@ export const cloudflareWorkerService = (options: WorkerServiceOptions): Resource
         physicalId,
         previous?.ownershipId ?? previous?.definition.id ?? definition.id,
       );
-      if (!existing)
-        await Effect.runPromise(
-          options.client.putWorker(
-            {
-              scriptName: physicalId,
-              metadata: { ...input(definition), tags: [marker(physicalId)] },
-              files: [
-                new File([stub(definition)], "worker.mjs", {
-                  type: "application/javascript+module",
-                }),
-              ],
-            },
-            options.token,
-          ),
-        );
+      if (!existing) await precreateWorker(options, definition, physicalId, marker(physicalId));
       return workerOutputs(options, definition, physicalId, previous, resources);
     },
     bind: async (resource, resources, _desired, operation) => {
@@ -336,11 +361,27 @@ export const cloudflareWorkerService = (options: WorkerServiceOptions): Resource
         operation?.force,
       );
       await finalizeWorkerPublication(resource, options.siteClient, options.token);
+      await reconcileWorkerBackground(
+        resource,
+        resources,
+        options.backgroundClient,
+        options.token,
+        (name) => verifyOwner(name, resource.ownershipId ?? resource.definition.id),
+      );
     },
     remove: async (resource, resources = {}) => {
       if (!(await verifyOwner(resource.physicalId, resource.ownershipId ?? resource.definition.id)))
         return;
       await assertNoDurableObjects(resource.physicalId, options.durableObjectClient);
+      await assertNoOwnedWorkflows(resource, options.backgroundClient);
+      await reconcileWorkerBackground(
+        resource,
+        resources,
+        options.backgroundClient,
+        options.token,
+        (name) => verifyOwner(name, resource.ownershipId ?? resource.definition.id),
+        true,
+      );
       await detachCallers(resource, resources, options, marker, verifyOwner);
       await Effect.runPromise(
         options.client

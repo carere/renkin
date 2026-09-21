@@ -1,4 +1,6 @@
 import { cloudflareAccessServices } from "@renkin/cloudflare/services/access/cloudflare-access-service";
+import { cloudflareQueueService } from "@renkin/cloudflare/services/background/cloudflare-queue-service";
+import { cloudflareWorkflowService } from "@renkin/cloudflare/services/background/cloudflare-workflow-service";
 import { cloudflareD1Service } from "@renkin/cloudflare/services/d1/cloudflare-d1-service";
 import { cloudflareDurableObjectService } from "@renkin/cloudflare/services/durable-object/cloudflare-durable-object-service";
 import { cloudflareKVService } from "@renkin/cloudflare/services/kv/cloudflare-kv-service";
@@ -14,6 +16,7 @@ import { CloudflareStateRepository } from "@renkin/cloudflare/services/state/clo
 import { cloudflareWorkerService } from "@renkin/cloudflare/services/worker/cloudflare-worker-service";
 import { createAccessClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/access-client";
 import { createAccountTokenClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/account-token-client";
+import { createBackgroundClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/background-client";
 import {
   createBootstrapClient,
   createCloudflareClient,
@@ -59,6 +62,14 @@ const cloudState = async (options?: CloudflareOptions) => {
   };
 };
 
+const accountSubdomain = async (config: CloudStateOptions) => {
+  const { subdomain } = await Effect.runPromise(
+    createBootstrapClient(config).getAccountSubdomain(),
+  );
+  if (!subdomain) throw new Error("Cloudflare account has no workers.dev subdomain.");
+  return subdomain;
+};
+
 export const cloudEnvironment = async (
   stack: string,
   environment: string,
@@ -83,10 +94,7 @@ export const cloudEnvironment = async (
           },
         )
       : undefined;
-  const { subdomain } = await Effect.runPromise(
-    createBootstrapClient(config).getAccountSubdomain(),
-  );
-  if (!subdomain) throw new Error("Cloudflare account has no workers.dev subdomain.");
+  const subdomain = await accountSubdomain(config);
   const gateway = {
     request: (request: GatewayRequest, token: string) =>
       state.gateway(stack, environment, token, request),
@@ -98,9 +106,12 @@ export const cloudEnvironment = async (
   const d1Client = createD1Client(config, gateway);
   const durableObjectClient = createDurableObjectClient(config, gateway);
   const r2Client = createR2Client(config, gateway);
+  const backgroundClient = createBackgroundClient(config, gateway);
   const services: ResourceServices = (lease) => ({
     ...cloudflareAccessServices({ client: accessClient, token: lease.token }),
     ...cloudflareSiteServices({ client: siteClient, token: lease.token }),
+    "cloudflare.queue": cloudflareQueueService(backgroundClient, lease.token),
+    "cloudflare.workflow": cloudflareWorkflowService(backgroundClient, lease.token),
     "cloudflare.d1": cloudflareD1Service(d1Client, lease.token),
     ...(accountTokenClient
       ? {

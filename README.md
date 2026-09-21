@@ -13,6 +13,8 @@ Native SQLite Durable Objects, alarms and restart fixtures are covered in
 [Durable Object usage](docs/durable-objects.md).
 R2 buckets, opt-in local presigned uploads and scoped preview credentials are described in
 [R2 and preview usage](docs/r2-and-previews.md).
+Native cron handlers, queues, durable Workflows and captured email support background
+jobs; see [background jobs and validation](docs/background-jobs.md).
 Additional resources, framework integrations and the release artifact remain in
 progress. See the
 [architecture](docs/architecture.md) for the agreed workspace boundaries and open

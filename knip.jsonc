@@ -1,9 +1,9 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
-    "packages/cloudflare": { "entry": ["vitest.cloud.config.ts"] },
-    // cloudflare:workers is a workerd runtime module, not an npm dependency.
+    // Runtime-provided cloudflare:workers is a workerd built-in, not the cloudflare npm package.
     "packages/runtime": { "ignoreDependencies": ["cloudflare"] },
+    "packages/cloudflare": { "entry": ["vitest.cloud.config.ts"] },
     "packages/renkin": {
       "entry": ["tests/fixtures/**/*.ts", "vitest.cloud.config.ts"]
     },

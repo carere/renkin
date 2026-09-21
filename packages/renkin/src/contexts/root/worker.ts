@@ -9,5 +9,8 @@ import {
 export const workerReference = reference;
 export const externalWorker = external;
 
+import type { QueueBatch as Batch } from "@renkin/runtime/models/queue";
+export type QueueBatch<Body = unknown> = Batch<Body>;
+
 import { localS3Endpoint as endpoint } from "@renkin/runtime/models/local-r2-s3";
 export const localS3Endpoint = endpoint;

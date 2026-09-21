@@ -72,6 +72,7 @@ export const startLocalBuild = async (
     return {
       url,
       fetch: (path = "/", init) => fetch(new URL(path, url), init),
+      scheduled: async (options) => (await instance.getWorker()).scheduled(options),
       reload: async () => {
         await instance.setOptions(await settings());
       },

@@ -20,6 +20,7 @@ export const prepareRequirements = async (
     compatibilityDate,
     compatibilityFlags,
     artifact,
+    ((resource.properties as Record<string, Json>).workflowClasses ?? []) as readonly string[],
   );
   const dependencies = [
     ...new Set([
@@ -29,6 +30,7 @@ export const prepareRequirements = async (
           (item) =>
             item.type === "cloudflare.kv" ||
             item.type === "cloudflare.d1" ||
+            item.type === "cloudflare.queue" ||
             item.type === "cloudflare.r2" ||
             item.type === "cloudflare.r2-token",
         )
@@ -38,7 +40,11 @@ export const prepareRequirements = async (
   const references = [
     ...new Set(
       Object.values(requirements)
-        .filter((item) => item.type === "cloudflare.worker-reference" && !item.external)
+        .filter(
+          (item) =>
+            (item.type === "cloudflare.worker-reference" && !item.external) ||
+            item.type === "cloudflare.workflow",
+        )
         .map((item) => item.id),
     ),
   ];
@@ -83,6 +89,7 @@ export const finalizeRequirements = (
       )
         throw new Error("Invalid binding descriptor.");
       if ("external" in value && value.external) continue;
+      if (value.type === "cloudflare.email") continue;
       const target = resources.find((item) => item.id === value.id);
       const expected =
         value.type === "cloudflare.worker-reference" ? "cloudflare.worker" : value.type;

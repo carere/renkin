@@ -9,7 +9,8 @@
     "./cloudflare": "./src/contexts/root/cloudflare.ts",
     "./testing": "./src/contexts/root/testing.ts",
     "./worker": "./src/contexts/root/worker.ts",
-    "./durable-object": "./src/contexts/root/durable-object.ts"
+    "./durable-object": "./src/contexts/root/durable-object.ts",
+    "./workflow": "./src/contexts/root/workflow.ts"
   },
   "bin": {
     "renkin": "./src/contexts/root/cli/main.ts"

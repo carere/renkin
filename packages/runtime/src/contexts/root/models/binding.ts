@@ -7,8 +7,17 @@ import {
   type DurableObjectRequirement,
   durableObjectClient,
 } from "./durable-object.ts";
+import { type EmailClient, type EmailRequirement, emailClient, type NativeEmail } from "./email.ts";
+import { localWorkflow } from "./local-workflow.ts";
+import { type NativeQueue, type QueueClient, type QueueRequirement, queueClient } from "./queue.ts";
 import { type NativeR2, type R2Client, type R2Requirement, r2Client } from "./r2.ts";
 import { type R2TokenClient, type R2TokenRequirement, r2TokenClient } from "./r2-token.ts";
+import {
+  type NativeWorkflow,
+  type WorkflowClient,
+  type WorkflowRequirement,
+  workflowClient,
+} from "./workflow-client.ts";
 
 export interface KVRequirement {
   readonly type: "cloudflare.kv";
@@ -29,7 +38,10 @@ export type BindingRequirement =
   | DurableObjectRequirement<DurableObjectInstance | undefined>
   | R2Requirement
   | R2TokenRequirement
-  | WorkerRequirement<unknown>;
+  | WorkerRequirement<unknown>
+  | QueueRequirement
+  | WorkflowRequirement
+  | EmailRequirement;
 export type Requirements = Readonly<Record<string, BindingRequirement>>;
 export type NativeKV = KVNamespace;
 export class BindingError extends Error {
@@ -72,9 +84,15 @@ export type Resolved<R extends Requirements> = {
           ? R2Client
           : R[K] extends R2TokenRequirement
             ? R2TokenClient
-            : R[K] extends WorkerRequirement<infer Service>
-              ? WorkerClient<Service>
-              : never;
+            : R[K] extends QueueRequirement<infer Body>
+              ? QueueClient<Body>
+              : R[K] extends WorkflowRequirement<infer Params>
+                ? WorkflowClient<Params>
+                : R[K] extends EmailRequirement
+                  ? EmailClient
+                  : R[K] extends WorkerRequirement<infer Service>
+                    ? WorkerClient<Service>
+                    : never;
 };
 export const resolveBindings = <R extends Requirements>(
   requirements: R,
@@ -96,11 +114,17 @@ export const resolveBindings = <R extends Requirements>(
                 ? r2Client(native as NativeR2, name)
                 : requirement.type === "cloudflare.r2-token"
                   ? r2TokenClient(native)
-                  : {
-                      native,
-                      call: <A>(operation: (service: unknown) => Promise<A>) =>
-                        call(name, "rpc", () => operation(native)),
-                    },
+                  : requirement.type === "cloudflare.queue"
+                    ? queueClient(native as NativeQueue, name)
+                    : requirement.type === "cloudflare.workflow"
+                      ? workflowClient(localWorkflow(native as NativeWorkflow, name, env), name)
+                      : requirement.type === "cloudflare.email"
+                        ? emailClient(native as NativeEmail, name)
+                        : {
+                            native,
+                            call: <A>(operation: (service: unknown) => Promise<A>) =>
+                              call(name, "rpc", () => operation(native)),
+                          },
       ];
     }),
   ) as Resolved<R>;

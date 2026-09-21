@@ -5,6 +5,7 @@ import type { Stack } from "@renkin/core/models/stack";
 import type { Change, EnvironmentState } from "@renkin/core/models/state";
 import { plan } from "@renkin/core/use-cases/plan";
 import { renamedState } from "@renkin/core/use-cases/rename";
+import type { LocalQueue, LocalWorkflow } from "@renkin/runtime/services/local/local-background";
 import type { LocalDurableObject } from "@renkin/runtime/services/local/local-durable-objects";
 import { removeLocalR2Objects } from "@renkin/runtime/services/local/local-r2-removal";
 
@@ -38,6 +39,20 @@ const r2Removals = (changes: Iterable<Change>) =>
     ];
   });
 
+const tokenBuckets = (value: unknown) => {
+  const properties = value;
+  if (
+    !properties ||
+    typeof properties !== "object" ||
+    Array.isArray(properties) ||
+    !("buckets" in properties) ||
+    !Array.isArray(properties.buckets) ||
+    !properties.buckets.every((id) => typeof id === "string")
+  )
+    throw new Error("Invalid local R2 token buckets.");
+  return properties.buckets as readonly string[];
+};
+
 export const prepareLocalResources = async (
   stack: Stack,
   state: EnvironmentState,
@@ -52,6 +67,8 @@ export const prepareLocalResources = async (
   const durableObjects: Record<string, LocalDurableObject> = {};
   const buckets: Record<string, string> = {};
   const r2Tokens: Record<string, readonly string[]> = {};
+  const queues: Record<string, LocalQueue> = {};
+  const workflows: Record<string, LocalWorkflow> = {};
   const workerResources: WorkerResource[] = [];
   for (const resource of stack.resources) {
     const previous =
@@ -74,17 +91,20 @@ export const prepareLocalResources = async (
     else if (resource.type === "cloudflare.r2")
       buckets[resource.id] = state.resources[resource.id]?.physicalId ?? resource.id;
     else if (resource.type === "cloudflare.r2-token") {
-      const properties = resource.properties;
-      if (
-        !properties ||
-        typeof properties !== "object" ||
-        Array.isArray(properties) ||
-        !("buckets" in properties) ||
-        !Array.isArray(properties.buckets) ||
-        !properties.buckets.every((id) => typeof id === "string")
-      )
-        throw new Error("Invalid local R2 token buckets.");
-      r2Tokens[resource.id] = properties.buckets as readonly string[];
+      r2Tokens[resource.id] = tokenBuckets(resource.properties);
+    } else if (resource.type === "cloudflare.queue") {
+      const properties = resource.properties as { deliveryDelay?: number };
+      queues[resource.id] = {
+        name: state.resources[resource.id]?.physicalId ?? resource.id,
+        deliveryDelay: properties.deliveryDelay,
+      };
+    } else if (resource.type === "cloudflare.workflow") {
+      const properties = resource.properties as { worker: string; className: string };
+      workflows[resource.id] = {
+        name: state.resources[resource.id]?.physicalId ?? resource.id,
+        scriptName: properties.worker,
+        className: properties.className,
+      };
     } else if (resource.type === "cloudflare.worker" && "options" in resource)
       workerResources.push(resource as WorkerResource);
     else if (!cloudOnlyControls.has(resource.type)) throw new Error("Unsupported local resource.");
@@ -100,5 +120,7 @@ export const prepareLocalResources = async (
     durableObjects,
     buckets,
     r2Tokens,
+    queues,
+    workflows,
   };
 };
