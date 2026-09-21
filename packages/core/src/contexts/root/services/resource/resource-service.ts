@@ -16,7 +16,12 @@ export interface ResourceService {
   readonly deferredBindings?: boolean;
   /** Observe/reconcile even when desired properties are unchanged. */
   readonly refresh?: boolean;
-  bind?(resource: ResourceState, resources: Readonly<Record<string, ResourceState>>): Promise<void>;
+  bind?(
+    resource: ResourceState,
+    resources: Readonly<Record<string, ResourceState>>,
+    /** Current configuration, only when logical ID, type and physical identity still agree. */
+    currentDesired?: ResourceDefinition,
+  ): Promise<void>;
   remove(resource: ResourceState): Promise<void>;
 }
 
