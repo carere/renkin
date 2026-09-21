@@ -108,11 +108,17 @@ const resume = async (
         resource.type === appliedDefinition.type &&
         resource.identity === appliedDefinition.identity,
     );
-    await service.bind?.(op.applied, { ...state.resources, [op.change.id]: op.applied }, desired, {
-      force: op.force ?? false,
-    });
-    state.resources[op.change.id] = op.applied;
-    op = { ...op, phase: "remove-previous" };
+    const outputs = await service.bind?.(
+      op.applied,
+      { ...state.resources, [op.change.id]: op.applied },
+      desired,
+      {
+        force: op.force ?? false,
+      },
+    );
+    const applied = outputs === undefined ? op.applied : { ...op.applied, outputs };
+    state.resources[op.change.id] = applied;
+    op = { ...op, applied, phase: "remove-previous" };
     state.pending = op;
     await lease.write(state);
     if (service.deferredBindings && op.change.kind === "replace") {
