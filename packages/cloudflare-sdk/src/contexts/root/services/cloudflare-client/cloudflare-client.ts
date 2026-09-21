@@ -123,6 +123,8 @@ export const createBootstrapClient = (config: CloudflareConfig) => {
       run(
         Workers.createScriptSubdomain({ accountId: config.accountId, scriptName, enabled: true }),
       ),
+    getWorkerSubdomain: (scriptName: string) =>
+      run(Workers.getScriptSubdomain({ accountId: config.accountId, scriptName })),
     getAccountSubdomain: () => run(Workers.getSubdomain({ accountId: config.accountId })),
   };
 };

@@ -77,14 +77,20 @@ export const startLocalWorker = async (options: LocalWorkerOptions): Promise<Loc
         await pending;
       },
       close: async () => {
-        await context.dispose();
-        await pending.catch(() => {});
-        await instance?.dispose();
+        try {
+          await context.dispose();
+        } finally {
+          await pending.catch(() => {});
+          await instance?.dispose();
+        }
       },
     };
   } catch (error) {
-    await context.dispose();
-    await instance?.dispose();
+    try {
+      await context.dispose();
+    } finally {
+      await instance?.dispose();
+    }
     throw error;
   }
 };

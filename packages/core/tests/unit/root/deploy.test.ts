@@ -116,3 +116,48 @@ it("treats prototype-like logical IDs as ordinary new resource identities", () =
   const desired = defineStack({ name: "app", resources: [{ ...resource(), id: "constructor" }] });
   expect(plan(desired, emptyState("app", "dev"))[0]?.kind).toBe("create");
 });
+
+it.effect("rechecks current protection before resuming an earlier destructive operation", () =>
+  Effect.gen(function* () {
+    const state = new InMemoryStateRepository();
+    const previous = {
+      definition: { ...resource("old"), protection: { data: true, allowDelete: true } },
+      physicalId: "old",
+      outputs: null,
+    };
+    const desired = { ...resource("new"), protection: { data: true, allowDelete: true } };
+    state.value = emptyState("app", "dev");
+    state.value.resources.api = previous;
+    state.value.pending = {
+      change: { id: "api", kind: "replace", previous, desired },
+      physicalId: "new",
+      phase: "apply",
+    };
+    const protectedStack = defineStack({
+      name: "app",
+      resources: [{ ...desired, protection: { data: true, allowDelete: false } }],
+    });
+    let mutated = false;
+    const exit = yield* Effect.exit(
+      deploy(protectedStack, {
+        environment: "dev",
+        state,
+        yes: true,
+        services: () => ({
+          worker: {
+            apply: async () => {
+              mutated = true;
+              return null;
+            },
+            remove: async () => {
+              mutated = true;
+            },
+          },
+        }),
+      }),
+    );
+    expect(exit._tag).toBe("Failure");
+    expect(mutated).toBe(false);
+    expect(state.written).toBeUndefined();
+  }),
+);

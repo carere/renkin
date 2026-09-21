@@ -93,7 +93,7 @@ const applyChange = async (
   state.pending = {
     change,
     physicalId:
-      change.kind === "update" && change.previous
+      (change.kind === "update" || change.kind === "remove") && change.previous
         ? change.previous.physicalId
         : `${`${state.stack}-${state.environment}-${change.id}`.toLowerCase().slice(0, 46)}-${randomUUID().replaceAll("-", "").slice(0, 16)}`,
     phase: change.kind === "remove" ? "remove" : "apply",
@@ -122,12 +122,25 @@ const execute = async (stack: Stack, options: DeployOptions): Promise<Environmen
     for (const resource of [
       ...stack.resources,
       ...Object.values(state.resources).map((item) => item.definition),
+      ...(state.pending?.change.desired ? [state.pending.change.desired] : []),
+      ...(state.pending?.change.previous ? [state.pending.change.previous.definition] : []),
     ]) {
       if (!services[resource.type])
         throw new DeploymentError(`No adapter registered for ${resource.type}.`);
     }
-    if (state.pending) assertProtection([state.pending.change]);
-    const actionable = changes.filter((change) => change.kind !== "unchanged");
+    if (state.pending) {
+      const current = stack.resources.find((resource) => resource.id === state.pending?.change.id);
+      assertProtection([{ ...state.pending.change, ...(current ? { desired: current } : {}) }]);
+    }
+    const actionable = [
+      ...(state.pending ? [state.pending.change] : []),
+      ...changes.filter((change) => change.kind !== "unchanged"),
+    ];
+    if (state.pending)
+      options.progress?.({
+        id: state.pending.change.id,
+        kind: `resume ${state.pending.change.kind}`,
+      });
     for (const change of changes) options.progress?.({ id: change.id, kind: change.kind });
     if (
       (actionable.length || state.pending) &&

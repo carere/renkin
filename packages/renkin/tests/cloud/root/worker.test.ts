@@ -30,7 +30,7 @@ const scope = () => {
       "Temporary Cloudflare tests require current explicit authorization and a resource prefix.",
     );
   }
-  return { prefix, stateScriptName: `${prefix}-state-v1` };
+  return { prefix, stateScriptName: `${prefix}-state-v2` };
 };
 
 const assertHttp = async (url: string, expected: string): Promise<void> => {

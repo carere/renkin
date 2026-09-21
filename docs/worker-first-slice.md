@@ -75,11 +75,15 @@ Cloud operations accept an API token and account ID through
 No browser login, saved account profile or global account-key flow is used.
 The account must have a workers.dev subdomain. Initial deployment provisions an
 account state Worker and SQLite Durable Object namespace automatically. Its
-name defaults to `renkin-state-v1`; `cloudflare.stateScriptName` or
+name defaults to `renkin-state-v2`; `cloudflare.stateScriptName` or
 `--state-worker` selects a separate permanent backend. It must survive ordinary
 environment cleanup. Inspection commands do not provision a missing backend.
 A pre-existing backend is accepted only with the expected ownership tag and
-account/namespace bindings, and is not silently overwritten.
+account/namespace bindings, and is not silently overwritten. Its dedicated random
+state-authentication secret is recovered through an authenticated ephemeral
+Cloudflare preview by callers with Workers Edit permission. An account-read-only
+token cannot retrieve state secrets. The Cloudflare API token is used separately
+for provider mutations and is never accepted as the state bearer token.
 
 Cloud state uses AES-256-GCM with random nonces, a versioned envelope and
 stack/environment authenticated associated data. The server creates its key

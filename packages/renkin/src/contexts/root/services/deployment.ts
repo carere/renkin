@@ -1,5 +1,5 @@
 import { prepareStack } from "@renkin/cloudflare/services/worker/prepare-stack";
-import type { Stack } from "@renkin/core/models/stack";
+import { defineStack, type Stack, validateName } from "@renkin/core/models/stack";
 import { emptyState } from "@renkin/core/models/state";
 import {
   DeploymentError,
@@ -42,6 +42,8 @@ export const planDeployment = (
 ) =>
   Effect.tryPromise({
     try: async () => {
+      defineStack(stack);
+      validateName(options.environment);
       const prepared = await prepareStack(stack);
       const repository = await readCloudState(options.cloudflare);
       const current =

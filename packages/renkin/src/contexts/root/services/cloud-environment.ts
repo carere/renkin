@@ -32,8 +32,11 @@ const cloudCredentials = (options: CloudflareOptions = {}): CloudStateOptions =>
 
 const cloudState = async (options?: CloudflareOptions) => {
   const config = cloudCredentials(options);
-  const { endpoint } = await ensureCloudflareState(config);
-  return { config, state: new CloudflareStateRepository({ endpoint, apiToken: config.apiToken }) };
+  const { endpoint, stateAuthToken } = await ensureCloudflareState(config);
+  return {
+    config,
+    state: new CloudflareStateRepository({ endpoint, stateAuthToken, apiToken: config.apiToken }),
+  };
 };
 
 export const cloudEnvironment = async (
@@ -66,6 +69,10 @@ export const readCloudState = async (options?: CloudflareOptions) => {
   const config = cloudCredentials(options);
   const located = await findCloudflareState(config);
   return located
-    ? new CloudflareStateRepository({ endpoint: located.endpoint, apiToken: config.apiToken })
+    ? new CloudflareStateRepository({
+        endpoint: located.endpoint,
+        stateAuthToken: located.stateAuthToken,
+        apiToken: config.apiToken,
+      })
     : undefined;
 };

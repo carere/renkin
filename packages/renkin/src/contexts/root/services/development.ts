@@ -23,11 +23,15 @@ const start = async (stack: Stack, options: DevelopmentOptions) => {
   const lease = await repository.acquire(stack.name, environment);
   const workers: Record<string, LocalWorker> = {};
   const close = async () => {
-    await Promise.all(Object.values(workers).map((worker) => worker.close()));
-    await lease.release();
+    try {
+      await Promise.all(Object.values(workers).map((worker) => worker.close()));
+    } finally {
+      await lease.release();
+    }
   };
   try {
     const state = (await lease.read()) ?? emptyState(stack.name, environment);
+    for (const key of Object.keys(state.outputs)) delete state.outputs[key];
     for (const resource of stack.resources) {
       if (resource.type !== "cloudflare.worker" || !("options" in resource))
         throw new Error("Unsupported local resource.");

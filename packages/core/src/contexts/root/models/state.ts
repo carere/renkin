@@ -74,7 +74,13 @@ const resource = (value: unknown): boolean =>
   json(value.outputs);
 
 const pending = (value: unknown): boolean => {
-  if (!record(value) || !record(value.change) || typeof value.physicalId !== "string") return false;
+  if (
+    !record(value) ||
+    !record(value.change) ||
+    typeof value.physicalId !== "string" ||
+    value.physicalId.length === 0
+  )
+    return false;
   const change = value.change;
   if (
     typeof change.id !== "string" ||
@@ -97,7 +103,10 @@ const pending = (value: unknown): boolean => {
     value.applied !== undefined &&
     (!resource(value.applied) ||
       !record(value.applied) ||
-      value.applied.physicalId !== value.physicalId)
+      value.applied.physicalId !== value.physicalId ||
+      !record(value.applied.definition) ||
+      !record(change.desired) ||
+      JSON.stringify(value.applied.definition) !== JSON.stringify(change.desired))
   )
     return false;
   return true;
