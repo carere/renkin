@@ -2,6 +2,7 @@ import type { KVNamespace } from "@cloudflare/workers-types";
 import { Effect } from "effect";
 import { type D1Client, type D1Requirement, d1Client, type NativeD1 } from "./d1.ts";
 import { type EmailClient, type EmailRequirement, emailClient, type NativeEmail } from "./email.ts";
+import { localWorkflow } from "./local-workflow.ts";
 import { type NativeQueue, type QueueClient, type QueueRequirement, queueClient } from "./queue.ts";
 import { type NativeR2, type R2Client, type R2Requirement, r2Client } from "./r2.ts";
 import {
@@ -99,7 +100,7 @@ export const resolveBindings = <R extends Requirements>(
               : requirement.type === "cloudflare.queue"
                 ? queueClient(native as NativeQueue, name)
                 : requirement.type === "cloudflare.workflow"
-                  ? workflowClient(native as NativeWorkflow, name)
+                  ? workflowClient(localWorkflow(native as NativeWorkflow, name, env), name)
                   : requirement.type === "cloudflare.email"
                     ? emailClient(native as NativeEmail, name)
                     : {

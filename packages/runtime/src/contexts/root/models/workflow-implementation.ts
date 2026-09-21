@@ -2,7 +2,7 @@ import { WorkflowEntrypoint } from "cloudflare:workers";
 import type { CloudflareWorkersModule } from "@cloudflare/workers-types";
 import { Cause, Effect, Exit, type Layer } from "effect";
 import { type Requirements, type Resolved, resolveBindings } from "./binding.ts";
-import { type WorkflowSteps, workflowSteps } from "./workflow-steps.ts";
+import { type WorkflowSteps, WorkflowTaskError, workflowSteps } from "./workflow-steps.ts";
 export type WorkflowEvent<Params> = CloudflareWorkersModule.WorkflowEvent<Params>;
 type WorkflowStep = CloudflareWorkersModule.WorkflowStep;
 
@@ -36,7 +36,11 @@ export function defineWorkflow<R extends Requirements, Params>(
           ? (Effect.provide(result, layer) as Effect.Effect<unknown, unknown>)
           : (result as Effect.Effect<unknown, unknown>),
       );
-      if (Exit.isFailure(exit)) throw Cause.squash(exit.cause);
+      if (Exit.isFailure(exit)) {
+        const error = Cause.squash(exit.cause);
+        // Native pause/terminate signals must reach the Workflow engine unchanged.
+        throw error instanceof WorkflowTaskError ? error.cause : error;
+      }
       return exit.value;
     }
   };

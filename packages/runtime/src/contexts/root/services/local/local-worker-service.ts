@@ -18,6 +18,7 @@ export interface LocalWorker {
   readonly url: string;
   fetch(path?: string, init?: RequestInit): Promise<Response>;
   reload(): Promise<void>;
+  scheduled(options?: { cron?: string; scheduledTime?: Date }): Promise<unknown>;
   close(): Promise<void>;
 }
 
@@ -72,6 +73,7 @@ export const startLocalWorker = async (options: LocalWorkerOptions): Promise<Loc
     return {
       url,
       fetch: async (path = "/", init) => fetch(new URL(path, url), init),
+      scheduled: async (options) => (await instance?.getWorker())?.scheduled(options),
       reload: async () => {
         await context.rebuild();
         await pending;

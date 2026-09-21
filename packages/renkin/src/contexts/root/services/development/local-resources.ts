@@ -4,6 +4,7 @@ import type { Stack } from "@renkin/core/models/stack";
 import type { Change, EnvironmentState } from "@renkin/core/models/state";
 import { plan } from "@renkin/core/use-cases/plan";
 import { renamedState } from "@renkin/core/use-cases/rename";
+import type { LocalQueue, LocalWorkflow } from "@renkin/runtime/services/local/local-background";
 import { removeLocalR2Objects } from "@renkin/runtime/services/local/local-r2-removal";
 
 const r2Removals = (changes: Iterable<Change>) =>
@@ -40,6 +41,8 @@ export const prepareLocalResources = async (
   const namespaces: Record<string, string> = {};
   const databases: Record<string, string> = {};
   const buckets: Record<string, string> = {};
+  const queues: Record<string, LocalQueue> = {};
+  const workflows: Record<string, LocalWorkflow> = {};
   const workerResources: WorkerResource[] = [];
   for (const resource of stack.resources) {
     const previous =
@@ -56,7 +59,20 @@ export const prepareLocalResources = async (
       databases[resource.id] = state.resources[resource.id]?.physicalId ?? resource.id;
     else if (resource.type === "cloudflare.r2")
       buckets[resource.id] = state.resources[resource.id]?.physicalId ?? resource.id;
-    else if (resource.type === "cloudflare.worker" && "options" in resource)
+    else if (resource.type === "cloudflare.queue") {
+      const properties = resource.properties as { deliveryDelay?: number };
+      queues[resource.id] = {
+        name: state.resources[resource.id]?.physicalId ?? resource.id,
+        deliveryDelay: properties.deliveryDelay,
+      };
+    } else if (resource.type === "cloudflare.workflow") {
+      const properties = resource.properties as { worker: string; className: string };
+      workflows[resource.id] = {
+        name: state.resources[resource.id]?.physicalId ?? resource.id,
+        scriptName: properties.worker,
+        className: properties.className,
+      };
+    } else if (resource.type === "cloudflare.worker" && "options" in resource)
       workerResources.push(resource as WorkerResource);
     else throw new Error("Unsupported local resource.");
   }
@@ -69,5 +85,7 @@ export const prepareLocalResources = async (
     namespaces,
     databases,
     buckets,
+    queues,
+    workflows,
   };
 };

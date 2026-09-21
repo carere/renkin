@@ -1,5 +1,7 @@
 import { type FSWatcher, watch } from "node:fs";
-import { dirname } from "node:path";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { type BuildContext, type BuildResult, context as buildContext } from "esbuild";
 import { Miniflare, type WorkerOptions } from "miniflare";
 import type { Requirements } from "../../models/binding.ts";
@@ -10,10 +12,19 @@ import type { NativeR2 } from "../../models/r2.ts";
 import { inspectRequirements } from "../bundler/inspect-requirements.ts";
 import { readBuildResult } from "../bundler/read-build-result.ts";
 import { bundleOptions, readBundle } from "../bundler/worker-bundler.ts";
+import {
+  capturedEmails,
+  type LocalBackgroundOptions,
+  type LocalQueueConsumer,
+  localBackgroundOptions,
+  workflowNames,
+} from "./local-background.ts";
 import { localAssetOptions } from "./local-build-service.ts";
 import { graphBindings } from "./local-graph-bindings.ts";
 import { localR2GatewayName, localR2Source, localR2Workers } from "./local-r2-service.ts";
 import type { LocalWorker } from "./local-worker-service.ts";
+import { type WorkflowJournal, workflowJournal } from "./workflow-journal.ts";
+import { recoverWorkflows, workflowRecoveryWorker } from "./workflow-recovery.ts";
 
 export interface GraphWorker {
   readonly id: string;
@@ -23,8 +34,9 @@ export interface GraphWorker {
   readonly compatibilityFlags?: readonly string[];
   readonly bindings?: Readonly<Record<string, string>>;
   readonly port?: number;
+  readonly consumers?: readonly LocalQueueConsumer[];
 }
-export interface LocalGraphOptions {
+export interface LocalGraphOptions extends LocalBackgroundOptions {
   readonly workers: readonly GraphWorker[];
   readonly namespaces: Readonly<Record<string, string>>;
   readonly persist: string;
@@ -45,6 +57,7 @@ const workerSettings = (
   worker: GraphWorker,
   prepared: PreparedWorker,
   options: LocalGraphOptions,
+  journal: WorkflowJournal,
 ): WorkerOptions => {
   const kvNamespaces: Record<string, string> = {};
   const d1Databases: Record<string, string> = {};
@@ -78,6 +91,7 @@ const workerSettings = (
     }
   }
   return {
+    ...localBackgroundOptions(prepared.requirements, worker.consumers ?? [], options),
     name: worker.id,
     ...(prepared.artifact
       ? {
@@ -106,11 +120,14 @@ const workerSettings = (
     ...(worker.build ? localAssetOptions(worker.build) : {}),
     compatibilityDate: worker.compatibilityDate,
     compatibilityFlags: [...(worker.compatibilityFlags ?? ["nodejs_compat"])],
-    bindings: { ...worker.bindings },
+    bindings: {
+      ...worker.bindings,
+      __RENKIN_WORKFLOW_NAMES: workflowNames(prepared.requirements, options),
+    },
     kvNamespaces,
     d1Databases,
     r2Buckets,
-    serviceBindings,
+    serviceBindings: { ...serviceBindings, __RENKIN_WORKFLOW_JOURNAL: journal.fetch },
     unsafeDirectSockets: [{ host: "127.0.0.1", port: options.r2S3 ? 0 : (worker.port ?? 0) }],
   };
 };
@@ -133,6 +150,7 @@ interface GraphSession {
   prepared: Record<string, PreparedWorker>;
   pending: Promise<void>;
   options: LocalGraphOptions;
+  journal: WorkflowJournal;
   settings: () => {
     workers: WorkerOptions[];
     host: string;
@@ -160,6 +178,8 @@ const reloader = (worker: GraphWorker, session: GraphSession) => (result: BuildR
         );
         session.prepared[worker.id] = { code, requirements };
         await session.runtime?.setOptions(session.settings());
+        if (session.runtime)
+          await recoverWorkflows(session.runtime, session.options.workflows ?? {}, session.journal);
         session.options.onReload?.(worker.id);
       } catch (error) {
         if (previous) session.prepared[worker.id] = previous;
@@ -193,6 +213,8 @@ const reloadArtifact = (worker: GraphWorker, session: GraphSession): Promise<voi
       try {
         session.prepared[worker.id] = await prepareArtifact(worker);
         await session.runtime?.setOptions(session.settings());
+        if (session.runtime)
+          await recoverWorkflows(session.runtime, session.options.workflows ?? {}, session.journal);
         session.options.onReload?.(worker.id);
       } catch (error) {
         if (previous) session.prepared[worker.id] = previous;
@@ -288,10 +310,26 @@ const exposedWorkers = async (
         else await contexts.get(worker.id)?.rebuild();
         await session.pending;
       },
+      scheduled: async (options) => (await runtime.getWorker(worker.id)).scheduled(options),
       close: async () => {},
     };
   }
   return workers;
+};
+
+const closeGraph = async (
+  watchers: readonly FSWatcher[],
+  contexts: ReadonlyMap<string, BuildContext>,
+  session: GraphSession,
+  journal: WorkflowJournal,
+  emailDirectory: string,
+) => {
+  for (const watcher of watchers) watcher.close();
+  await Promise.all([...contexts.values()].map((context) => context.dispose()));
+  await session.pending.catch(() => {});
+  await session.runtime?.dispose();
+  await journal.settled();
+  await rm(emailDirectory, { recursive: true, force: true });
 };
 
 export const startLocalGraph = async (
@@ -302,7 +340,13 @@ export const startLocalGraph = async (
   bucket: (id: string) => Promise<NativeR2>;
   bindings: (workerId: string) => Promise<Record<string, unknown>>;
   close: () => Promise<void>;
+  capturedEmails: () => Promise<readonly string[]>;
 }> => {
+  const journal = await workflowJournal(
+    options.persist,
+    Object.values(options.workflows ?? {}).map((flow) => flow.name),
+  );
+  const emailDirectory = await mkdtemp(join(tmpdir(), "renkin-email-"));
   const declaredWorkers = new Set(options.workers.map((worker) => worker.id));
   const graphWorkers = [...options.workers];
   options = { ...options, workers: graphWorkers };
@@ -315,12 +359,16 @@ export const startLocalGraph = async (
     host: "127.0.0.1",
     port: 0,
     defaultPersistRoot: options.persist,
+    defaultProjectTmpPath: emailDirectory,
     workers: [
+      ...(Object.keys(options.workflows ?? {}).length
+        ? [workflowRecoveryWorker(options.workflows ?? {})]
+        : []),
       ...localR2Workers(options, prepared, r2Source),
       ...options.workers.map((worker) => {
         const source = prepared[worker.id];
         if (!source) throw new Error("Worker has not built.");
-        return workerSettings(worker, source, options);
+        return workerSettings(worker, source, options, journal);
       }),
       ...(options.databases && Object.keys(options.databases).length
         ? [
@@ -340,24 +388,22 @@ export const startLocalGraph = async (
     prepared,
     pending: Promise.resolve(),
     options,
+    journal,
     settings,
   };
-  const close = async () => {
-    for (const watcher of watchers) watcher.close();
-    await Promise.all([...contexts.values()].map((context) => context.dispose()));
-    await session.pending.catch(() => {});
-    await runtime?.dispose();
-  };
+  const close = () => closeGraph(watchers, contexts, session, journal, emailDirectory);
   try {
     await prepareGraph(options, graphWorkers, prepared, contexts, session);
     runtime = new Miniflare(settings());
     session.runtime = runtime;
     await runtime.ready;
+    await recoverWorkflows(runtime, options.workflows ?? {}, journal);
     const workers = await exposedWorkers(session, contexts, declaredWorkers);
     await watchGraph(options, contexts, watchers, session);
     return {
       workers,
       close,
+      capturedEmails: () => capturedEmails(emailDirectory),
       ...graphBindings(runtime, prepared, options.databases, options.buckets),
     };
   } catch (error) {

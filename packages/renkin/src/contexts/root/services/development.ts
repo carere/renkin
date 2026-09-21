@@ -79,6 +79,7 @@ const start = async (input: Stack, options: DevelopmentOptions) => {
       database: graph.database,
       bucket: graph.bucket,
       bindings: graph.bindings,
+      capturedEmails: graph.capturedEmails,
       close,
     };
   } catch (error) {

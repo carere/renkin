@@ -1,8 +1,9 @@
 import type { Miniflare } from "miniflare";
 import type { Requirements } from "../../models/binding.ts";
 import { guardD1, type NativeD1 } from "../../models/d1.ts";
-
+import { localWorkflow } from "../../models/local-workflow.ts";
 import type { NativeR2 } from "../../models/r2.ts";
+import type { NativeWorkflow } from "../../models/workflow-client.ts";
 
 export const graphBindings = (
   runtime: Miniflare,
@@ -21,6 +22,8 @@ export const graphBindings = (
       for (const [name, requirement] of Object.entries(prepared[workerId]?.requirements ?? {})) {
         if (requirement.type === "cloudflare.d1")
           bindings[name] = guardD1(bindings[name] as NativeD1);
+        if (requirement.type === "cloudflare.workflow")
+          bindings[name] = localWorkflow(bindings[name] as NativeWorkflow, name, bindings);
       }
       return bindings;
     },
