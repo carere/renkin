@@ -14,6 +14,9 @@ import {
   reconcileOperation,
   removeEnvironment,
 } from "../api.ts";
+import { routeCliOutput } from "./output.ts";
+
+const writeOutput = routeCliOutput();
 
 const usage =
   "Usage: renkin dev|plan|deploy [--file renkin.ts] [--env name] [--yes] [--force]; renkin list|outputs|remove|inspect|reconcile --stack name [--env name]. Use --local only with list or outputs. Scoped R2 tokens require --token-management-token-env VARIABLE for deploy/remove.";
@@ -89,7 +92,7 @@ const runRecovery = async (
   cloudflare: { stateScriptName?: string },
 ): Promise<boolean> => {
   if (command === "inspect") {
-    console.log(
+    writeOutput(
       JSON.stringify(
         await Effect.runPromise(inspectRecovery(required("stack"), environment, cloudflare)),
       ),
@@ -115,7 +118,7 @@ const runRecovery = async (
     "Record the operator's provider settlement assertion and clear this exact quarantine. A delayed provider request cannot be fenced by Renkin.\n",
   );
   if (!flag("yes") && !(await confirm())) throw new CommandError("Reconciliation cancelled.");
-  console.log(
+  writeOutput(
     JSON.stringify(
       await Effect.runPromise(reconcileOperation(stack, environment, decision, cloudflare)),
     ),
@@ -149,12 +152,12 @@ const run = async (): Promise<void> => {
   };
   switch (command) {
     case "list":
-      console.log(
+      writeOutput(
         JSON.stringify(await Effect.runPromise(listEnvironments(required("stack"), readOptions))),
       );
       return;
     case "outputs":
-      console.log(
+      writeOutput(
         JSON.stringify(
           (await Effect.runPromise(
             readOutputs(required("stack"), environment, {
@@ -166,13 +169,13 @@ const run = async (): Promise<void> => {
       );
       return;
     case "plan":
-      console.log(
+      writeOutput(
         JSON.stringify(await Effect.runPromise(planDeployment(await loadStack(), options))),
       );
       return;
     case "deploy": {
       const result = await Effect.runPromise(deploy(await loadStack(), options));
-      console.log(
+      writeOutput(
         JSON.stringify({
           stack: result.stack,
           environment: result.environment,
@@ -183,7 +186,7 @@ const run = async (): Promise<void> => {
     }
     case "remove":
       await Effect.runPromise(removeEnvironment(required("stack"), options));
-      console.log(JSON.stringify({ removed: environment }));
+      writeOutput(JSON.stringify({ removed: environment }));
       return;
     case "dev":
       await runDevelopment();
@@ -193,7 +196,7 @@ const run = async (): Promise<void> => {
   }
 };
 
-if (command === "help" || command === "--help") console.log(usage);
+if (command === "help" || command === "--help") writeOutput(usage);
 else
   run().catch((error: unknown) => {
     // Never print causes, input values, credentials or arbitrary provider response bodies.

@@ -11,21 +11,30 @@ import { platformModuleSource, websiteRequestContext } from "./request-context.t
 const originHeader = "x-renkin-development-origin";
 const tokenHeader = "x-renkin-development-token";
 const virtualModule = "\0renkin:development-platform";
+const browserModule = "\0renkin:browser-platform";
+
+const platformImports: Plugin = {
+  name: "renkin:development-platform",
+  enforce: "pre",
+  resolveId(id) {
+    if (id !== "cloudflare:workers") return;
+    if (this.environment.name === "client") return browserModule;
+    return virtualModule;
+  },
+  load: (id) =>
+    id === virtualModule
+      ? platformModuleSource
+      : id === browserModule
+        ? 'const fail=()=>{throw Error("Cloudflare bindings are server-only.")};export const env=new Proxy({},{get:fail});export const waitUntil=fail;'
+        : undefined,
+};
 
 export const createPlatformBridge = () => {
   const token = randomUUID();
   let connection: WorkerDevelopmentConnection | undefined;
   const pending = new Set<Promise<void>>();
   const plugin: Plugin = {
-    name: "renkin:development-platform",
-    enforce: "pre",
-    resolveId(id) {
-      if (id !== "cloudflare:workers") return;
-      if (this.environment.name === "client")
-        throw new Error("Cloudflare bindings cannot be imported into browser code.");
-      return virtualModule;
-    },
-    load: (id) => (id === virtualModule ? platformModuleSource : undefined),
+    ...platformImports,
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
         if (!connection) return next();
