@@ -23,6 +23,11 @@ export const prepareWorkerPublication = async (
   readonly metadata: Partial<NonNullable<WorkerUpload["metadata"]>>;
 }> => {
   const properties = object(resource.definition.properties);
+  if (properties.workersDev === false) {
+    const origin = await Effect.runPromise(client.getWorkerSubdomain(resource.physicalId));
+    if (origin.enabled !== false || origin.previewsEnabled !== false)
+      await Effect.runPromise(client.setWorkerSubdomain(resource.physicalId, false, token));
+  }
   const mainModule =
     typeof properties.mainModule === "string" ? properties.mainModule : "worker.mjs";
   const files = [
