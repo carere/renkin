@@ -1,6 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import type { WorkerResource } from "@renkin/cloudflare/models/worker";
+import { prepareD1, preparedMigrations } from "@renkin/cloudflare/services/d1/prepare-d1";
+import {
+  applyMigrations,
+  MigrationError,
+} from "@renkin/cloudflare/services/migrations/migration-service";
+import { nativeD1MigrationExecutor } from "@renkin/cloudflare/services/migrations/native-d1-migration-executor";
 import type { Stack } from "@renkin/core/models/stack";
 import { emptyState } from "@renkin/core/models/state";
 import { FileStateRepository } from "@renkin/core/services/state/file-state-repository";
@@ -16,7 +22,8 @@ export interface DevelopmentOptions {
   readonly progress?: (message: string) => void;
 }
 
-const start = async (stack: Stack, options: DevelopmentOptions) => {
+const start = async (input: Stack, options: DevelopmentOptions) => {
+  const stack = { ...input, resources: await Promise.all(input.resources.map(prepareD1)) };
   const directory = resolve(options.directory ?? ".renkin");
   const environment = options.environment ?? "local";
   const repository = new FileStateRepository(directory);
@@ -31,12 +38,14 @@ const start = async (stack: Stack, options: DevelopmentOptions) => {
   };
   try {
     let state = (await lease.read()) ?? emptyState(stack.name, environment);
-    plan(stack, state);
+    const changes = new Map(plan(stack, state).map((change) => [change.id, change]));
     state = renamedState(stack, state);
     const namespaces: Record<string, string> = {};
+    const databases: Record<string, string> = {};
     const workerResources: WorkerResource[] = [];
     for (const resource of stack.resources) {
-      const previous = state.resources[resource.id];
+      const previous =
+        changes.get(resource.id)?.kind === "replace" ? undefined : state.resources[resource.id];
       state.resources[resource.id] = {
         definition: resource,
         physicalId: previous?.physicalId ?? randomUUID(),
@@ -45,6 +54,8 @@ const start = async (stack: Stack, options: DevelopmentOptions) => {
       };
       if (resource.type === "cloudflare.kv")
         namespaces[resource.id] = state.resources[resource.id]?.physicalId ?? resource.id;
+      else if (resource.type === "cloudflare.d1")
+        databases[resource.id] = state.resources[resource.id]?.physicalId ?? resource.id;
       else if (resource.type === "cloudflare.worker" && "options" in resource)
         workerResources.push(resource as WorkerResource);
       else throw new Error("Unsupported local resource.");
@@ -55,11 +66,21 @@ const start = async (stack: Stack, options: DevelopmentOptions) => {
     graph = await startLocalGraph({
       workers: workerResources.map((resource) => ({ id: resource.id, ...resource.options })),
       namespaces,
+      databases,
       persist: resolve(directory, "data", stack.name, environment),
       watch: options.watch ?? true,
       onReload: (id) => options.progress?.(`Reloaded ${id}`),
       onError: (message) => options.progress?.(message),
     });
+    for (const resource of stack.resources) {
+      if (resource.type !== "cloudflare.d1") continue;
+      await Effect.runPromise(
+        applyMigrations(
+          preparedMigrations(resource),
+          nativeD1MigrationExecutor(await graph.database(resource.id)),
+        ),
+      );
+    }
     for (const key of Object.keys(state.outputs)) delete state.outputs[key];
     for (const [id, localWorker] of Object.entries(graph.workers)) {
       state.outputs[id] = { value: { url: localWorker.url } };
@@ -67,7 +88,7 @@ const start = async (stack: Stack, options: DevelopmentOptions) => {
     }
     Object.assign(state.outputs, stack.outputs ?? {});
     await lease.write(state);
-    return { workers: graph.workers, close };
+    return { workers: graph.workers, database: graph.database, bindings: graph.bindings, close };
   } catch (error) {
     await close();
     throw error;
@@ -78,7 +99,11 @@ export const development = (stack: Stack, options: DevelopmentOptions = {}) =>
   Effect.acquireRelease(
     Effect.tryPromise({
       try: () => start(stack, options),
-      catch: () => new Error("Local application startup failed."),
+      catch: (error) =>
+        error instanceof MigrationError ||
+        (error instanceof Error && error.message.startsWith("Deletion protection"))
+          ? error
+          : new Error("Local application startup failed."),
     }),
     (session) => Effect.promise(() => session.close()),
   );

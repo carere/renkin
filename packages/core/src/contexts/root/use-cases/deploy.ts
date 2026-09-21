@@ -7,6 +7,7 @@ import {
   emptyState,
   type PendingOperation,
 } from "../models/state.ts";
+import { ResourceOperationError } from "../services/resource/resource-operation-error.ts";
 import type { ResourceService, ResourceServices } from "../services/resource/resource-service.ts";
 import type { StateLease, StateRepository } from "../services/state/state-repository.ts";
 import { assertProtection, plan } from "./plan.ts";
@@ -262,7 +263,9 @@ export const deploy = (
           ? error
           : new DeploymentError(
               error instanceof Error &&
-                (error.name === "StateError" || error.message.startsWith("Deletion protection"))
+                (error instanceof ResourceOperationError ||
+                  error.name === "StateError" ||
+                  error.message.startsWith("Deletion protection"))
                 ? error.message
                 : "Deployment failed. Ownership and operation progress were preserved; retry to recover.",
             ),

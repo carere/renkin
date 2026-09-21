@@ -9,6 +9,7 @@ import { inspectRequirements } from "../bundler/inspect-requirements.ts";
 import { readBuildResult } from "../bundler/read-build-result.ts";
 import { bundleOptions, readBundle } from "../bundler/worker-bundler.ts";
 import { localAssetOptions } from "./local-build-service.ts";
+import { graphBindings } from "./local-graph-bindings.ts";
 import type { LocalWorker } from "./local-worker-service.ts";
 
 export interface GraphWorker {
@@ -317,16 +318,7 @@ export const startLocalGraph = async (
       };
     }
     await watchGraph(options, contexts, watchers, session);
-    const readyRuntime = runtime;
-    return {
-      workers,
-      close,
-      bindings: (workerId) => readyRuntime.getBindings(workerId),
-      database: async (id) => {
-        if (!options.databases?.[id]) throw new Error("D1 resource is not declared.");
-        return (await readyRuntime.getD1Database(id, "__renkin_databases")) as unknown as NativeD1;
-      },
-    };
+    return { workers, close, ...graphBindings(runtime, prepared, options.databases) };
   } catch (error) {
     await close();
     throw error;

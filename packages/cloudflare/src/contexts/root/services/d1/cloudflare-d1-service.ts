@@ -76,11 +76,11 @@ export const cloudflareD1Service = (
       if (typeof id !== "string" || !id) throw new Error("D1 provider returned no identity.");
       return id;
     },
-    bind: async (resource) => {
+    bind: async (resource, _resources, currentDesired) => {
       if (!(await owned(resource))) throw new Error("Managed D1 database is missing.");
       await Effect.runPromise(
         applyMigrations(
-          preparedMigrations(resource.definition),
+          preparedMigrations(currentDesired ?? resource.definition),
           cloudflareD1MigrationExecutor(client, resource.physicalId, token),
         ),
       );

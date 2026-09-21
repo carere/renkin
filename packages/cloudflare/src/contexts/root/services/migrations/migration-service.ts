@@ -1,3 +1,4 @@
+import { ResourceOperationError } from "@renkin/core/services/resource/resource-operation-error";
 import { Effect } from "effect";
 import type { MigrationFile } from "./migration-files.ts";
 
@@ -8,7 +9,7 @@ export interface MigrationExecutor {
   apply(migration: MigrationFile): Promise<void>;
 }
 
-export class MigrationError extends Error {
+export class MigrationError extends ResourceOperationError {
   readonly name = "MigrationError";
   constructor(readonly migration: string | undefined) {
     super(

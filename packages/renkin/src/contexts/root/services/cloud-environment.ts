@@ -1,3 +1,4 @@
+import { cloudflareD1Service } from "@renkin/cloudflare/services/d1/cloudflare-d1-service";
 import { cloudflareKVService } from "@renkin/cloudflare/services/kv/cloudflare-kv-service";
 import {
   type CloudStateOptions,
@@ -10,6 +11,7 @@ import {
   createBootstrapClient,
   createCloudflareClient,
 } from "@renkin/cloudflare-sdk/services/cloudflare-client/cloudflare-client";
+import { createD1Client } from "@renkin/cloudflare-sdk/services/cloudflare-client/d1-client";
 import { createKVClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/kv-client";
 import { createSiteClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/site-client";
 import type { ResourceServices } from "@renkin/core/services/resource/resource-service";
@@ -61,8 +63,12 @@ export const cloudEnvironment = async (
   const siteClient = createSiteClient(config, {
     request: (request, token) => state.gateway(stack, environment, token, request),
   });
+  const d1Client = createD1Client(config, {
+    request: (request, token) => state.gateway(stack, environment, token, request),
+  });
   const services: ResourceServices = (lease) => ({
     "cloudflare.kv": cloudflareKVService(kvClient, lease.token),
+    "cloudflare.d1": cloudflareD1Service(d1Client, lease.token),
     "cloudflare.worker": cloudflareWorkerService({
       client,
       siteClient,
