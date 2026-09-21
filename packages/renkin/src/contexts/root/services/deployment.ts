@@ -9,6 +9,7 @@ import {
 import { plan as resourcePlan } from "@renkin/core/use-cases/plan";
 import { Effect } from "effect";
 import { type CloudflareOptions, cloudEnvironment, readCloudState } from "./cloud-environment.ts";
+import { stackDefinition } from "./deployment/stack-definition.ts";
 
 export interface DeploymentOptions
   extends Pick<DeployOptions, "environment" | "yes" | "force" | "confirm" | "progress"> {
@@ -18,7 +19,7 @@ export interface DeploymentOptions
 const apply = (stack: Stack, options: DeploymentOptions, removeEmpty = false) =>
   Effect.gen(function* () {
     const prepared = yield* Effect.tryPromise({
-      try: () => prepareStack(stack),
+      try: async () => stackDefinition(await prepareStack(stack)),
       catch: () => new DeploymentError("Worker build failed."),
     });
     const environment = yield* Effect.tryPromise({
@@ -47,7 +48,7 @@ export const planDeployment = (
     try: async () => {
       defineStack(stack);
       validateName(options.environment);
-      const prepared = await prepareStack(stack);
+      const prepared = stackDefinition(await prepareStack(stack));
       const repository = await readCloudState(options.cloudflare);
       const current =
         (await repository?.read(stack.name, options.environment)) ??
