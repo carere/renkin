@@ -57,6 +57,8 @@ export default defineWorker({DB:d1("Database")},({DB})=>({fetch:(request)=>Effec
     environment: "migration",
     yes: true,
     cloudflare: { stateScriptName: `${prefix}-state-v2` },
+    progress: ({ id, kind }: { id: string; kind: string }) =>
+      console.info(`Cloud D1 ${kind}: ${id}`),
   };
   const stack = (
     allowDelete = false,
@@ -84,7 +86,7 @@ export default defineWorker({DB:d1("Database")},({DB})=>({fetch:(request)=>Effec
     try {
       await Effect.runPromise(deploy(stack(true, "disabled", false), options));
       await Effect.runPromise(removeEnvironment(name, options));
-      console.info(`Cloud D1 cleanup completed: ${name}/migration`);
+      process.stdout.write(`Cloud D1 cleanup completed: ${name}/migration\n`);
     } catch {
       throw new Error(`Cloud D1 cleanup failed; inspect owned environment ${name}/migration.`);
     } finally {
@@ -92,7 +94,7 @@ export default defineWorker({DB:d1("Database")},({DB})=>({fetch:(request)=>Effec
       await rm(root, { recursive: true, force: true });
     }
   };
-  console.info(`Cloud D1 test ownership: ${name}/migration`);
+  process.stdout.write(`Cloud D1 test ownership: ${name}/migration\n`);
   return { name, root, migrations, options, deploy: deployCurrent, close };
 };
 

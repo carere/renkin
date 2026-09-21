@@ -104,3 +104,35 @@ it.effect("numeric-prefix ties retain input order, including partially numeric p
     ]);
   }),
 );
+
+it.effect("rejects journal reorder and duplicate tags despite contiguous indices", () =>
+  Effect.gen(function* () {
+    const path = yield* directory;
+    yield* Effect.promise(async () => {
+      await mkdir(join(path, "meta"));
+      await writeFile(join(path, "0000_first.sql"), "SELECT 0;");
+      await writeFile(join(path, "0001_second.sql"), "SELECT 1;");
+      for (const tags of [
+        ["0001_second", "0000_first"],
+        ["0000_first", "0000_first"],
+      ]) {
+        const entries = tags.map((tag, idx) => ({ idx, tag, version: "6" }));
+        await writeFile(
+          join(path, "meta", "_journal.json"),
+          JSON.stringify({ version: "7", entries }),
+        );
+        await expect(readMigrationFiles(path)).rejects.toThrow("journal order must match");
+      }
+    });
+  }),
+);
+
+it.effect("rejects invalid UTF-8 rather than silently changing SQL bytes", () =>
+  Effect.gen(function* () {
+    const path = yield* directory;
+    yield* Effect.promise(async () => {
+      await writeFile(join(path, "0000_invalid.sql"), Buffer.from([0xc3, 0x28]));
+      await expect(readMigrationFiles(path)).rejects.toThrow();
+    });
+  }),
+);

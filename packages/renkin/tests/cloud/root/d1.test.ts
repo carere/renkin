@@ -1,4 +1,4 @@
-import { rm, writeFile } from "node:fs/promises";
+import { rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
@@ -64,9 +64,30 @@ it.effect(
           { id: 4, name: "Later" },
         ]);
         expect(await readCloudD1(url, "/history")).toHaveLength(4);
+        await assertBookkeepingAndRenameBoundaries(test, url);
       } finally {
         await test.close();
       }
     }),
   420000,
 );
+
+const assertBookkeepingAndRenameBoundaries = async (
+  test: Awaited<ReturnType<typeof createCloudD1Fixture>>,
+  url: string,
+) => {
+  const bookkeeping = join(test.migrations, "0004_bookkeeping.sql");
+  await writeFile(
+    bookkeeping,
+    "INSERT INTO users VALUES (5,'Unrecorded'); DROP TABLE __renkin_migrations;",
+  );
+  await expect(test.deploy()).rejects.toThrow("0004_bookkeeping.sql");
+  expect(await readCloudD1(url, "/history")).toHaveLength(4);
+  expect(await readCloudD1(url)).toHaveLength(4);
+  await rm(bookkeeping);
+  await rename(join(test.migrations, "0003_later.sql"), join(test.migrations, "0005_renamed.sql"));
+  await expect(test.deploy()).rejects.toThrow("0005_renamed.sql");
+  await rm(join(test.migrations, "0005_renamed.sql"));
+  await test.deploy();
+  expect(await readCloudD1(url, "/history")).toHaveLength(4);
+};

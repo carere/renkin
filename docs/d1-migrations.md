@@ -82,6 +82,27 @@ provider outcomes also follow the explicit coordinator reconciliation policy.
 
 Local integration tests use real Miniflare D1 storage and demonstrate ordered
 batches, failure rollback, SQL-plus-history rollback, restart persistence,
-name-based history, malformed journals and an actual Drizzle adapter. Cloud
-compatibility is established only by the separately authorized real-D1 suite;
-local evidence alone is not a claim about provider behavior.
+name-based history, malformed journals and an actual Drizzle adapter. The separately authorized public real-D1 suite passed on 2026-09-21, including
+typed/native Worker access, protection, read-replication update with stable
+identity, repeat migrations, SQL/bookkeeping failure and correction, edited and
+deleted history, renamed-file behavior, and explicit cleanup. Local evidence
+alone is not a claim about provider behavior.
+
+Reference behavior was investigated at Alchemy commit
+`82b7fc24c03db868772a60bb2927054582d22f43` and Delimoov commit
+`cb885863bb6b91901865700bb947c84742aae069`; no upstream source was copied.
+The authorized D1 boundary probe on 2026-09-21 observed rollback for both a later
+SQL failure and a failed bookkeeping insert within the exact raw-query request.
+Earlier successful migrations remained applied, and corrected SQL succeeded on
+retry. This evidence applies to those requests; transport failures still require
+outcome inspection and can require manual repair.
+
+Run credential-free checks with `bun vitest run --project integration` in
+`packages/cloudflare`, `packages/runtime`, and `packages/renkin`. Run the separate
+public real-D1 suite from `packages/renkin` with
+`bun vitest run --config vitest.cloud.config.ts tests/cloud/root/d1.test.ts`
+only after configuring the explicit account, prefix, product and expiry test
+authorization variables. The suite logs its owned environment and performs
+explicit protected-resource cleanup. Cloud tests are not part of default local
+or CI checks. Removed or replaced local database namespaces may leave unbound
+emulator persistence files; removal does not promise physical disk erasure.
