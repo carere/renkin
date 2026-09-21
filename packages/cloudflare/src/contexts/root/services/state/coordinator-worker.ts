@@ -264,6 +264,17 @@ export class StateCoordinator {
       return response({ error: "Mutation is outside the configured account." }, 403);
     if (this.get(`operation:${environment}`))
       return response({ error: "A provider operation is unresolved." }, 409);
+    const assetUpload =
+      url.pathname === `/client/v4/accounts/${this.env.ACCOUNT_ID}/workers/assets/upload`;
+    if (
+      (mutation.assetUploadToken !== undefined && !assetUpload) ||
+      (assetUpload &&
+        (mutation.method !== "POST" ||
+          url.search !== "?base64=true" ||
+          typeof mutation.assetUploadToken !== "string" ||
+          !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(mutation.assetUploadToken)))
+    )
+      return response({ error: "Invalid asset upload authorization." }, 400);
     const prepared = await prepareWorkerOperation(
       url,
       mutation,

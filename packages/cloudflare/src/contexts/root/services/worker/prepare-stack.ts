@@ -1,6 +1,9 @@
 import { createHash } from "node:crypto";
-import type { Stack } from "@renkin/core/models/stack";
+import type { Json, Stack } from "@renkin/core/models/stack";
+import { readBuildResult } from "@renkin/runtime/services/bundler/read-build-result";
 import { bundleWorker } from "@renkin/runtime/services/bundler/worker-bundler";
+import type { WorkerResource } from "../../models/worker.ts";
+import type { WorkerExtensions } from "../../models/worker-extensions.ts";
 
 /** Build before planning so source changes participate in the infrastructure diff. */
 export const prepareStack = async (stack: Stack): Promise<Stack> => ({
@@ -8,23 +11,35 @@ export const prepareStack = async (stack: Stack): Promise<Stack> => ({
   resources: await Promise.all(
     stack.resources.map(async (resource) => {
       if (resource.type !== "cloudflare.worker") return resource;
-      const properties = resource.properties;
+      const options = (resource as WorkerResource).options as WorkerResource["options"] &
+        WorkerExtensions;
+      const properties = resource.properties as Record<string, Json>;
       if (
         !properties ||
         typeof properties !== "object" ||
         Array.isArray(properties) ||
-        !("entry" in properties) ||
-        typeof properties.entry !== "string"
+        (!options.build && typeof properties.entry !== "string")
       ) {
         throw new Error("Worker entry must be a path.");
       }
-      const bundle = await bundleWorker(properties.entry);
+      const result = options.build
+        ? await readBuildResult(options.build)
+        : {
+            source: (await bundleWorker(String(properties.entry))).code,
+            mainModule: "worker.mjs",
+            modules: [],
+          };
       return {
         ...resource,
         properties: {
           ...properties,
-          source: bundle.code,
-          sourceHash: createHash("sha256").update(bundle.code).digest("hex"),
+          ...(JSON.parse(JSON.stringify(result)) as Record<string, Json>),
+          compatibilityDate:
+            options.build?.compatibilityDate ?? properties.compatibilityDate ?? "2026-07-30",
+          compatibilityFlags: options.build?.compatibilityFlags
+            ? [...options.build.compatibilityFlags]
+            : (properties.compatibilityFlags ?? ["nodejs_compat"]),
+          sourceHash: createHash("sha256").update(JSON.stringify(result)).digest("hex"),
         },
       };
     }),
