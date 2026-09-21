@@ -10,7 +10,8 @@
     "./testing": "./src/contexts/root/testing.ts",
     "./worker": "./src/contexts/root/worker.ts",
     "./durable-object": "./src/contexts/root/durable-object.ts",
-    "./workflow": "./src/contexts/root/workflow.ts"
+    "./workflow": "./src/contexts/root/workflow.ts",
+    "./vite": "./src/contexts/root/vite.ts"
   },
   "bin": {
     "renkin": "./src/contexts/root/cli/main.ts"
@@ -26,7 +27,8 @@
     "@renkin/cloudflare-sdk": "workspace:*",
     "@renkin/core": "workspace:*",
     "@renkin/runtime": "workspace:*",
-    "@renkin/testing": "workspace:*"
+    "@renkin/testing": "workspace:*",
+    "@renkin/websites": "workspace:*"
   },
   "devDependencies": {
     "@effect/vitest": "^4.0.0-rc.115",
