@@ -160,7 +160,65 @@ versus invalid-route errors, authentication failures, upload multipart encoding
 and fenced mutation transport. See the SDK README for details. No Alchemy or
 Distilled implementation source was copied into this slice.
 
-The [macOS execution record](validation/issue-4.md) reports the checks run with this change. Linux execution is wired
-into CI but is not implied by local macOS passes. The release artifact, broader
+The [macOS execution record](validation/issue-4.md) reports the checks run with this change. The parent task also verified the initial 55 tests on Linux CI. The release artifact, broader
 cloud-only resources, full application graph and all resource-specific runtime
 regressions remain later tickets; empty projects are not behavioral coverage.
+
+## Reconcile an ambiguous provider operation
+
+A deployment client can crash and recover through its lease and checkpoint.
+A coordinator crash during a Cloudflare request is different: the provider may
+have accepted a request whose outcome Renkin cannot establish. The environment
+stays quarantined. The accepted recovery exception is recorded in
+[ADR 0007](adr/0007-reconcile-ambiguous-provider-operations-explicitly.md).
+
+Inspect without evaluating an infrastructure file:
+
+```sh
+renkin inspect --stack app --env production
+```
+
+The JSON reports the exact operation ID, HTTP method, target path, operation tag
+when available, lease expiry, whether a dispatch remains active in this
+coordinator, and past reconciliation receipts. It excludes request bodies,
+authorization tokens, query strings and stored application outputs. Audit
+receipts are encrypted in durable storage. Operator labels and evidence
+references are included in the authorized inspection response; never put
+credentials or secret payloads in these fields.
+
+Stop deployment clients and investigate that exact request with Cloudflare.
+Establish whether it completed or was not applied, and whether it can still
+complete later. A missing resource, an expired lease, or elapsed time alone
+cannot establish settlement. If settlement cannot be established, leave the
+environment blocked. Record a support case or audit reference, then explicitly
+accept responsibility for the settlement assertion:
+
+```sh
+renkin reconcile --stack app --env production \
+  --operation 00000000-0000-4000-8000-000000000000 \
+  --outcome completed --operator operator@example.com \
+  --evidence support-case-123 --provider-settled
+```
+
+Use `--outcome not-applied` only when that is the established outcome.
+`--yes` skips the confirmation prompt; neither it nor `--force` replaces
+`--provider-settled`. A live lease, active coordinator dispatch, changed
+operation ID, or repeated receipt is rejected. Successful reconciliation records
+an encrypted receipt, advances the fencing epoch and clears only that gateway
+quarantine. Ownership, outputs and deployment checkpoints remain intact.
+Rerun the normal plan/deploy/remove workflow to resume from the checkpoint.
+
+The public Effect APIs are `inspectRecovery(stack, environment, cloudflare?)`
+and `reconcileOperation(stack, environment, decision, cloudflare?)`, with decision
+fields `operationId`, `outcome`, `operator`, `evidence` and `providerSettled: true`.
+They only discover an existing state service. Existing deployed state services
+need this coordinator revision before they can serve these routes; preserve the
+same Durable Object namespace and shared secret when upgrading the service.
+
+The operator assertion is not a Cloudflare guarantee. Renkin fences subsequent
+requests from stale clients, but cannot cancel a request Cloudflare already
+accepted or prove it will never complete late. The current Worker adapter uses
+idempotent apply/bind/remove operations. Reconciliation does not invent a provider
+response or mark a core checkpoint complete. Future non-idempotent resource
+adapters must consume the recorded outcome and recover the final resource identity
+or observed state before resuming; blindly replaying such a POST is not supported.
