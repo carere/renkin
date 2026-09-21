@@ -19,6 +19,10 @@ const inspectBrowser = async (browser: Browser, url: string) => {
   await page.getByRole("button", { name: "Clicks: 1" }).waitFor();
   await page.getByRole("link", { name: "Details", exact: true }).click();
   await page.getByRole("heading", { name: "SSR details" }).waitFor();
+  await page.getByRole("link", { name: "Home", exact: true }).click();
+  await page.locator("#native-value").filter({ hasText: "stage: development" }).waitFor();
+  await page.getByRole("link", { name: "Details", exact: true }).click();
+  await page.getByRole("heading", { name: "SSR details" }).waitFor();
   assert.deepEqual(errors, []);
   return page;
 };
