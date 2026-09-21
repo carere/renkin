@@ -7,6 +7,7 @@ import {
   MigrationError,
 } from "@renkin/cloudflare/services/migrations/migration-service";
 import { nativeD1MigrationExecutor } from "@renkin/cloudflare/services/migrations/native-d1-migration-executor";
+import { prepareBackgroundResources } from "@renkin/cloudflare/services/worker/prepare-background";
 import type { Stack } from "@renkin/core/models/stack";
 import { emptyState } from "@renkin/core/models/state";
 import { FileStateRepository } from "@renkin/core/services/state/file-state-repository";
@@ -22,8 +23,13 @@ export interface DevelopmentOptions {
   readonly progress?: (message: string) => void;
 }
 
+const prepareLocalStack = async (input: Stack) => ({
+  ...input,
+  resources: prepareBackgroundResources(await Promise.all(input.resources.map(prepareD1))),
+});
+
 const start = async (input: Stack, options: DevelopmentOptions) => {
-  const stack = { ...input, resources: await Promise.all(input.resources.map(prepareD1)) };
+  const stack = await prepareLocalStack(input);
   const directory = resolve(options.directory ?? ".renkin");
   const environment = options.environment ?? "local";
   const repository = new FileStateRepository(directory);

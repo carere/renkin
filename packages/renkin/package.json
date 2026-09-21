@@ -8,7 +8,8 @@
     ".": "./src/contexts/root/api.ts",
     "./cloudflare": "./src/contexts/root/cloudflare.ts",
     "./testing": "./src/contexts/root/testing.ts",
-    "./worker": "./src/contexts/root/worker.ts"
+    "./worker": "./src/contexts/root/worker.ts",
+    "./workflow": "./src/contexts/root/workflow.ts"
   },
   "bin": {
     "renkin": "./src/contexts/root/cli/main.ts"

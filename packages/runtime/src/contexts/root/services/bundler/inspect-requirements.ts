@@ -1,5 +1,6 @@
 import { Log, LogLevel, Miniflare, supportedCompatibilityDate } from "miniflare";
 import type { BindingRequirement, Requirements } from "../../models/binding.ts";
+import { validateEmailOptions } from "../../models/email.ts";
 
 const inspect = (value: unknown): Requirements => {
   if (!value || typeof value !== "object" || Array.isArray(value))
@@ -8,6 +9,7 @@ const inspect = (value: unknown): Requirements => {
   for (const [name, item] of Object.entries(value)) {
     if (
       !/^[A-Za-z_][A-Za-z0-9_]*$/.test(name) ||
+      name.startsWith("__RENKIN_") ||
       !item ||
       typeof item !== "object" ||
       !("type" in item) ||
@@ -18,9 +20,20 @@ const inspect = (value: unknown): Requirements => {
     if (
       item.type !== "cloudflare.kv" &&
       item.type !== "cloudflare.d1" &&
+      item.type !== "cloudflare.queue" &&
+      item.type !== "cloudflare.workflow" &&
+      item.type !== "cloudflare.email" &&
       item.type !== "cloudflare.worker-reference"
     )
       throw new Error("Unsupported Worker requirement.");
+    if (item.type === "cloudflare.email") {
+      result[name] = {
+        type: "cloudflare.email",
+        id: "email",
+        options: validateEmailOptions("options" in item ? item.options : {}),
+      };
+      continue;
+    }
     const entrypoint = "entrypoint" in item ? item.entrypoint : undefined;
     if (entrypoint !== undefined && typeof entrypoint !== "string")
       throw new Error("Invalid Worker entrypoint.");
@@ -64,7 +77,7 @@ export const inspectRequirements = async (
       {
         type: "ESModule",
         path: "inspect.mjs",
-        contents: `import implementation from ${JSON.stringify(`./${artifact.mainModule}`)}; export default {fetch(){return Response.json(implementation.__renkinRequirements ?? {})}}`,
+        contents: `import * as implementation from ${JSON.stringify(`./${artifact.mainModule}`)}; export default {fetch(){const result={};for(const exported of Object.values(implementation)){for(const [name, requirement] of Object.entries(exported?.__renkinRequirements ?? {})){if(name in result && JSON.stringify(result[name])!==JSON.stringify(requirement))throw new Error("Conflicting Worker requirements");result[name]=requirement;}}return Response.json(result)}}`,
       },
       { type: "ESModule", path: artifact.mainModule, contents: source },
       ...artifact.modules.map((module) => ({

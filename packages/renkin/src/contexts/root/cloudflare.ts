@@ -4,6 +4,13 @@ export const worker = resource;
 import { kv as namespace } from "@renkin/cloudflare/models/kv";
 export const kv = namespace;
 
+import { email as emailBinding } from "@renkin/cloudflare/models/email";
+import { queue as queueResource } from "@renkin/cloudflare/models/queue";
+import { workflow as workflowResource } from "@renkin/cloudflare/models/workflow";
+export const queue = queueResource;
+export const workflow = workflowResource;
+export const email = emailBinding;
+
 import {
   accessApplication as application,
   accessPolicy as policy,

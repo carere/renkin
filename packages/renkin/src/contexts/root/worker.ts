@@ -8,3 +8,6 @@ import {
 } from "@renkin/runtime/models/binding";
 export const workerReference = reference;
 export const externalWorker = external;
+
+import type { QueueBatch as Batch } from "@renkin/runtime/models/queue";
+export type QueueBatch<Body = unknown> = Batch<Body>;

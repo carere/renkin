@@ -1,3 +1,4 @@
+import type { MessageBatch, ScheduledController } from "@cloudflare/workers-types";
 import { Effect, type Layer } from "effect";
 import { type Requirements, type Resolved, resolveBindings } from "./binding.ts";
 
@@ -6,35 +7,56 @@ export interface WorkerExecutionContext {
   passThroughOnException(): void;
 }
 
-export interface WorkerHandlers<Environment, Error, Requirements> {
-  readonly fetch: (
+type HandlerResult<A, Error, Needs> = A | Promise<A> | Effect.Effect<A, Error, Needs>;
+export interface WorkerHandlers<Environment, Error, Needs, Body = unknown> {
+  readonly fetch?: (
     request: Request,
     env: Environment,
     context: WorkerExecutionContext,
-  ) => Response | Promise<Response> | Effect.Effect<Response, Error, Requirements>;
+  ) => HandlerResult<Response, Error, Needs>;
+  readonly scheduled?: (
+    controller: ScheduledController,
+    env: Environment,
+    context: WorkerExecutionContext,
+  ) => HandlerResult<void, Error, Needs>;
+  readonly queue?: (
+    batch: MessageBatch<Body>,
+    env: Environment,
+    context: WorkerExecutionContext,
+  ) => HandlerResult<void, Error, Needs>;
 }
 
-export interface WorkerImplementation<Environment> {
+export interface WorkerImplementation<Environment, Body = unknown> {
   readonly __renkinRequirements?: Requirements;
   fetch(request: Request, env: Environment, context: WorkerExecutionContext): Promise<Response>;
+  scheduled(
+    controller: ScheduledController,
+    env: Environment,
+    context: WorkerExecutionContext,
+  ): Promise<void>;
+  queue(
+    batch: MessageBatch<Body>,
+    env: Environment,
+    context: WorkerExecutionContext,
+  ): Promise<void>;
 }
 
-export function defineWorker<R extends Requirements, Error = never>(
+export function defineWorker<R extends Requirements, Error = never, Body = unknown>(
   requirements: R,
-  factory: (bindings: Resolved<R>) => WorkerHandlers<Record<string, unknown>, Error, never>,
-): WorkerImplementation<Record<string, unknown>>;
-export function defineWorker<R extends Requirements, Error, Needs, LayerError>(
+  factory: (bindings: Resolved<R>) => WorkerHandlers<Record<string, unknown>, Error, never, Body>,
+): WorkerImplementation<Record<string, unknown>, Body>;
+export function defineWorker<R extends Requirements, Error, Needs, LayerError, Body = unknown>(
   requirements: R,
-  factory: (bindings: Resolved<R>) => WorkerHandlers<Record<string, unknown>, Error, Needs>,
+  factory: (bindings: Resolved<R>) => WorkerHandlers<Record<string, unknown>, Error, Needs, Body>,
   layer: Layer.Layer<Needs, LayerError>,
-): WorkerImplementation<Record<string, unknown>>;
-export function defineWorker<Environment = Record<string, unknown>, Error = never>(
-  handlers: WorkerHandlers<Environment, Error, never>,
-): WorkerImplementation<Environment>;
-export function defineWorker<Environment, Error, Requirements, LayerError>(
-  handlers: WorkerHandlers<Environment, Error, Requirements>,
-  layer: Layer.Layer<Requirements, LayerError>,
-): WorkerImplementation<Environment>;
+): WorkerImplementation<Record<string, unknown>, Body>;
+export function defineWorker<Environment = Record<string, unknown>, Error = never, Body = unknown>(
+  handlers: WorkerHandlers<Environment, Error, never, Body>,
+): WorkerImplementation<Environment, Body>;
+export function defineWorker<Environment, Error, Needs, LayerError, Body = unknown>(
+  handlers: WorkerHandlers<Environment, Error, Needs, Body>,
+  layer: Layer.Layer<Needs, LayerError>,
+): WorkerImplementation<Environment, Body>;
 export function defineWorker(
   first: Requirements | WorkerHandlers<unknown, unknown, unknown>,
   second?:
@@ -47,26 +69,38 @@ export function defineWorker(
   const requirements = typeof second === "function" ? (first as Requirements) : undefined;
   const layer = typeof second === "function" ? third : second;
   const handlers = new WeakMap<object, WorkerHandlers<unknown, unknown, unknown>>();
+  const resolve = (env: unknown) => {
+    if (!requirements || typeof second !== "function" || !env || typeof env !== "object")
+      return first as WorkerHandlers<unknown, unknown, unknown>;
+    const cached = handlers.get(env);
+    if (cached) return cached;
+    const selected = second(
+      resolveBindings(requirements, env as Record<string, unknown>),
+    ) as WorkerHandlers<unknown, unknown, unknown>;
+    handlers.set(env, selected);
+    return selected;
+  };
+  const run = async <A>(result: HandlerResult<A, unknown, unknown>): Promise<A> => {
+    if (!Effect.isEffect(result)) return result;
+    return layer
+      ? Effect.runPromise(Effect.provide(result, layer) as Effect.Effect<A, unknown>)
+      : Effect.runPromise(result as Effect.Effect<A, unknown>);
+  };
   return {
     ...(requirements ? { __renkinRequirements: requirements } : {}),
-    async fetch(request, env, context) {
-      let selected: WorkerHandlers<unknown, unknown, unknown>;
-      if (requirements && typeof second === "function" && env && typeof env === "object") {
-        const cached = handlers.get(env);
-        selected =
-          cached ??
-          (second(resolveBindings(requirements, env as Record<string, unknown>)) as WorkerHandlers<
-            unknown,
-            unknown,
-            unknown
-          >);
-        if (!cached) handlers.set(env, selected);
-      } else selected = first as WorkerHandlers<unknown, unknown, unknown>;
-      const result = selected.fetch(request, env, context);
-      if (!Effect.isEffect(result)) return result;
-      return layer
-        ? Effect.runPromise(Effect.provide(result, layer) as Effect.Effect<Response, unknown>)
-        : Effect.runPromise(result as Effect.Effect<Response, unknown>);
+    fetch: (request, env, context) =>
+      run(
+        resolve(env).fetch?.(request, env, context) ?? new Response("Not Found", { status: 404 }),
+      ),
+    scheduled: (controller, env, context) => {
+      const handler = resolve(env).scheduled;
+      if (!handler) return Promise.reject(new Error("Worker has no scheduled handler."));
+      return run(handler(controller, env, context));
+    },
+    queue: (batch, env, context) => {
+      const handler = resolve(env).queue;
+      if (!handler) return Promise.reject(new Error("Worker has no queue handler."));
+      return run(handler(batch, env, context));
     },
   };
 }

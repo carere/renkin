@@ -55,7 +55,7 @@ const workerSettings = (
       if (!database)
         throw new Error(`D1 requirement ${requirement.id} is not declared in the stack.`);
       d1Databases[binding] = database;
-    } else {
+    } else if (requirement.type === "cloudflare.worker-reference") {
       const targetId = requirement.external
         ? `renkin-external-${requirement.external.name}`
         : requirement.id;
