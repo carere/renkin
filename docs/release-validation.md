@@ -29,6 +29,49 @@ source manifest remains unchanged. `--ignore-scripts` deliberately bypasses life
 scripts and is not a supported release path. No registry publication command is
 part of these tasks.
 
+## Completed acceptance and final artifact
+
+The final Linux-produced tarball has SHA-256
+`21873a56d9bd8af088085d90670e91f1595aceb1bf78d70de0d973682ed2eff4`.
+It records clean PR merge `02ae0d8a52b41a70f3fb1e2a82814c79aa7c4081`
+(parent `593aebc`), Bun 1.4.2 and lock digest
+`118e4e1c89bd51573ef2e39ec3e43bbf91ebb1f5b4857f5bd54bf06587193fb3`.
+Its inventory contains 341 files and 522 checked relative references.
+[Release CI](https://github.com/carere/renkin/actions/runs/35656934871) passed
+on Ubuntu 24.04 and macOS 15. The exact Linux bytes also passed the full local
+macOS installed-consumer harness in 39.47 seconds without repacking.
+[Source CI](https://github.com/carere/renkin/actions/runs/35656934762) passed
+227 tests across 14 populated tasks and all static checks. Four offline cloud-harness
+preparation tests passed separately and are now wired into ordinary Checks.
+
+| Candidate | Actual Cloudflare evidence |
+| --- | --- |
+| Earlier `ad218c…` archive | Twelve complete suites / thirteen cases: Worker, connected services, D1, background execution, DO lifecycle/recovery/retirement, R2, protected site, Astro, TanStack SPA/SSR and state authorization. The full graph additionally passed native flow and its accepted email before failing later state operations; that whole run was not green. |
+| State fix `da7c8c3` | Maintained uninstrumented pressure regression: twenty 20 MiB write/read/lease cycles passed in 53.58 seconds, with exact disposable backend and namespace cleanup. |
+| Final `21873a…` archive | Installed graph reuse-only test passed in 389.30 seconds: three frontend compilations remained three after the provider-observed cron change, and Tracking retained its physical identity. No application-flow or email request ran. |
+
+The final graph scope was `renkin-test-graph-a153800d/full-graph`, with a fresh
+`renkin-test-graph-a153800d-state` backend built from the installed archive.
+All seventeen application resources and the environment were removed before the
+owned backend was deleted; its Worker and namespace absence were verified. The
+canonical shared backend was not upgraded. Earlier failed application and diagnostic
+scopes were recovered and cleaned, as recorded below. Cleanup evidence combines
+maintained public removal/index checks with targeted backend, token and domain
+checks; it is not an independent physical GET audit of every resource.
+
+Four test emails were accepted across the overall implementation and confirmed
+received by the user. They were not repeated for the state fix. This is combined
+acceptance evidence across two archives, not a claim that every cloud case ran on
+one binary. The final changes preserve the encrypted state format and authenticated
+context; native base64 conversion reduces temporary allocation pressure. The exact
+provider admission mechanism behind the earlier repeated-state stall remains
+unproven, while the repeated production regression and final graph now pass.
+
+The scaffold publication warning has been removed. The source-workspace `prepack`
+guard remains: distribute only the staged standalone artifact. No registry
+publication was performed. Upstream declaration and guarded framework transport
+compatibility limits described below still apply.
+
 ## Maintained installed-consumer checks
 
 The harness installs the actual tarball into a fresh directory outside the
@@ -82,10 +125,9 @@ nor browser reload retries. Two narrow cold network-denied probes and the comple
 maintained artifact test passed after those changes.
 
 Linux and hosted macOS artifact validation now pass (see the final candidate below).
-Installed cloud acceptance remains partial. Subsequent approved runs completed both
-email sends and domain retries; the full graph's cron/update reuse checks remain
-blocked by cloud-state failures. The chronological evidence below distinguishes
-successful assertions, failed attempts and cleanup. The publication warning remains.
+Installed cloud acceptance is complete across the candidates recorded below.
+The chronological evidence retains earlier failures and their cleanup; the final
+state-fix candidate completes the graph assertions without repeating accepted emails.
 
 The merged candidate's extended macOS harness passed in 34.39s, including an actual
 installed Moon → Bun → `buildAstro` nested command, reuse of its result, recovery of
@@ -100,7 +142,7 @@ source revision. This permits the Linux-produced bytes to be checked on macOS an
 used unchanged for the later cloud suite. Per-OS preliminary builds have separate
 identities and are not represented as the same artifact.
 
-## Final candidate artifact
+## Earlier candidate artifact
 
 Release CI `35635021012` passed on Ubuntu 24.04 and hosted macOS 15 arm64. The exact
 Linux archive also passed the full local macOS arm64 harness in 37.35s without

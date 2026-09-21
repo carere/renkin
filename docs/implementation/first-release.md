@@ -89,4 +89,9 @@ graph test passed native service flow, signed uploads, one accepted email and a
 provider-observed cron update with all three frontend builds reused. All 17 resources
 and the successful environment were removed; both earlier failed scopes were also
 fully cleaned. See [graph and build evidence](../validation/issue-13.md).
-Release packaging and installed-consumer validation are active in ticket #14.
+Ticket #14 implementation and installed-consumer acceptance are complete. The final
+Linux-produced archive passed on Linux and macOS, and its isolated Cloudflare graph
+proved frontend reuse, cron updates and stable Worker identity before exact cleanup.
+Earlier installed cloud cases and accepted email checks retain their original
+artifact provenance; see [the final release record](../release-validation.md).
+Registry publication and the parent spec’s final review remain separate actions.

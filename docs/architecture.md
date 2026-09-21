@@ -5,7 +5,7 @@ records ownership and the first-release scope. Workers, protected storage, nativ
 background services, lifecycle recovery, local/cloud state, website integrations
 and public test helpers are implemented. The staged release artifact and isolated
 consumer checks are described in [release validation](release-validation.md);
-that record distinguishes completed checks from pending release acceptance.
+that record distinguishes release candidates, completed checks and compatibility limits.
 
 ## Workspace ownership
 
@@ -155,7 +155,8 @@ required; see [the fresh-start decision](adr/0002-start-with-fresh-infrastructur
 
 Renkin uses Apache 2.0; LICENSE, NOTICE and source provenance are included in the artifact. Retain applicable third-party licenses and notices for
 copied code, record its source revision, and mark modifications as required.
-License selection does not complete the per-file review or release notices.
+The release artifact includes the reviewed provenance and notices described in
+[release validation](release-validation.md); future copied code requires the same review.
 
 ## Release validation
 

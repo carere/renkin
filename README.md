@@ -70,9 +70,10 @@ Foundation validation runs Biome, TypeScript, Knip and manifest sorting directly
 TypeScript checks the workspace-owned tool configurations. Populated behavioral
 suites cover resources, runtime, frameworks, example apps and the full local graph;
 credentialed Cloudflare suites run separately. Empty test projects remain strict.
-Standalone artifact validation passed on Linux and macOS. Installed cloud acceptance
-is partial, and subsequent source CI startup failures remain under investigation;
-see [release validation](docs/release-validation.md) for exact evidence and limits.
+Standalone artifact validation passed on Linux and macOS, and installed Cloudflare
+acceptance is complete across the documented release candidates. Source CI passed
+227 behavioral tests after the startup and state fixes; see
+[release validation](docs/release-validation.md) for exact provenance and limits.
 
 Each workspace owns its `vitest.config.ts` and its Moon test tasks. Its initial
 unit and integration projects discover local `tests/unit/**/*.test.ts` and
@@ -93,7 +94,8 @@ root Moon project. Moon uses local caching
 and the shared Remoshu HTTP cache at `https://remoshu.carere.workers.dev`, with
 Renkin artifacts isolated under `carere/renkin`. Cache integrity verification is enabled.
 Repository checks run directly, outside Moon caching.
-Add cache inputs, outputs and dependency ordering with future build tasks.
+Configure application build inputs and external command ordering through the
+[build reuse API](docs/build-reuse.md); workspace Moon task definitions remain explicit.
 
 Dependencies use caret (`^`) ranges. `bun.lock` records the exact resolved versions;
 `bun install --frozen-lockfile` keeps CI reproducible. Run `bun update` to select
