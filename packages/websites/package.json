@@ -4,7 +4,21 @@
   "private": true,
   "description": "TanStack SPA/SSR and Astro SSG build and deployment integration, including public Vite integration.",
   "type": "module",
+  "exports": {
+    "./*": "./src/contexts/root/*.ts"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^14.3.2",
+    "@renkin/cloudflare": "workspace:*",
+    "@renkin/core": "workspace:*",
+    "@renkin/runtime": "workspace:*",
+    "astro": "^7.3.3"
+  },
   "devDependencies": {
+    "@effect/vitest": "^4.0.0-rc.115",
     "vitest": "^5.0.0"
+  },
+  "peerDependencies": {
+    "effect": "^4.0.0-rc.115"
   }
 }
