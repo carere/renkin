@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.2",
-    "@cloudflare/vite-plugin": "^1.56.0",
+    "@cloudflare/vite-plugin": "~1.56.0",
     "@renkin/cloudflare": "workspace:*",
     "@renkin/core": "workspace:*",
     "@renkin/runtime": "workspace:*",

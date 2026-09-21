@@ -30,14 +30,20 @@ export const verifyPackage = async (consumer: InstalledConsumer, archive: string
   const probe = `import assert from 'node:assert/strict'; import {createRequire} from 'node:module';
 const here=createRequire(import.meta.url); const library=createRequire(import.meta.resolve('renkin'));
 assert.equal(here.resolve('effect'),library.resolve('effect'));
+const adapter=createRequire(library.resolve('@astrojs/cloudflare'));
+const plugin=adapter.resolve('@cloudflare/vite-plugin/package.json');
+assert.equal(plugin,library.resolve('@cloudflare/vite-plugin/package.json'));
+assert.match(here(plugin).version,/^1\\.56\\./);
+console.log('installed Astro plugin compatibility:',here(plugin).version);
 for(const name of ['renkin','renkin/cloudflare','renkin/worker','renkin/testing','renkin/astro','renkin/vite']) await import(name);
 console.log('installed imports and Effect identity passed');`;
   await writeFile(join(consumer.directory, "imports.ts"), probe);
-  await execute(process.execPath, ["--no-env-file", "imports.ts"], {
+  const imports = await execute(process.execPath, ["--no-env-file", "imports.ts"], {
     cwd: consumer.directory,
     env: consumer.env,
     maxBuffer: 200000,
   });
+  console.info(imports.stdout.trim());
   const cli = join(consumer.directory, "node_modules/renkin", manifest.bin.renkin);
   const help = await execute(process.execPath, ["--no-env-file", cli, "help"], {
     cwd: consumer.directory,
