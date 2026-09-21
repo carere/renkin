@@ -43,6 +43,7 @@ export default defineWorker({Files:r2("Files")},({Files})=>({fetch:request=>Effe
     action: (session: Effect.Success<ReturnType<typeof development>>) => Promise<A>,
     desired = stack,
     s3 = true,
+    environment = "local",
   ) =>
     Effect.runPromise(
       Effect.scoped(
@@ -50,6 +51,7 @@ export default defineWorker({Files:r2("Files")},({Files})=>({fetch:request=>Effe
           const session = yield* development(desired, {
             directory: join(root, "state"),
             watch: false,
+            environment,
             ...(s3 ? { r2S3: credentials } : {}),
           });
           return yield* Effect.promise(() => action(session));
