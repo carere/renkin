@@ -48,16 +48,46 @@ const assertOwned = (observed: Observation, accountId: string): void => {
   }
 };
 
-/** Reuses the protocol-compatible account service without replacing its code or encryption keys. */
-export const ensureCloudflareState = async (
-  options: CloudStateOptions,
-): Promise<{ readonly endpoint: string; readonly scriptName: string }> => {
-  const scriptName = options.stateScriptName ?? "renkin-state-v1";
-  if (!/^[a-z0-9][a-z0-9-]{0,62}$/.test(scriptName)) {
+const stateName = (options: CloudStateOptions): string => {
+  const name = options.stateScriptName ?? "renkin-state-v1";
+  if (!/^[a-z0-9][a-z0-9-]{0,62}$/.test(name)) {
     throw new StateBootstrapError(
       "The state Worker name must contain 1–63 lowercase letters, digits or hyphens.",
     );
   }
+  return name;
+};
+
+const endpointFor = async (
+  client: ReturnType<typeof createBootstrapClient>,
+  scriptName: string,
+) => {
+  const account = await Effect.runPromise(client.getAccountSubdomain());
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(account.subdomain)) {
+    throw new StateBootstrapError("The account has no usable workers.dev subdomain.");
+  }
+  return { endpoint: `https://${scriptName}.${account.subdomain}.workers.dev`, scriptName };
+};
+
+/** State inspection never provisions or changes infrastructure. */
+export const findCloudflareState = async (options: CloudStateOptions) => {
+  const scriptName = stateName(options);
+  const client = createBootstrapClient(options);
+  const observed = await observe(client, scriptName);
+  if (!observed) return undefined;
+  assertOwned(observed, options.accountId);
+  try {
+    return await endpointFor(client, scriptName);
+  } catch {
+    throw new StateBootstrapError("The account state endpoint could not be discovered.");
+  }
+};
+
+/** Reuses the protocol-compatible account service without replacing its code or encryption keys. */
+export const ensureCloudflareState = async (
+  options: CloudStateOptions,
+): Promise<{ readonly endpoint: string; readonly scriptName: string }> => {
+  const scriptName = stateName(options);
   const client = createBootstrapClient(options);
   let observed = await observe(client, scriptName);
   if (observed) assertOwned(observed, options.accountId);
@@ -101,11 +131,7 @@ export const ensureCloudflareState = async (
   }
   try {
     await Effect.runPromise(client.enableWorkerSubdomain(scriptName));
-    const account = await Effect.runPromise(client.getAccountSubdomain());
-    if (!/^[a-z0-9][a-z0-9-]*$/.test(account.subdomain)) {
-      throw new StateBootstrapError("The account has no usable workers.dev subdomain.");
-    }
-    return { endpoint: `https://${scriptName}.${account.subdomain}.workers.dev`, scriptName };
+    return await endpointFor(client, scriptName);
   } catch {
     throw new StateBootstrapError(
       "Could not enable the account state endpoint. Verify workers.dev is configured for this account, then retry.",

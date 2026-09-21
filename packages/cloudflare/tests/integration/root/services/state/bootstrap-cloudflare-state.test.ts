@@ -2,7 +2,10 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { ensureCloudflareState } from "../../../../../src/contexts/root/services/state/bootstrap-cloudflare-state.ts";
+import {
+  ensureCloudflareState,
+  findCloudflareState,
+} from "../../../../../src/contexts/root/services/state/bootstrap-cloudflare-state.ts";
 
 const owned = {
   tags: ["renkin-state-v1"],
@@ -106,5 +109,23 @@ it.live("provisions a missing coordinator with a SQLite class and no stored acco
     expect(boundary.uploads[0]).toContain('"new_sqlite_classes":["StateCoordinator"]');
     expect(boundary.uploads[0]).toContain('"name":"ACCOUNT_ID"');
     expect(boundary.uploads[0]).not.toContain("test-token");
+  }).pipe(Effect.scoped),
+);
+
+it.live("discovers existing state without mutations", () =>
+  Effect.gen(function* () {
+    const boundary = yield* provider(owned);
+    const result = yield* Effect.promise(() => findCloudflareState(boundary.config));
+    expect(result?.endpoint).toBe("https://renkin-test-state.example-account.workers.dev");
+    expect(boundary.mutations).toEqual([]);
+  }).pipe(Effect.scoped),
+);
+
+it.live("returns absent state without provisioning it", () =>
+  Effect.gen(function* () {
+    const boundary = yield* provider(null, { status: 404, code: 10007 });
+    const result = yield* Effect.promise(() => findCloudflareState(boundary.config));
+    expect(result).toBeUndefined();
+    expect(boundary.mutations).toEqual([]);
   }).pipe(Effect.scoped),
 );
