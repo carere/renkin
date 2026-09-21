@@ -14,7 +14,16 @@ interface Scenario {
   secret?: string;
   redirect?: boolean;
   denied?: boolean;
+  exchangeFailure?: "http" | "malformed" | "missing" | "network" | "redirect";
 }
+
+const exchangeResponse = (failure: Scenario["exchangeFailure"]) => {
+  if (failure === "network") throw new Error("exchange unavailable");
+  return new Response(failure === "malformed" ? "invalid JSON" : "{}", {
+    status: failure === "http" ? 400 : failure === "redirect" ? 302 : 200,
+    headers: failure === "redirect" ? { location: "https://attacker.invalid/" } : {},
+  });
+};
 
 const fixture = (scenario: Scenario = {}) =>
   Effect.acquireRelease(
@@ -67,6 +76,10 @@ const fixture = (scenario: Scenario = {}) =>
       const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
       const fetch: typeof globalThis.fetch = (url, init) => {
         expect(init?.redirect).toBe("error");
+        if (String(url) === exchangeUrl && scenario.exchangeFailure) {
+          expect(new Headers(init?.headers).has("authorization")).toBe(false);
+          return Promise.resolve().then(() => exchangeResponse(scenario.exchangeFailure));
+        }
         return globalThis.fetch(base, {
           ...init,
           headers: { ...Object.fromEntries(new Headers(init?.headers)), "x-test-url": String(url) },
@@ -149,4 +162,25 @@ describe("preview rejects unsafe responses", () => {
       expect(test.calls).toHaveLength(1);
     }).pipe(Effect.scoped),
   );
+});
+
+describe("optional token exchange", () => {
+  for (const exchangeFailure of ["http", "malformed", "missing", "network", "redirect"] as const) {
+    it.live(`uses original session token after ${exchangeFailure} failure`, () =>
+      Effect.gen(function* () {
+        const test = yield* fixture({ exchange: exchangeUrl, exchangeFailure });
+        expect(
+          yield* readStateAuth(test.config, input).pipe(
+            Effect.provideService(FetchHttpClient.Fetch, test.fetch),
+          ),
+        ).toBe(secret);
+        expect(
+          test.calls
+            .find((call) => call.method === "POST")
+            ?.headers.get("cf-preview-upload-config-token"),
+        ).toBe("session-token");
+        expect(test.calls.some((call) => call.url.includes("attacker.invalid"))).toBe(false);
+      }).pipe(Effect.scoped),
+    );
+  }
 });

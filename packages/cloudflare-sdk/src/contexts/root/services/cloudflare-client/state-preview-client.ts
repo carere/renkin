@@ -63,6 +63,24 @@ const readToken = async (response: Response) => {
   return body.token;
 };
 
+// Matches Cloudflare workers-sdk dev/create-worker-preview.ts: exchange is optional.
+// Validate its destination before the fallback so unsafe URLs still fail closed.
+const exchangeToken = (
+  session: Workers.CreateSubdomainEdgePreviewSessionResponse,
+  subdomain: string,
+  fetch: typeof globalThis.fetch,
+) =>
+  Effect.promise(async (signal) => {
+    if (!session.exchangeUrl) return session.token;
+    const url = trustedExchange(session.exchangeUrl, subdomain);
+    try {
+      return await readToken(await fetch(url, { signal }));
+    } catch (error) {
+      if (signal.aborted || (error instanceof Error && error.name === "AbortError")) throw error;
+      return session.token;
+    }
+  });
+
 /** Recovers the inherited secret in an authenticated preview; never deploys probe code. */
 export const readStateAuth = (config: CloudflareConfig, input: StatePreviewInput) =>
   Effect.gen(function* () {
@@ -102,11 +120,7 @@ const recover = (
     const session = yield* Workers.createSubdomainEdgePreviewSession({
       accountId: config.accountId,
     });
-    const token = session.exchangeUrl
-      ? yield* Effect.promise(async () =>
-          readToken(await fetch(trustedExchange(session.exchangeUrl ?? "", account.subdomain))),
-        )
-      : session.token;
+    const token = yield* exchangeToken(session, account.subdomain, fetch);
     if (!token) return yield* Effect.fail(new Error("Missing preview token"));
     const preview = yield* Workers.createScriptEdgePreview({
       accountId: config.accountId,
