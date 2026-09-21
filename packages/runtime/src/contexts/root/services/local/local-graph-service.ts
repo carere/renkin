@@ -22,6 +22,7 @@ import {
 import { localAssetOptions } from "./local-build-service.ts";
 import { type LocalDurableObject, localDurableObjects } from "./local-durable-objects.ts";
 import { graphBindings } from "./local-graph-bindings.ts";
+import { graphDispatcher } from "./local-graph-dispatch.ts";
 import {
   localR2Credentials,
   localR2GatewayName,
@@ -354,6 +355,7 @@ export const startLocalGraph = async (
   database: (id: string) => Promise<NativeD1>;
   bucket: (id: string) => Promise<NativeR2>;
   bindings: (workerId: string) => Promise<Record<string, unknown>>;
+  dispatch: (workerId: string, request: Request) => Promise<Response>;
   close: () => Promise<void>;
   capturedEmails: () => Promise<readonly string[]>;
 }> => {
@@ -413,11 +415,11 @@ export const startLocalGraph = async (
     session.runtime = runtime;
     await runtime.ready;
     await recoverWorkflows(runtime, options.workflows ?? {}, journal);
-    const workers = await exposedWorkers(session, contexts, declaredWorkers);
     await watchGraph(options, contexts, watchers, session);
     return {
-      workers,
+      workers: await exposedWorkers(session, contexts, declaredWorkers),
       close,
+      dispatch: graphDispatcher(runtime, declaredWorkers, Boolean(options.r2S3)),
       capturedEmails: () => capturedEmails(emailDirectory),
       ...graphBindings(runtime, prepared, options.databases, options.buckets),
     };

@@ -6,6 +6,7 @@ import type { WorkerResource } from "../../models/worker.ts";
 import type { WorkerExtensions } from "../../models/worker-extensions.ts";
 import { prepareD1 } from "../d1/prepare-d1.ts";
 import { prepareDurableObjects } from "../durable-object/prepare-durable-objects.ts";
+import { expandResources } from "./expand-resources.ts";
 import { prepareBackgroundResources } from "./prepare-background.ts";
 import { finalizeRequirements, prepareRequirements } from "./prepare-requirements.ts";
 
@@ -16,10 +17,12 @@ export const prepareStack = async (stack: Stack): Promise<Stack> => ({
     prepareBackgroundResources(
       finalizeRequirements(
         await Promise.all(
-          prepareBackgroundResources(stack.resources).map(async (resource) => {
+          prepareBackgroundResources(expandResources(stack.resources)).map(async (resource) => {
             if (resource.type !== "cloudflare.worker") return prepareD1(resource);
-            const options = (resource as WorkerResource).options as WorkerResource["options"] &
+            let options = (resource as WorkerResource).options as WorkerResource["options"] &
               WorkerExtensions;
+            if (!options.build && options.builder)
+              options = { ...options, build: await options.builder.build() };
             const properties = resource.properties as Record<string, Json>;
             if (
               !properties ||
@@ -39,6 +42,7 @@ export const prepareStack = async (stack: Stack): Promise<Stack> => ({
             return prepareRequirements(
               {
                 ...resource,
+                ...{ options },
                 properties: {
                   ...properties,
                   ...(JSON.parse(JSON.stringify(result)) as Record<string, Json>),
