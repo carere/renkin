@@ -79,3 +79,5 @@ request was intentionally induced.
 
 This slice does not validate a packed package, additional resource adapters,
 framework integrations or the complete application graph.
+
+The completed recovery checkpoint `5c5867b` passed [Linux CI](https://github.com/carere/renkin/actions/runs/35587890346): all 59 behavioral tests and static checks. The actual task-owned v2 backend was updated in place, preserving its namespace, secret and encrypted state. An existing encrypted probe output remained readable; the new inspection endpoint returned valid data; the probe output was cleared afterward. This verifies code-update preservation and the real inspection route, not an induced ambiguous cloud mutation.
