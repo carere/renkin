@@ -11,8 +11,8 @@ The specification and issue acceptance criteria remain authoritative.
 | [#6: Run database-backed applications with SQL and Drizzle migrations](https://github.com/carere/renkin/issues/6) | #5 | Complete; merged and closed |
 | [#7: Upload files and manage isolated preview storage](https://github.com/carere/renkin/issues/7) | #5 | In progress in isolated worktree |
 | [#8: Process scheduled and durable background jobs](https://github.com/carere/renkin/issues/8) | #5 | In progress in isolated worktree |
-| [#9: Run persistent stateful services with Durable Objects](https://github.com/carere/renkin/issues/9) | #5 | Pending |
-| [#10: Serve a protected application on its domain](https://github.com/carere/renkin/issues/10) | #4 | In progress in isolated worktree |
+| [#9: Run persistent stateful services with Durable Objects](https://github.com/carere/renkin/issues/9) | #5 | In progress in isolated worktree |
+| [#10: Serve a protected application on its domain](https://github.com/carere/renkin/issues/10) | #4 | Complete; merged and closed |
 | [#11: Run and deploy TanStack Start Solid applications](https://github.com/carere/renkin/issues/11) | #10, #5 | Pending |
 | [#12: Run and deploy Astro sites](https://github.com/carere/renkin/issues/12) | #10, #5 | Pending |
 | [#13: Run the complete application graph with reliable build reuse](https://github.com/carere/renkin/issues/13) | #12, #11, #9, #8, #7, #6 | Pending |
@@ -56,4 +56,8 @@ plus all required static checks. Real Cloudflare connected-Worker and D1 suites
 passed, including explicit cleanup; earlier failed-run application resources
 were also removed. See [connected Worker evidence](../validation/issue-5.md) and
 [D1 behavior and evidence](../d1-migrations.md). Tickets #7 and #8 are active in
-separate worktrees. Ticket #10 is completing its final cloud isolation checks.
+separate worktrees. Ticket #10 is complete and closed after merge `cb4f12a`: all 123 combined
+behavioral tests and static checks passed locally. Its real Cloudflare protected-site
+suite passed isolation, token recovery, configuration updates and teardown; see
+[site validation](../validation/issue-10.md). Ticket #9 is now active in an isolated
+worktree.
