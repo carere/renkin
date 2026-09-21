@@ -2,6 +2,7 @@ import type { WorkerUpload } from "@renkin/cloudflare-sdk/services/cloudflare-cl
 import type { createSiteClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/site-client";
 import type { ResourceState } from "@renkin/core/models/state";
 import { Effect } from "effect";
+import mime from "mime";
 
 const object = (value: unknown): Record<string, unknown> => {
   if (!value || typeof value !== "object" || Array.isArray(value))
@@ -12,32 +13,6 @@ const text = (value: unknown): string => {
   if (typeof value !== "string") throw new Error("Invalid prepared Worker artifact value.");
   return value;
 };
-const contentType = (path: string) => {
-  const extension = path.slice(path.lastIndexOf(".")).toLowerCase();
-  return (
-    (
-      {
-        ".html": "text/html",
-        ".css": "text/css",
-        ".js": "application/javascript",
-        ".mjs": "application/javascript",
-        ".json": "application/json",
-        ".svg": "image/svg+xml",
-        ".png": "image/png",
-        ".jpg": "image/jpeg",
-        ".jpeg": "image/jpeg",
-        ".webp": "image/webp",
-        ".ico": "image/x-icon",
-        ".txt": "text/plain",
-        ".xml": "application/xml",
-        ".woff": "font/woff",
-        ".woff2": "font/woff2",
-        ".wasm": "application/wasm",
-      } as Record<string, string>
-    )[extension] ?? "application/octet-stream"
-  );
-};
-
 /** Upload content-addressed assets before the final fenced Worker publication. */
 export const prepareWorkerPublication = async (
   resource: ResourceState,
@@ -91,7 +66,12 @@ export const prepareWorkerPublication = async (
           const asset = entries.find((item) => item.hash === hash);
           if (!asset)
             throw new Error("Cloudflare requested an asset outside the prepared manifest.");
-          return [hash, new File([text(asset.content)], hash, { type: contentType(asset.path) })];
+          return [
+            hash,
+            new File([text(asset.content)], hash, {
+              type: mime.getType(asset.path) ?? "application/octet-stream",
+            }),
+          ];
         }),
       );
       const uploaded = await Effect.runPromise(client.uploadAssets(body, jwt, token));

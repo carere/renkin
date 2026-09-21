@@ -1,3 +1,6 @@
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterAll, beforeAll, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { build } from "esbuild";
@@ -5,6 +8,8 @@ import { Miniflare, Response } from "miniflare";
 
 let emulator: Miniflare;
 let dispatches = 0;
+let directory: string;
+let options: ConstructorParameters<typeof Miniflare>[0];
 beforeAll(async () => {
   const script = await build({
     entryPoints: [new URL("./recovery-fixture.ts", import.meta.url).pathname],
@@ -13,7 +18,9 @@ beforeAll(async () => {
     format: "esm",
     platform: "browser",
   });
-  emulator = new Miniflare({
+  directory = await mkdtemp(join(tmpdir(), "renkin-receipt-"));
+  options = {
+    durableObjectsPersist: directory,
     modules: true,
     script: script.outputFiles[0]?.text ?? "",
     compatibilityDate: "2026-08-01",
@@ -31,9 +38,13 @@ beforeAll(async () => {
         },
       });
     },
-  });
+  };
+  emulator = new Miniflare(options);
 });
-afterAll(() => emulator.dispose());
+afterAll(async () => {
+  await emulator.dispose();
+  await rm(directory, { recursive: true, force: true });
+});
 const call = (action: string, environment: string, input: Record<string, unknown> = {}) =>
   emulator.dispatchFetch(`https://state.test/v1/${action}`, {
     method: "POST",
@@ -89,6 +100,8 @@ it.live(
       expect(JSON.stringify(missing)).not.toContain("one-time-secret");
       expect(dispatches).toBe(before);
       const created = await (await gateway("receipt", first.token)).json();
+      await emulator.dispose();
+      emulator = new Miniflare(options);
       await call("test-expire", "receipt");
       const second = await acquire("receipt");
       expect(

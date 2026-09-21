@@ -11,7 +11,8 @@
     "@renkin/cloudflare-sdk": "workspace:*",
     "@renkin/core": "workspace:*",
     "@renkin/runtime": "workspace:*",
-    "effect": "^4.0.0-rc.115"
+    "effect": "^4.0.0-rc.115",
+    "mime": "^4.1.0"
   },
   "devDependencies": {
     "@effect/vitest": "^4.0.0-rc.115",
