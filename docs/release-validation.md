@@ -29,6 +29,27 @@ source manifest remains unchanged. `--ignore-scripts` deliberately bypasses life
 scripts and is not a supported release path. No registry publication command is
 part of these tasks.
 
+## Astro CLI and README follow-up
+
+At `84394e8`, `renkin(site)` from `renkin/astro` enables normal
+`bun --bun astro build` and writes deployment metadata without a consumer
+`build.ts`. The documentation/marketing app is removed; its SSR browser,
+native-binding, session and prerender checks are preserved under
+`packages/renkin/tests/fixtures/astro-ssr`. The README is the main usage guide.
+Both Astro fixtures now exercise the CLI.
+
+Local checks passed both CLI/browser fixtures, all 10 framework integration
+tests, all 48 Renkin integration tests, four offline cloud-preparation tests and
+static checks. The clean installed-artifact harness passed in 39.83 seconds,
+including all four framework modes, external Moon → Astro CLI build reuse and
+the network-isolated application graph. The archive contains 347 files and 534
+checked references, with SHA-256
+`d24555e1436888b1555038d85736a4d50bb0828cce120a20ca0d4a61928485e0`.
+It records clean source `84394e88f31b5b2f52b8d7a40ff1ad978ef86aea`, Bun 1.4.2
+and lock digest `75016edcabe9514eb0e203ad75be6c0edcad6aaa50b5e3ec57180ff835e62957`.
+Final hosted results are linked from PR #16. Earlier real-Cloudflare evidence
+below remains separately attributed; no provider tests were repeated here.
+
 ## Completed cloud acceptance and accepted artifact
 
 The accepted Linux-produced cloud-validation tarball has SHA-256
