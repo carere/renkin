@@ -81,9 +81,12 @@ interactive after hydration. Maintained checks use neither stale-module suppress
 nor browser reload retries. Two narrow cold network-denied probes and the complete
 maintained artifact test passed after those changes.
 
-Linux CI and the accumulated installed real-cloud suite are pending at this
-checkpoint. Source-workspace cloud results are not claimed as installed-artifact
-results. The scaffold publication warning remains until release acceptance finishes.
+Linux and hosted macOS artifact validation now pass (see the final candidate below).
+Installed cloud validation is partial: 10 of 12 non-email test cases passed; two
+custom-host readiness checks failed. The two email suites remain unrun pending
+explicit approval of their payloads and destinations. Source-workspace cloud results
+are not claimed as installed-artifact results. The scaffold publication warning
+remains until release acceptance finishes.
 
 The merged candidate's extended macOS harness passed in 34.39s, including an actual
 installed Moon → Bun → `buildAstro` nested command, reuse of its result, recovery of
@@ -97,3 +100,89 @@ test. Its adjacent `artifact.json` must match the tarball digest and record a cl
 source revision. This permits the Linux-produced bytes to be checked on macOS and
 used unchanged for the later cloud suite. Per-OS preliminary builds have separate
 identities and are not represented as the same artifact.
+
+## Final candidate artifact
+
+Release CI `35635021012` passed on Ubuntu 24.04 and hosted macOS 15 arm64. The exact
+Linux archive also passed the full local macOS arm64 harness in 37.35s without
+repacking. Its SHA-256 is
+`ad218c4191b3f24e6f1c0ef9e1572f07cdcc7662ba5beedbd0c5843aec5d54fb`,
+with clean PR merge source `b1c8a00709f2d7149cb75b0b35a30023ae505465` and
+Bun 1.4.2. It contains 337 files and 518 checked relative module/URL references.
+The adjacent artifact record retains the source lock digest; consumer dependency
+resolution is separately tested rather than assumed equal to that source lock.
+
+Hosted macOS exposed the official prerenderer's dependence on an HTTP dispatcher
+that Bun's built-in undici replacement ignores. The scoped compatibility bridge
+and its explicit verified-version boundary are documented in [Astro sites](astro-sites.md#bun-build-transport-compatibility).
+Real workerd tests demonstrate both the corrected dispatcher path and the native
+shim's missing dispatcher support. Failed prerender responses now abort builds.
+The provisional plugin-minor constraint did not fix this failure and was reverted.
+
+Supported installations should retain their package-manager lockfile after the
+validated installation. The public caret ranges permit future dependency releases;
+a new, unverified Miniflare 5 build intentionally requires compatibility validation
+before the guarded build transport accepts it. No registry publication has occurred.
+
+Source Checks CI `35635021057` passed all static checks and 219 behavioral tests
+across 14 populated suites. These source results are recorded separately from the
+installed-artifact and cloud results.
+
+## Installed cloud validation: partial, September 21, 2026
+
+The exact final archive above was installed outside the source checkout and used
+unchanged for these provider tests. Nine complete suites passed: Worker, connected
+Workers, D1, Durable Object lifecycle, recovery and retirement, R2, restricted-token
+state authorization, and Astro. TanStack's SPA case also passed. Thus **10 of the
+12 selected non-email cases passed**, across nine complete suites and one partial
+suite. No installed cloud email was sent; background and full-graph suites were
+explicitly excluded while approval of their two messages remains pending.
+
+Protected-site and TanStack SSR reached their custom-host readiness limits. Their
+normal TLS checks were retained. Protected-site reported
+`UNKNOWN_CERTIFICATE_VERIFICATION_ERROR`; SSR reported a network `TypeError`.
+Both completed cleanup. Astro's live hostname independently showed a shared
+advanced certificate pack in `pending_validation` and a TLS handshake with no
+peer certificate; it subsequently became ready and passed within the original
+bound. This demonstrates transient issuance during this run, but does not prove
+the precise earlier certificate state of either failed hostname. No TLS bypass,
+readiness extension, shared-certificate deletion, or further hostname allocation
+was used to turn those failures into passes.
+
+Two test-only corrections preceded successful reruns. Worker cleanup now expects
+`readOutputs` to return `undefined` after the environment is removed. The public
+state authorization observer now starts before Effect caches its default fetch
+service, so it observes the exact restricted bearer rather than accepting a generic
+public error. Both restricted permission types passed their authorized read controls,
+direct state rejection and observed provider permission denial. Every temporary
+token created by that suite was revoked in `finally`.
+
+Cleanup evidence is deliberately narrower than an independent GET of every
+physical resource. Maintained cleanup completed for every started scenario;
+installed public reads additionally verified environment/index and output absence
+for the following exact scopes (all names start with `renkin-test-`):
+
+| Stack suffix | Environments |
+| --- | --- |
+| `e803dec0`, `c7a8fefe` | `smoke` |
+| `e322d83d`, `e322d83d-permanent` | `graph` |
+| `d1-e4c42bec` | `migration` |
+| `do-c9255534`, `do-9d742417`, `do-a5c6a39d` | `objects` |
+| `r2-ef98c518` | `preview-a`, `preview-b` |
+| `astro-e6817058` | `preview` |
+| `spa-e819df97`, `ssr-326f06dd` | `framework` |
+
+The protected-site's three environments were removed before its isolated backend
+`renkin-test-site-fef366d3-state-76129b` was removed. Independent provider inspection
+confirmed that backend and its Durable Object namespace absent, with the canonical
+`renkin-test-state-v2` still present. No custom-domain associations or retained
+certificate packs matched the exact `site-fef366d3`, `astro-e6817058`, or
+`ssr-326f06dd` hostnames under the authorized test domain. Temporary certificate-read
+tokens were revoked. No independent physical-ID inventory of every other resource
+is claimed.
+
+Release acceptance remains incomplete. The remaining criteria are successful
+installed protected-site and SSR custom-host checks, the two authorized email
+suites once approval arrives, their final cleanup audit, and the final release
+review. Ticket #14 remains open and the publication warning remains in place;
+this record does not authorize registry publication.
