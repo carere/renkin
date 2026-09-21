@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": false,
   "description": "The sole future published package: public API and CLI.",
+  "license": "Apache-2.0",
   "type": "module",
   "exports": {
     ".": "./src/contexts/root/api.ts",
@@ -21,6 +22,7 @@
     "dist"
   ],
   "scripts": {
+    "prepack": "bun -e 'throw new Error(\"Source workspace is not the release artifact. Run bun moon run renkin:pack, then use the generated tarball.\")'",
     "prepublishOnly": "bun -e 'throw new Error(\"Scaffold only: implement and validate the release build before publishing\")'"
   },
   "dependencies": {
@@ -32,12 +34,14 @@
     "@renkin/websites": "workspace:*"
   },
   "devDependencies": {
+    "@babel/parser": "^7.29.9",
     "@cloudflare/workers-types": "^5.20260921.1",
     "@effect/vitest": "^4.0.0-rc.115",
     "@tanstack/solid-query": "^5.103.2",
     "@tanstack/solid-router": "^1.170.36",
     "@tanstack/solid-start": "^1.168.54",
     "aws4fetch": "^1.0.20",
+    "esbuild": "^0.28.2",
     "playwright": "^1.63.0",
     "solid-js": "^1.9.15",
     "vite": "^8.3.0",

@@ -1,5 +1,6 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import type { Miniflare, WorkerOptions } from "miniflare";
+import { LocalWorkflowRecoveryError } from "../../models/local-workflow-recovery-error.ts";
 import type { NativeWorkflow } from "../../models/workflow-client.ts";
 import type { LocalWorkflow } from "./local-background.ts";
 import type { WorkflowJournal, WorkflowRecoveryRecord } from "./workflow-journal.ts";
@@ -13,9 +14,6 @@ export const workflowRecoveryWorker = (
   compatibilityDate: "2026-07-30",
   workflows: { ...workflows },
 });
-export class LocalWorkflowRecoveryError extends Error {
-  readonly name = "LocalWorkflowRecoveryError";
-}
 const terminal = (status: string) => ["complete", "errored", "terminated"].includes(status);
 const pauseSettled = async (instance: Awaited<ReturnType<NativeWorkflow["get"]>>) => {
   const deadline = Date.now() + 5000;
