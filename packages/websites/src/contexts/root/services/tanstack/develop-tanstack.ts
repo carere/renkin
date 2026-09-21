@@ -1,3 +1,4 @@
+import { mkdir, realpath } from "node:fs/promises";
 import { resolve } from "node:path";
 import type {
   WorkerDevelopmentContext,
@@ -11,9 +12,14 @@ export const developTanStack = async (
   options: TanStackOptions,
   context: WorkerDevelopmentContext,
 ): Promise<WorkerDevelopmentSession> => {
+  // Each graph frontend owns its optimizer output; canonical paths also avoid
+  // macOS /var versus /private/var identities invalidating optimized module URLs.
+  await mkdir(context.directory, { recursive: true });
+  const cacheRoot = await realpath(context.directory);
   const bridge = createPlatformBridge();
   const server = await createServer({
-    root: options.root,
+    root: await realpath(options.root),
+    cacheDir: resolve(cacheRoot, "vite"),
     ...(options.configFile ? { configFile: resolve(options.root, options.configFile) } : {}),
     plugins: [bridge.plugin],
     server: {

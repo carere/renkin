@@ -14,3 +14,15 @@ tasks:
     command: vitest run --config vitest.cloud.config.ts
     options:
       cache: false
+  build:
+    command: bun --no-env-file release.ts build
+    options:
+      cache: false
+  pack:
+    command: bun --no-env-file release.ts pack
+    options:
+      cache: false
+  test-release:
+    command: bun --bun vitest run --config vitest.release.config.ts
+    options:
+      cache: false

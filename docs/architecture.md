@@ -1,10 +1,11 @@
 # Renkin architecture
 
 Renkin is an Effect-based infrastructure toolkit for Cloudflare. This document
-records the agreed ownership and future feature scope. The repository currently
-contains an initial Worker, lifecycle, state, SDK and runtime implementation.
-See [the Worker slice](worker-first-slice.md) for current capabilities and limits;
-remaining resources, frameworks and release packaging are subsequent work.
+records ownership and the first-release scope. Workers, protected storage, native
+background services, lifecycle recovery, local/cloud state, website integrations
+and public test helpers are implemented. The staged release artifact and isolated
+consumer checks are described in [release validation](release-validation.md);
+that record distinguishes completed checks from pending release acceptance.
 
 ## Workspace ownership
 
@@ -41,22 +42,21 @@ are deferred. Node may still be used by repository tools or build dependencies;
 that does not make it a supported runtime for Renkin's public CLI.
 
 Only `packages/renkin` is publishable. All other packages and apps are private.
-Planned entry points include `renkin/cloudflare`, `renkin/vite` and
-`renkin/testing`, alongside the root API and CLI. No exports point at nonexistent
-files in this scaffold.
+The public entries are the root API, `renkin/cloudflare`, `renkin/worker`,
+`renkin/testing`, `renkin/durable-object`, `renkin/workflow`, `renkin/vite`,
+`renkin/astro`, and the Bun CLI.
 
-The eventual release build must include the internal JavaScript and TypeScript
-declarations required by those entry points. Bundle or copy the internal code
-and resolve or rewrite private workspace imports in both JavaScript and type
-declarations. Consumers must never need an unpublished `@renkin/*` package.
-Workspace source resolution is a development convenience, not release validation.
+The release assembler preserves the production module layout, emits ESM JavaScript
+and declarations, and rewrites private workspace imports and package-relative
+runtime assets using parsed syntax positions. External dependencies remain external;
+consumers need no unpublished `@renkin/*` package. Host-only framework loaders remain
+lazy so ordinary Worker bundling does not traverse native build tooling.
 
-Before release, pack the actual artifact and install it into an isolated consumer
-outside the monorepo and its workspace resolution. Verify runtime imports, every
-public subpath, declaration resolution, the CLI, and representative Vite/framework
-usage. Inspect the tarball and its dependency metadata for private package leaks.
-The build approach and supported output formats remain open. Publishing is guarded
-until that build and consumer validation exist.
+Workspace source exports are a development convenience. The release task creates a
+separate standalone stage, packs it, and validates the actual installed tarball
+outside workspace resolution on supported systems. The source workspace keeps a
+permanent wrong-target pack guard; its manifest is never temporarily rewritten.
+See [release validation](release-validation.md) for artifact identity and results.
 
 Effect must be a compatible peer dependency of the published API, with a matching
 development dependency for tests. The foundation uses matching caret ranges for Effect and
@@ -153,7 +153,7 @@ required; see [the fresh-start decision](adr/0002-start-with-fresh-infrastructur
 
 ## License
 
-Renkin will use Apache 2.0. Retain applicable third-party licenses and notices for
+Renkin uses Apache 2.0; LICENSE, NOTICE and source provenance are included in the artifact. Retain applicable third-party licenses and notices for
 copied code, record its source revision, and mark modifications as required.
 License selection does not complete the per-file review or release notices.
 
@@ -165,7 +165,7 @@ the required behavior and cleans up. These checks complement the isolated
 package installation checks above; neither local emulation nor source inspection
 alone proves cloud compatibility.
 
-## Initial future capability scope
+## First-release capability scope
 
 The initial scope is Delimoov's actual requirements plus TanStack Start with
 Solid SPA/SSR and Astro static/SSR validation, including the local fork's added behavior.
@@ -184,15 +184,15 @@ validation needs are:
   including Delimoov's permanent review Worker.
 - Local/cloud state, preview environments and build caching.
 
-This list is future implementation scope, not a claim that the setup implements
-or deploys any resources. The example apps should eventually exercise the SPA,
-SSR and SSG paths, including Astro server rendering; package tests should verify
-their owning behavior locally. `apps/example-static` exercises Astro static output,
+This list defines the selected behavior rather than all capabilities of each platform.
+The example apps exercise SPA, SSR and SSG paths; package-owned tests and separate
+real-cloud suites validate their owning behavior. `apps/example-static` exercises Astro static output,
 and `apps/website` is the runnable Astro SSR fixture with native bindings and sessions.
 
-## Open decisions
+## Deliberate limits
 
-- Release bundler, declaration assembly and isolated consumer checks.
-- Detailed engine, state, lifecycle and resource interfaces.
-- Framework versions and integration contracts when the apps are implemented.
-- Required source and third-party notices before any extraction or release.
+Node.js and Windows are not supported Renkin execution environments. Remote artifact
+caching, implicit account/profile selection and arbitrary Alchemy capabilities are
+outside this release. Exact resource, framework and recovery limits are documented
+in the linked usage guides and accepted ADRs. Release validation does not authorize
+publishing a package or deploying permanent infrastructure.

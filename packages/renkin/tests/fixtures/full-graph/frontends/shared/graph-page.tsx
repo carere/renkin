@@ -1,9 +1,11 @@
 import { useMutation, useQuery } from "@tanstack/solid-query";
 import { Effect } from "effect";
-import { createSignal, ErrorBoundary, For, Suspense } from "solid-js";
+import { createSignal, ErrorBoundary, For, onMount, Suspense } from "solid-js";
 import { GraphApi, type GraphContext } from "./context.ts";
 
 export const GraphPage = (props: { title: string; context: GraphContext }) => {
+  const [ready, setReady] = createSignal(false);
+  onMount(() => setReady(true));
   const [authenticated, setAuthenticated] = createSignal(false);
   const [id, setId] = createSignal("order-1");
   const login = useMutation(() => ({
@@ -62,7 +64,7 @@ export const GraphPage = (props: { title: string; context: GraphContext }) => {
     <main>
       <h1>{props.title}</h1>
       <p>Connected order workflow</p>
-      <button type="button" onClick={() => login.mutate()}>
+      <button type="button" disabled={!ready()} onClick={() => login.mutate()}>
         Sign in locally
       </button>
       <p data-testid="auth">{authenticated() ? "Signed in" : "Signed out"}</p>
