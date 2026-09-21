@@ -29,8 +29,9 @@ const defaults = [
   ".git",
   ".moon/",
   ".git/",
-  "node_modules/",
+  "node_modules",
   ".renkin/",
+  ".renkin-*/",
   ".wrangler/",
   ".astro/",
   ".tanstack/",
@@ -88,16 +89,21 @@ const ancestors = async (root: string) => {
 export const fingerprint = async (producer: BuildProducer) => {
   const root = await realpath(resolve(producer.root));
   const options = producer.reuse || {};
+  const dependencies = new Set(await workspaceInputs(root));
+  const explicit = new Set((options.inputs ?? []).map((path) => resolve(root, path)));
   const inputs = [
-    ...new Set([
-      root,
-      ...(options.inputs ?? []).map((path) => resolve(root, path)),
-      ...(await ancestors(root)),
-      ...(await workspaceInputs(root)),
-    ]),
+    ...new Set([root, ...explicit, ...(await ancestors(root)), ...dependencies]),
   ].sort();
   const source = await Promise.all(
-    inputs.map(async (path) => [path, await inventory(path, options.exclude ?? [])]),
+    inputs.map(async (path) => [
+      path,
+      await inventory(path, [
+        ...(dependencies.has(path) && path !== root && !explicit.has(path)
+          ? ["/tests/", "/test/"]
+          : []),
+        ...(options.exclude ?? []),
+      ]),
+    ]),
   );
   return digest(
     canonicalBuildValue({

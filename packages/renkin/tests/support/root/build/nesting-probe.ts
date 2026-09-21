@@ -42,6 +42,10 @@ try {
   assert.ok(source.includes("__renkinRequirements"));
   assert.ok(!source.includes('import server from "./renkin-entry-'));
   assert.deepEqual(external.dependencies, site.dependencies);
+  await rm(resolve(root, ".renkin/build-result.json"));
+  const restored = await buildAstro(external);
+  assert.equal(await readFile(restored.entry, "utf8"), source);
+  assert.ok(JSON.parse(await readFile(resolve(root, ".renkin/build-result.json"), "utf8")).entry);
   console.log("Public Moon → Bun → buildAstro nesting and verified reuse passed.");
 } finally {
   await rm(temporary, { recursive: true, force: true });

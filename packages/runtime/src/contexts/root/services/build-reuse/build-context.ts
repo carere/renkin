@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import type { WorkerBuildResult } from "../../models/build-result.ts";
 import type { BuildProducer, WorkerBuildContext } from "../../models/build-reuse.ts";
 import { captureArtifact, saveArtifact } from "./artifact.ts";
-import { fingerprint } from "./fingerprint.ts";
+import { canonicalBuildValue, digest, fingerprint } from "./fingerprint.ts";
 import { withBuildOutput } from "./output-lock.ts";
 
 interface Receipt {
@@ -13,12 +13,17 @@ interface Receipt {
   readonly original: WorkerBuildResult;
   readonly snapshot: WorkerBuildResult;
   readonly hash: string;
+  readonly controls: string;
 }
 
 const absent = (error: unknown) =>
   error instanceof Error && "code" in error && error.code === "ENOENT";
 
-const readReceipt = async (path: string, input: string): Promise<WorkerBuildResult | undefined> => {
+const readReceipt = async (
+  path: string,
+  input: string,
+  producer: BuildProducer,
+): Promise<WorkerBuildResult | undefined> => {
   let receipt: Receipt;
   try {
     receipt = JSON.parse(await readFile(path, "utf8")) as Receipt;
@@ -27,13 +32,14 @@ const readReceipt = async (path: string, input: string): Promise<WorkerBuildResu
     throw error;
   }
   if (
-    receipt.schema !== 1 ||
+    receipt?.schema !== 1 ||
     receipt.input !== input ||
     !receipt.original?.entry ||
     !receipt.snapshot?.entry
   )
     return;
   try {
+    if (receipt.controls !== (await controlDigest(producer))) return;
     const original = await captureArtifact(receipt.original);
     if (original.hash !== receipt.hash) return;
     const snapshot = await captureArtifact(receipt.snapshot);
@@ -42,6 +48,15 @@ const readReceipt = async (path: string, input: string): Promise<WorkerBuildResu
     if (!absent(error)) throw error;
   }
 };
+
+const controlDigest = async (producer: BuildProducer) =>
+  digest(
+    canonicalBuildValue(
+      await Promise.all(
+        (producer.outputFiles ?? []).map(async (path) => [path, digest(await readFile(path))]),
+      ),
+    ),
+  );
 
 const writeReceipt = async (path: string, receipt: Receipt) => {
   const temporary = `${path}.${randomUUID()}.tmp`;
@@ -65,7 +80,7 @@ const resolveProducer = async (producer: BuildProducer, input: string) => {
         "Build inputs changed while waiting for output ownership. Retry the operation.",
       );
     const receipt = resolve(outputRoot, ".renkin/build", `${input}.json`);
-    const hit = reusable ? await readReceipt(receipt, input) : undefined;
+    const hit = reusable ? await readReceipt(receipt, input, producer) : undefined;
     if (hit) return hit;
     const original = await producer.build({ environment });
     const artifact = await captureArtifact(original, outputRoot);
@@ -73,7 +88,14 @@ const resolveProducer = async (producer: BuildProducer, input: string) => {
       throw new Error("Build inputs changed during compilation. No reusable result was recorded.");
     const snapshot = await saveArtifact(outputRoot, input, original, artifact);
     if (reusable)
-      await writeReceipt(receipt, { schema: 1, input, original, snapshot, hash: artifact.hash });
+      await writeReceipt(receipt, {
+        schema: 1,
+        input,
+        original,
+        snapshot,
+        hash: artifact.hash,
+        controls: await controlDigest(producer),
+      });
     return snapshot;
   });
 };

@@ -19,6 +19,8 @@ Astro static and server-rendered sites include native bindings and protected ses
 see [Astro usage](docs/astro-sites.md).
 TanStack Start Solid SPA/SSR builds, native development bindings and runnable
 examples are described in [TanStack sites](docs/tanstack-sites.md).
+Validated local artifact reuse and external Moon/Bun build commands are described
+in [Build reuse](docs/build-reuse.md).
 Additional integrations and the release artifact remain in progress. See the
 [architecture](docs/architecture.md) for the agreed workspace boundaries and open
 decisions.

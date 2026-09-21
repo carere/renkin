@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -60,7 +60,7 @@ const compileTanStack = async (options: TanStackOptions): Promise<WorkerBuildRes
   const directory = await mkdtemp(resolve(tmpdir(), "renkin-tanstack-build-"));
   try {
     const manifest = resolve(directory, "build.json");
-    await runBuild(options, directory, manifest);
+    await runBuild({ ...options, root: await realpath(options.root) }, directory, manifest);
     const artifact = JSON.parse(await readFile(manifest, "utf8")) as WorkerBuildResult;
     const result: WorkerBuildResult = {
       ...artifact,

@@ -8,10 +8,11 @@ export const withBuildCommand = <Site extends WorkerResource>(
   options: BuildCommandOptions,
 ): Site => {
   const command = buildCommand(options);
+  const { build: _build, ...workerOptions } = site.options;
   return {
     ...site,
     options: {
-      ...site.options,
+      ...workerOptions,
       builder: {
         ...site.options.builder,
         build: command.build,

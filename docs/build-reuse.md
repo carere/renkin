@@ -23,6 +23,10 @@ const site = tanstackStart("console", {
 });
 ```
 
+Automatically discovered dependency packages exclude their `tests` and `test`
+directories. The application root and explicit `reuse.inputs` do not have this
+exclusion. Arbitrary imports outside known roots are not automatically discovered.
+
 A reusable result requires both the original compiler outputs and the captured
 snapshot to match the previous complete inventory. Removing a chunk, effective
 asset, routing file or source map triggers compilation. Cache hits still run
@@ -89,3 +93,13 @@ by `worker({ builder: ... })`. Commands use argv rather than a shell, receive on
 standard process paths plus explicit `environment`, and write their result to the
 manifest file. Relative result paths resolve against `cwd`. Compiler stdout and
 stderr are diagnostics on stderr, preserving the CLI's JSON stdout channel.
+Missing or changed command manifests invalidate the command receipt as well as
+missing or changed artifact files.
+
+The maintained public tests run real Solid SPA/SSR and Astro static/SSR compilers,
+check separate binding wrappers with one raw compilation, change shared source,
+lock/configuration/public files and stage values, and remove emitted assets and
+routing controls. Filesystem tests cover failed builds, concurrent stages,
+corrupted captures, missing source maps and contention with another process. The
+public external-command test executes Moon → Bun → `buildAstro` and restores a
+deleted manifest without recursive lock contention.

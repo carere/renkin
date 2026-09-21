@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { readFile, rm } from "node:fs/promises";
-import { resolve } from "node:path";
+import { relative, resolve } from "node:path";
 import type { BuildCommandOptions } from "../../models/build-command.ts";
 import type { WorkerBuildResult } from "../../models/build-result.ts";
 import type { WorkerBuildRecipe } from "../../models/worker-builder.ts";
@@ -36,7 +36,20 @@ export const buildCommand = (options: BuildCommandOptions): WorkerBuildRecipe =>
         environment: options.environment ?? {},
         values: options.values ?? null,
       },
-      ...(options.reuse === undefined ? {} : { reuse: options.reuse }),
+      reuse:
+        options.reuse === false
+          ? false
+          : {
+              ...options.reuse,
+              exclude: [
+                ...(options.reuse?.exclude ?? []),
+                relative(
+                  resolve(options.cwd, options.root ?? "."),
+                  resolve(options.cwd, options.manifest),
+                ),
+              ],
+            },
+      outputFiles: [resolve(options.cwd, options.manifest)],
       async build({ environment }) {
         const manifest = resolve(options.cwd, options.manifest);
         await rm(manifest, { force: true });

@@ -29,6 +29,8 @@ export interface BuildProducer {
   readonly reuse?: BuildReuseOptions | false;
   /** Disable receipts for opaque callbacks while retaining safe capture/output ownership. */
   readonly cacheable?: boolean;
+  /** Additional producer outputs, such as an external command manifest. */
+  readonly outputFiles?: readonly string[];
   build(context: {
     readonly environment: Readonly<Record<string, string>>;
   }): Promise<WorkerBuildResult>;
