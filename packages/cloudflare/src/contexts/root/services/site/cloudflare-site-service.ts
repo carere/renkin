@@ -102,7 +102,7 @@ const destination = ({ client, token }: Options): ResourceService => ({
         headers: (settings.headers ?? {}) as Record<string, string>,
       },
     } satisfies DestinationInput;
-    const observe = async () => (await Effect.runPromise(client.listDestinations())).result;
+    const observe = () => allDestinations(client);
     let observed = (await observe()).find((item) =>
       previous ? item.slug === previous.physicalId : item.name === name,
     );
@@ -143,7 +143,7 @@ const destination = ({ client, token }: Options): ResourceService => ({
     return destinationOutput(observed, name);
   },
   remove: async (resource) => {
-    const observed = (await Effect.runPromise(client.listDestinations())).result.find(
+    const observed = (await allDestinations(client)).find(
       (item) => item.slug === resource.physicalId,
     );
     if (!observed) return;
@@ -196,4 +196,13 @@ const destinationOutput = (
     enabled: observed.enabled,
     scripts: observed.scripts,
   });
+};
+
+const allDestinations = async (client: Options["client"]) => {
+  const values = [];
+  for (let page = 1; ; page++) {
+    const result = await Effect.runPromise(client.listDestinations(page));
+    values.push(...result.result);
+    if (page >= (result.resultInfo?.totalPages ?? page)) return values;
+  }
 };
