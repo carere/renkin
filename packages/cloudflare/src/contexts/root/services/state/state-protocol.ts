@@ -21,16 +21,19 @@ export interface CoordinatorRequest {
   readonly request?: GatewayRequest;
   readonly decision?: ReconciliationDecision;
 }
+// Workers and Bun support native conversion, avoiding whole-checkpoint binary strings.
 export const encodeBytes = (bytes: Uint8Array): string => {
+  if (typeof bytes.toBase64 === "function") return bytes.toBase64();
+  // Older host engines need a fallback. Multiples of three avoid padding between chunks.
   const parts: string[] = [];
-  for (let offset = 0; offset < bytes.length; offset += 32_768)
-    parts.push(String.fromCharCode(...bytes.subarray(offset, offset + 32_768)));
-  return btoa(parts.join(""));
+  for (let offset = 0; offset < bytes.length; offset += 32_766)
+    parts.push(btoa(String.fromCharCode(...bytes.subarray(offset, offset + 32_766))));
+  return parts.join("");
 };
 export const decodeBytes = (value: string): Uint8Array<ArrayBuffer> => {
+  if (typeof Uint8Array.fromBase64 === "function") return Uint8Array.fromBase64(value);
   const binary = atob(value);
   const bytes = new Uint8Array(binary.length);
-  // Avoid materializing an intermediate array for every byte of a large checkpoint.
   for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
   return bytes;
 };

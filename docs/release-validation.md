@@ -204,11 +204,12 @@ same cloud-state error. The first failed graph checkpoint was 21,298,604 bytes,
 pending Storefront bindings; the second was 15,010,028 bytes, pending Auth bindings.
 Both were subsequently readable with no active lease or uncertain provider
 operation. The first was recovered and removed through the installed public API,
-with environment/output absence verified. The second recovery cleanup also failed with cloud state unavailable. Its exact
-`renkin-test-graph-cbc3e382/full-graph` scope remains unresolved and may retain
-resources; ownership state and the isolated consumer were preserved. No cleanup
-claim is made for that scope. These failures do not establish a provider state-size
-limit.
+with environment/output absence verified. The second recovery initially failed too,
+but later completed through the installed public API after bounded diagnostics;
+`renkin-test-graph-cbc3e382/full-graph` now has verified environment/output absence.
+A temporary diagnostic tail was removed. The canonical backend's code, secrets,
+namespace and ownership state were preserved. These failures alone did not
+establish a provider state-size limit.
 
 Twelve complete installed suites (13 test cases) have passed. Full-graph acceptance
 is incomplete: its native flow passed, but the cron-only deployment return,
@@ -220,3 +221,29 @@ local startup (SSR, then the full graph), despite the earlier 219-test pass and
 successful release-artifact CI. Investigation is separate from the cloud failures.
 Ticket #14 and release acceptance remain open; the publication warning stays in
 place and no registry publication has occurred.
+
+### Repeated large-checkpoint regression
+
+An isolated state-only reproducer consistently stalled after five successful
+20 MiB encrypted write/read cycles. Node transport, buffered request forwarding,
+explicit storage synchronization and smaller SQLite transaction batches did not
+resolve it. The 10 MiB case passed twenty cycles; plaintext and same-request crypto
+controls also passed. No CPU/memory exception was reported, so the precise provider
+admission mechanism remains unproven.
+
+Native Base64 conversion reduced measured temporary host allocations and passed
+twenty full 20 MiB encrypted write/read cycles against an isolated real backend.
+It preserves the version-one envelope, authenticated stack/environment context
+and atomic SQLite checkpoint/receipt transaction. All diagnostic backends, tails
+and namespaces were removed. The production change retains a bounded standard
+Base64 fallback for host engines without the native methods. Wire-format and
+legacy-envelope tests run on both Node and Bun; the opt-in maintained provider
+regression is documented in `packages/cloudflare/README.md`. This source change
+requires fresh release-artifact validation; it does not alter the provenance or
+previous results of archive `ad218c4191b3f24e6f1c0ef9e1572f07cdcc7662ba5beedbd0c5843aec5d54fb`.
+
+The maintained test then passed against the uninstrumented production coordinator:
+twenty 20 MiB checkpoints, lease inspection, empty-state removal and exact temporary
+Worker/namespace cleanup, in 53.58 seconds. Focused validation also passed 14 unit
+tests on Node, the same 14 on Bun, 34 state integration tests, TypeScript, Biome and
+Knip. No diagnostic batching, request-forwarding or phase logging entered production.
