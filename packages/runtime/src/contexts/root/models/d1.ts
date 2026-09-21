@@ -5,10 +5,18 @@ export interface D1Requirement {
   readonly id: string;
 }
 export interface D1Result<T = Record<string, unknown>> {
-  readonly success: boolean;
+  readonly success: true;
   readonly results: T[];
-  readonly meta: Record<string, unknown>;
-  readonly error?: string;
+  readonly meta: Record<string, unknown> & {
+    duration: number;
+    size_after: number;
+    rows_read: number;
+    rows_written: number;
+    last_row_id: number;
+    changed_db: boolean;
+    changes: number;
+  };
+  readonly error?: never;
 }
 export interface NativeD1PreparedStatement {
   bind(...values: unknown[]): NativeD1PreparedStatement;

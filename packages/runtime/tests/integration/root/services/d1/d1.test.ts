@@ -1,7 +1,15 @@
+import type { D1Database as CloudflareD1Database } from "@cloudflare/workers-types";
 import { expect, it } from "@effect/vitest";
+import { drizzle } from "drizzle-orm/d1";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { Effect } from "effect";
 import { Miniflare } from "miniflare";
 import { d1Client, guardD1, type NativeD1 } from "../../../../../src/contexts/root/models/d1.ts";
+
+const users = sqliteTable("users", {
+  id: integer("id").primaryKey(),
+  name: text("name").notNull(),
+});
 
 it.effect("preserves real native batch order, binding provenance and rollback", () =>
   Effect.promise(async () => {
@@ -44,6 +52,35 @@ it.effect("preserves real native batch order, binding provenance and rollback", 
           client.first<{ value: string }>("SELECT value FROM data WHERE value = ?", ["two"]),
         ),
       ).toEqual({ value: "two" });
+    } finally {
+      await mf.dispose();
+    }
+  }),
+);
+
+it.effect("native handles work with the actual Drizzle D1 adapter", () =>
+  Effect.promise(async () => {
+    const mf = new Miniflare({
+      modules: true,
+      script: "export default {fetch(){return new Response('ok')}}",
+      compatibilityDate: "2026-07-30",
+      d1Databases: { DB: "drizzle-db" },
+    });
+    try {
+      const client = d1Client((await mf.getD1Database("DB")) as unknown as NativeD1, "DB");
+      const native: CloudflareD1Database = client.native;
+      await native.exec("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT NOT NULL)");
+      const database = drizzle(native);
+      await database.insert(users).values({ id: 1, name: "Ada" });
+      expect(await database.select().from(users).all()).toEqual([{ id: 1, name: "Ada" }]);
+      const result = await database.batch([
+        database.insert(users).values({ id: 2, name: "Grace" }),
+        database.select().from(users).orderBy(users.id),
+      ]);
+      expect(result[1]).toEqual([
+        { id: 1, name: "Ada" },
+        { id: 2, name: "Grace" },
+      ]);
     } finally {
       await mf.dispose();
     }
