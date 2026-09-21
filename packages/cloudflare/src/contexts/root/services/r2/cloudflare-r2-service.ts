@@ -80,6 +80,16 @@ class CloudflareR2Service implements ResourceService {
   };
   readonly apply: ResourceService["apply"] = async (definition, allocationId, previous) => {
     const value = properties(definition);
+    if (previous && allocationId === previous.physicalId) {
+      const original = properties(previous.definition);
+      if (
+        value.jurisdiction !== original.jurisdiction ||
+        value.locationHint !== original.locationHint
+      )
+        throw new ResourceOperationError(
+          "R2 jurisdiction and location changes require explicit resource replacement.",
+        );
+    }
     const name = allocationId.toLowerCase().replace(/[^a-z0-9-]/g, "-");
     let found =
       previous && allocationId === previous.physicalId

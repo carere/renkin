@@ -101,7 +101,7 @@ class CloudflareR2TokenService implements ResourceService {
       resources,
     );
     const saved = previous ? record(previous.outputs) : undefined;
-    const name = saved?.name ?? `renkin-${allocation}`;
+    const name = saved?.name ?? allocation;
     if (typeof name !== "string")
       throw new ResourceOperationError("R2 token ownership name is missing.");
     const desired: AccountTokenInput = {

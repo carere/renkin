@@ -9,6 +9,8 @@ export interface R2TokenOptions {
   readonly expiresAt: string;
   readonly allowDelete?: boolean;
   readonly retain?: boolean;
+  /** Explicit rotation trigger, for example after replacing a bucket with the same logical ID. */
+  readonly identity?: string;
 }
 export interface R2TokenResource extends ResourceDefinition, R2TokenRequirement {
   readonly type: "cloudflare.r2-token";
@@ -28,7 +30,7 @@ export const r2Token = (id: string, options: R2TokenOptions): R2TokenResource =>
   return {
     id,
     type: "cloudflare.r2-token",
-    identity: JSON.stringify([buckets, options.permissions, options.expiresAt]),
+    identity: options.identity ?? JSON.stringify([buckets, options.permissions, options.expiresAt]),
     properties: { buckets, permissions: options.permissions, expiresAt: options.expiresAt },
     dependencies: buckets,
     secretOutputs: true,

@@ -14,7 +14,7 @@ const fixture = (existing = false, failed = false) =>
   Effect.acquireRelease(
     Effect.promise(async () => {
       const writes: GatewayRequest[] = [];
-      const token = { id: "provider-id", name: "renkin-allocation" };
+      const token = { id: "provider-id", name: "allocation" };
       const server = createServer((request, response) => {
         const path = new URL(request.url ?? "/", "http://local").pathname;
         let result: unknown = {};
@@ -103,7 +103,7 @@ it.effect(
       expect(
         JSON.parse(Buffer.from(test.writes[1]?.bodyBase64 ?? "", "base64").toString()),
       ).toEqual({
-        name: "renkin-allocation",
+        name: "allocation",
         expires_on: "2099-01-01T00:00:00Z",
         policies: [
           {
@@ -157,7 +157,7 @@ it.effect("revokes only the recorded account token and refuses ownership mismatc
     yield* Effect.promise(() =>
       test.service.remove({
         ...resource,
-        outputs: { id: "provider-id", name: "renkin-allocation" },
+        outputs: { id: "provider-id", name: "allocation" },
       }),
     );
     expect(test.writes[0]?.path).toBe("/accounts/account/tokens/provider-id");
