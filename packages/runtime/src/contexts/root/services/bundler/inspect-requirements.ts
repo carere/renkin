@@ -1,4 +1,4 @@
-import { Log, LogLevel, Miniflare } from "miniflare";
+import { Log, LogLevel, Miniflare, supportedCompatibilityDate } from "miniflare";
 import type { BindingRequirement, Requirements } from "../../models/binding.ts";
 
 const inspect = (value: unknown): Requirements => {
@@ -15,7 +15,11 @@ const inspect = (value: unknown): Requirements => {
       typeof item.id !== "string"
     )
       throw new Error("Invalid Worker requirement.");
-    if (item.type !== "cloudflare.kv" && item.type !== "cloudflare.worker-reference")
+    if (
+      item.type !== "cloudflare.kv" &&
+      item.type !== "cloudflare.d1" &&
+      item.type !== "cloudflare.worker-reference"
+    )
       throw new Error("Unsupported Worker requirement.");
     const entrypoint = "entrypoint" in item ? item.entrypoint : undefined;
     if (entrypoint !== undefined && typeof entrypoint !== "string")
@@ -77,7 +81,10 @@ export const inspectRequirements = async (
       })),
     ],
     modulesRoot: "/",
-    compatibilityDate,
+    compatibilityDate:
+      compatibilityDate > supportedCompatibilityDate
+        ? supportedCompatibilityDate
+        : compatibilityDate,
     compatibilityFlags: [...compatibilityFlags],
     outboundService: () =>
       new Response("Metadata inspection cannot access the network.", { status: 403 }),
