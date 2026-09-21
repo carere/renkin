@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/solid-router";
-import { createSignal } from "solid-js";
+import { createSignal, onMount } from "solid-js";
 import { readCount } from "../contexts/root/server/read-count.ts";
 export const Route = createFileRoute("/")({ component: Home, loader: () => readCount() });
 function Home() {
+  const [ready, setReady] = createSignal(false);
+  onMount(() => setReady(true));
   const [clicks, setClicks] = createSignal(0);
   const stored = Route.useLoaderData();
   return (
@@ -12,7 +14,7 @@ function Home() {
       <p id="native-value">
         Stored count: {stored().value}; stage: {stored().stage}
       </p>
-      <button type="button" onClick={() => setClicks((value) => value + 1)}>
+      <button type="button" disabled={!ready()} onClick={() => setClicks((value) => value + 1)}>
         Clicks: {clicks()}
       </button>
     </main>

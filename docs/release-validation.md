@@ -84,3 +84,16 @@ maintained artifact test passed after those changes.
 Linux CI and the accumulated installed real-cloud suite are pending at this
 checkpoint. Source-workspace cloud results are not claimed as installed-artifact
 results. The scaffold publication warning remains until release acceptance finishes.
+
+The merged candidate's extended macOS harness passed in 34.39s, including an actual
+installed Moon → Bun → `buildAstro` nested command, reuse of its result, recovery of
+a deleted command manifest, and Solid build-snapshot invalidation after deleting a
+captured source map. The standalone Moon fixture initializes its own empty Git
+repository; it has no link to the source checkout's repository or dependencies.
+
+To recheck an already validated CI tarball without repacking, set
+`RENKIN_RELEASE_ARCHIVE` to its absolute path before running the maintained release
+test. Its adjacent `artifact.json` must match the tarball digest and record a clean
+source revision. This permits the Linux-produced bytes to be checked on macOS and
+used unchanged for the later cloud suite. Per-OS preliminary builds have separate
+identities and are not represented as the same artifact.

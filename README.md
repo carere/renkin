@@ -1,7 +1,7 @@
 # Renkin
 
 An Effect-based infrastructure toolkit for Cloudflare. This repository currently
-provides a Bun/Moon monorepo and an initial Worker deployment slice: ordinary and
+provides a Bun/Moon monorepo and a Worker deployment toolkit: ordinary and
 Effect HTTP Workers, local hot reload, encrypted shared state, lifecycle recovery,
 and JSON inspection APIs. See [Worker usage and validation](docs/worker-first-slice.md).
 Protected D1 databases support typed and native bindings, persistent local storage,
@@ -21,9 +21,9 @@ TanStack Start Solid SPA/SSR builds, native development bindings and runnable
 examples are described in [TanStack sites](docs/tanstack-sites.md).
 Validated local artifact reuse and external Moon/Bun build commands are described
 in [Build reuse](docs/build-reuse.md).
-Additional integrations and the release artifact remain in progress. See the
-[architecture](docs/architecture.md) for the agreed workspace boundaries and open
-decisions.
+The standalone release candidate, installed-consumer checks and validation status
+are described in [release validation](docs/release-validation.md). See the
+[architecture](docs/architecture.md) for workspace ownership and deliberate limits.
 
 ## Getting started
 
@@ -108,8 +108,8 @@ synchronization of that field is disabled.
 GitHub Actions runs the same checks, verifies Conventional Commits and PR titles,
 and checks for configuration drift. It needs no Cloudflare credentials. Review
 [AGENTS.md](AGENTS.md) and the individual `.agents/skills/*/SKILL.md` files for
-agent workflows. Apache 2.0 is the chosen project license; prepare its license
-file and applicable third-party notices before importing source or publishing.
+agent workflows. Apache 2.0 licensing, source provenance and external dependency notices are present
+in LICENSE, NOTICE, SOURCE_PROVENANCE.md and THIRD_PARTY_NOTICES.md.
 
 ## Remote cache credentials
 
@@ -149,10 +149,11 @@ are accepted and omitted from release notes. Before 1.0, automatic bumps stay
 below 1.0; choose the first stable release explicitly. Dry runs do not execute
 bump hooks.
 
-Versioning configuration does not complete the release build. Before publishing,
-implement and validate the build and isolated consumer checks described in
-[the architecture](docs/architecture.md), then replace the scaffold publish guard
-with the actual release checks and add deployment automation.
+Versioning does not publish a package. Build the standalone artifact with
+`bun moon run renkin:pack` and inspect its identity and the completed checks in
+[release validation](docs/release-validation.md). Source-workspace packing remains
+guarded; only the staged tarball is an intended distribution artifact. Registry
+publication requires separate authorization and is not part of validation.
 
 References: [Cocogitto configuration](https://docs.cocogitto.io/reference/config.html)
 [automatic versioning and hooks](https://docs.cocogitto.io/guide/bump.html),
