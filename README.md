@@ -4,6 +4,8 @@ An Effect-based infrastructure toolkit for Cloudflare. This repository currently
 provides a Bun/Moon monorepo and an initial Worker deployment slice: ordinary and
 Effect HTTP Workers, local hot reload, encrypted shared state, lifecycle recovery,
 and JSON inspection APIs. See [Worker usage and validation](docs/worker-first-slice.md).
+Protected D1 databases support typed and native bindings, persistent local storage,
+and name-based SQL or Drizzle migrations. See [D1 usage and migrations](docs/d1-migrations.md).
 Additional resources, framework integrations and the release artifact remain in
 progress. See the
 [architecture](docs/architecture.md) for the agreed workspace boundaries and open

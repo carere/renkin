@@ -13,8 +13,11 @@ export interface ResourceDefinition {
   readonly identity: string;
   readonly properties: Json;
   readonly dependencies?: readonly string[];
+  /** Binding references are resolved after provisioning; mutual Worker calls may cycle. */
+  readonly references?: readonly string[];
   readonly protection?: { readonly data: boolean; readonly allowDelete: boolean };
   readonly retain?: boolean;
+  readonly secretOutputs?: boolean;
 }
 
 export interface Output {
@@ -26,6 +29,8 @@ export interface Stack {
   readonly name: string;
   readonly resources: readonly ResourceDefinition[];
   readonly outputs?: Readonly<Record<string, Output>>;
+  /** Explicit identity-preserving moves inside this stack and environment. */
+  readonly renames?: readonly { readonly from: string; readonly to: string }[];
 }
 
 export const validateName = (name: string): void => {

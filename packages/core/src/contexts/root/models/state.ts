@@ -4,6 +4,8 @@ export interface ResourceState {
   readonly definition: ResourceDefinition;
   readonly physicalId: string;
   readonly outputs: Json;
+  /** Stable ownership proof across logical-ID renames. */
+  readonly ownershipId?: string;
 }
 
 export type ChangeKind = "create" | "update" | "replace" | "remove" | "retain" | "unchanged";
@@ -20,6 +22,7 @@ export interface PendingOperation {
   readonly physicalId: string;
   readonly phase: "apply" | "bindings" | "remove-previous" | "remove";
   readonly applied?: ResourceState;
+  readonly force?: boolean;
 }
 
 export interface EnvironmentState {
@@ -29,6 +32,7 @@ export interface EnvironmentState {
   readonly resources: Record<string, ResourceState>;
   readonly outputs: Record<string, Output>;
   pending?: PendingOperation;
+  bindings?: PendingOperation[];
 }
 
 export const emptyState = (stack: string, environment: string): EnvironmentState => ({
@@ -60,6 +64,9 @@ const definition = (value: unknown): boolean =>
   (value.dependencies === undefined ||
     (Array.isArray(value.dependencies) &&
       value.dependencies.every((id) => typeof id === "string"))) &&
+  (value.references === undefined ||
+    (Array.isArray(value.references) && value.references.every((id) => typeof id === "string"))) &&
+  (value.secretOutputs === undefined || typeof value.secretOutputs === "boolean") &&
   (value.retain === undefined || typeof value.retain === "boolean") &&
   (value.protection === undefined ||
     (record(value.protection) &&
@@ -71,7 +78,8 @@ const resource = (value: unknown): boolean =>
   definition(value.definition) &&
   typeof value.physicalId === "string" &&
   value.physicalId.length > 0 &&
-  json(value.outputs);
+  json(value.outputs) &&
+  (value.ownershipId === undefined || typeof value.ownershipId === "string");
 
 const pending = (value: unknown): boolean => {
   if (
@@ -81,6 +89,7 @@ const pending = (value: unknown): boolean => {
     value.physicalId.length === 0
   )
     return false;
+  if (value.force !== undefined && typeof value.force !== "boolean") return false;
   const change = value.change;
   if (
     typeof change.id !== "string" ||
@@ -136,7 +145,12 @@ export const decodeState = (text: string, stack: string, environment: string): E
         json(item.value) &&
         (item.secret === undefined || typeof item.secret === "boolean"),
     ) ||
-    (value.pending !== undefined && !pending(value.pending))
+    (value.pending !== undefined && !pending(value.pending)) ||
+    (value.bindings !== undefined &&
+      (!Array.isArray(value.bindings) ||
+        !value.bindings.every(
+          (op) => pending(op) && record(op) && op.phase !== "apply" && op.phase !== "remove",
+        )))
   ) {
     throw new Error("State contains an invalid resource, output or operation record.");
   }
