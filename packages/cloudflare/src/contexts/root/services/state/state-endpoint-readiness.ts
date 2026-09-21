@@ -16,6 +16,8 @@ export const waitForStateEndpoint = async (
       const remaining = deadline - Date.now();
       if (remaining > 0)
         await new Promise((resolve) => setTimeout(resolve, Math.min(500, remaining)));
+      // A shortened final sleep cannot fund another retry, even if the timer wakes early.
+      if (remaining <= 500) break;
       continue;
     }
     if (!response.ok) throw new Error("State endpoint readiness was rejected.");
