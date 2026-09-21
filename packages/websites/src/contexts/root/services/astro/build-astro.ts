@@ -52,6 +52,16 @@ const prepareConfiguration = async (
   return { root, directory, configPath };
 };
 
+// The adapter nests pages beneath base; the deployed asset root is its parent.
+const assetDirectory = (config: AstroConfig): string =>
+  resolve(
+    fileURLToPath(config.build.client),
+    ...config.base
+      .split("/")
+      .filter(Boolean)
+      .map(() => ".."),
+  );
+
 /** Runs the official adapter. High-level resource bindings are attached only after page generation. */
 export const buildAstro = async (
   options: AstroBuildOptions,
@@ -61,9 +71,12 @@ export const buildAstro = async (
   let resolvedConfig: AstroConfig | undefined;
   let clientDirectory: string | undefined;
   await build({
+    logLevel: "silent",
     ...options.config,
     root,
-    ...(options.configFile === undefined ? {} : { configFile: options.configFile }),
+    ...(options.configFile === undefined
+      ? {}
+      : { configFile: options.configFile === false ? false : resolve(root, options.configFile) }),
     output: options.output,
     ...(options.output === "static" || options.sessionKVBindingName === false
       ? { session: false }
@@ -86,7 +99,7 @@ export const buildAstro = async (
         hooks: {
           "astro:config:done": ({ config }) => {
             resolvedConfig = config;
-            clientDirectory = fileURLToPath(config.build.client);
+            clientDirectory = assetDirectory(config);
           },
         },
       },
@@ -109,7 +122,7 @@ export const buildAstro = async (
       ...compatibility,
       assets: {
         directory: clientDirectory ?? fileURLToPath(config.build.client),
-        config: { notFoundHandling: "404-page" },
+        config: { notFoundHandling: "404-page", ...options.assetRouting },
       },
     };
   }
@@ -120,7 +133,7 @@ export const buildAstro = async (
     ...compatibility,
     assets: {
       directory: clientDirectory ?? fileURLToPath(config.build.client),
-      config: { notFoundHandling: "none" },
+      config: { notFoundHandling: "none", ...options.assetRouting },
     },
   };
 };

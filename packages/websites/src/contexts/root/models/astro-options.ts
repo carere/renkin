@@ -1,3 +1,4 @@
+import type { AssetRouting } from "@renkin/runtime/models/build-result";
 import type { AstroInlineConfig } from "astro";
 
 /** Astro owns page generation; Renkin owns bindings and deployment. */
@@ -6,6 +7,7 @@ export interface AstroBuildOptions {
   readonly output: "static" | "server";
   readonly compatibilityDate: string;
   readonly compatibilityFlags?: readonly string[];
+  readonly assetRouting?: AssetRouting;
   /** Alternate Astro configuration file, relative to root; false disables discovery. */
   readonly configFile?: string | false;
   /** Ordinary Astro configuration, including site/base, directories, routing and Vite hooks. */

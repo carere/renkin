@@ -88,3 +88,49 @@ it.effect(
     }),
   60_000,
 );
+
+it.effect(
+  "preserves a base path, routing and explicit Node page-generation fallback",
+  () =>
+    Effect.promise(async () => {
+      const directory = await mkdtemp(resolve(tmpdir(), "renkin-astro-base-"));
+      let graph: Awaited<ReturnType<typeof startLocalGraph>> | undefined;
+      try {
+        const build = await buildAstro(
+          {
+            root: fileURLToPath(new URL("../../../support/root/astro/static/", import.meta.url)),
+            output: "static",
+            compatibilityDate: "2026-07-30",
+            configFile: false,
+            prerenderEnvironment: "node",
+            config: {
+              outDir: resolve(directory, "dist"),
+              base: "/docs",
+              site: "https://example.test",
+              trailingSlash: "always",
+              logLevel: "silent",
+            },
+          },
+          { directory },
+        );
+        const captured = await readBuildResult(build);
+        expect(captured.assets?.files["/docs/index.html"]).toBeDefined();
+        expect(
+          Object.keys(captured.assets?.files ?? {}).some((path) => path.endsWith("wrangler.json")),
+        ).toBe(false);
+        graph = await startLocalGraph({
+          workers: [{ id: "static", build, compatibilityDate: "2026-07-30" }],
+          namespaces: {},
+          persist: resolve(directory, "data"),
+          watch: false,
+        });
+        const response = await graph.workers.static?.fetch("/docs/");
+        expect(response?.status).toBe(200);
+        expect(await response?.text()).toContain('data-runtime="undefined"');
+      } finally {
+        await graph?.close();
+        await rm(directory, { recursive: true, force: true });
+      }
+    }),
+  60_000,
+);
