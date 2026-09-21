@@ -125,7 +125,7 @@ class CloudflareR2Service implements ResourceService {
     if (typeof name !== "string" || !name) throw new Error("R2 provider returned no identity.");
     return name;
   };
-  readonly remove: ResourceService["remove"] = async (resource, resources) => {
+  readonly remove: ResourceService["remove"] = async (resource, resources, currentDesired) => {
     if (!(await this.owned(resource))) return;
     const value = properties(resource.definition);
     const replacement = resources?.[resource.definition.id];
@@ -134,7 +134,7 @@ class CloudflareR2Service implements ResourceService {
       replacement.physicalId !== resource.physicalId &&
       replacement.definition.type === resource.definition.type
         ? replacement.definition
-        : resource.definition;
+        : (currentDesired ?? resource.definition);
     for (;;) {
       const page = await Effect.runPromise(
         this.client.objects({

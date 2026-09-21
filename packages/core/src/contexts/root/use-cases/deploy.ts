@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Effect } from "effect";
-import { defineStack, type Stack, validateName } from "../models/stack.ts";
+import { defineStack, type ResourceDefinition, type Stack, validateName } from "../models/stack.ts";
 import {
   type Change,
   type EnvironmentState,
@@ -72,6 +72,14 @@ const applyPending = async (
   return op;
 };
 
+const currentDefinition = (stack: Stack | undefined, previous: ResourceDefinition) =>
+  stack?.resources.find(
+    (resource) =>
+      resource.id === previous.id &&
+      resource.type === previous.type &&
+      resource.identity === previous.identity,
+  );
+
 const resume = async (
   state: EnvironmentState,
   lease: StateLease,
@@ -104,12 +112,7 @@ const resume = async (
   }
   if (op.phase === "bindings" && op.applied) {
     const appliedDefinition = op.applied.definition;
-    const desired = stack?.resources.find(
-      (resource) =>
-        resource.id === appliedDefinition.id &&
-        resource.type === appliedDefinition.type &&
-        resource.identity === appliedDefinition.identity,
-    );
+    const desired = currentDefinition(stack, appliedDefinition);
     await service.bind?.(op.applied, { ...state.resources, [op.change.id]: op.applied }, desired, {
       force: op.force ?? false,
     });
@@ -132,7 +135,11 @@ const resume = async (
     const previousService = services[oldType];
     if (!previousService) throw new Error(`No adapter registered for resource type ${oldType}.`);
     if (!op.change.previous.definition.retain)
-      await previousService.remove(op.change.previous, state.resources);
+      await previousService.remove(
+        op.change.previous,
+        state.resources,
+        currentDefinition(stack, op.change.previous.definition),
+      );
   }
   if (op.phase === "remove") delete state.resources[op.change.id];
   delete state.pending;
