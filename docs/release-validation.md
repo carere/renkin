@@ -29,9 +29,9 @@ source manifest remains unchanged. `--ignore-scripts` deliberately bypasses life
 scripts and is not a supported release path. No registry publication command is
 part of these tasks.
 
-## Completed acceptance and final artifact
+## Completed cloud acceptance and accepted artifact
 
-The final Linux-produced tarball has SHA-256
+The accepted Linux-produced cloud-validation tarball has SHA-256
 `21873a56d9bd8af088085d90670e91f1595aceb1bf78d70de0d973682ed2eff4`.
 It records clean PR merge `02ae0d8a52b41a70f3fb1e2a82814c79aa7c4081`
 (parent `593aebc`), Bun 1.4.2 and lock digest
@@ -72,10 +72,37 @@ guard remains: distribute only the staged standalone artifact. No registry
 publication was performed. Upstream declaration and guarded framework transport
 compatibility limits described below still apply.
 
+## Standards review candidate, September 22, 2026
+
+The five final standards findings are addressed: request-scoped SSR runtime/query
+composition, project-local imports with release rewriting, service-owned entry
+implementations, mirrored test paths and a configurable state-removal test double.
+Local serial source validation passed **236 tests across 90 files and 16 populated
+tasks**, including four offline cloud-harness preparation cases. TypeScript, Biome,
+Knip and manifest sorting passed. The SSR unit task is included in serial source CI.
+
+The first standards candidate, `fc479f2`, failed installed SSR hydration because
+late Query-core discovery invalidated browser dependency hashes. The application
+now explicitly prediscovers that dependency, matching the maintained graph fixtures.
+Three fresh-cache installed SSR repetitions and the strengthened browser assertion
+against failed HTTP responses passed after the fix; no retries or stale-module
+suppression were introduced.
+
+Clean revision `8efb21e1e8720c47dc84b094ab2d993aa332028b` produced macOS archive
+`f8e298da543af484303f251f7e23560eb6822abab64ae67d923125d8dc74799c`, using Bun 1.4.2
+and lock digest `0301d2f7efd280ee3c74b9106be5025079f5257b00ea8fe0fa6a3281e5f7bbd0`.
+Its full installed-consumer harness passed in 35.34 seconds: package and declaration
+checks, all four framework apps, the native full graph, restored builds and Moon/Bun
+build nesting. The artifact retains 341 files, 522 checked relative references and
+the same eight public subpaths. This is local validation of the standards candidate;
+actual Cloudflare acceptance remains the separate multi-candidate record above.
+No provider calls, emails or publication were performed for these review fixes.
+
 ## Maintained installed-consumer checks
 
 The harness installs the actual tarball into a fresh directory outside the
-repository with no workspace aliases or manual dependency symlinks. It inspects
+repository with no private workspace package resolution or manual dependency
+symlinks. It inspects
 archive entries and the installed transitive module/URL closure, verifies all eight
 public declaration subpaths, host imports and shared Effect identity, CLI help and
 read-only inspection, plus the application's negative Effect-requirement type tests.
