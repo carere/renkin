@@ -50,6 +50,7 @@ export const runInstalledCloud = async (
   suites: readonly CloudSuite[] = cloudSuites,
   testNamePattern?: string,
   graphReuseOnly = false,
+  isolatedGraphState = false,
 ): Promise<void> => {
   const authorized = scope(scopeEnvironment);
   if (!process.versions.bun) throw new Error("Installed cloud harness requires Bun.");
@@ -77,6 +78,7 @@ export const runInstalledCloud = async (
     PROTO_OFFLINE: "true",
     NO_COLOR: "1",
     ...(graphReuseOnly ? { RENKIN_CLOUDFLARE_GRAPH_REUSE_ONLY: "true" } : {}),
+    ...(isolatedGraphState ? { RENKIN_CLOUDFLARE_GRAPH_ISOLATED_STATE: "true" } : {}),
   };
   await new Promise<void>((resolve, reject) => {
     const child = spawn(
