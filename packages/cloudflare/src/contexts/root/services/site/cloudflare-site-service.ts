@@ -54,22 +54,25 @@ const domain = ({ client, token }: Options): ResourceService => ({
     const observed = existing[0];
     if (
       observed &&
-      ((previous && observed.id !== previous.physicalId) || observed.service !== worker.physicalId)
+      ((previous && observed.id !== previous.physicalId) ||
+        (observed.service !== worker.physicalId &&
+          observed.service !== (previous ? object(previous.outputs).service : worker.physicalId)))
     )
       throw new Error("The custom domain belongs to another Worker or ownership record.");
     const result =
-      observed ??
-      (await Effect.runPromise(
-        client.putDomain(
-          {
-            hostname,
-            service: worker.physicalId,
-            zoneId: string(settings.zoneId),
-            previewsEnabled: false,
-          },
-          token,
-        ),
-      ));
+      observed?.service === worker.physicalId
+        ? observed
+        : await Effect.runPromise(
+            client.putDomain(
+              {
+                hostname,
+                service: worker.physicalId,
+                zoneId: string(settings.zoneId),
+                previewsEnabled: false,
+              },
+              token,
+            ),
+          );
     const fresh = await Effect.runPromise(client.getDomain(string(result.id)));
     return json({ ...fresh, url: `https://${hostname}`, service: worker.physicalId });
   },

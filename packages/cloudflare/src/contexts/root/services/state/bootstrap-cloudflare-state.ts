@@ -7,6 +7,7 @@ import {
 import { readStateAuth } from "@renkin/cloudflare-sdk/services/cloudflare-client/state-preview-client";
 import { bundleWorker } from "@renkin/runtime/services/bundler/worker-bundler";
 import { Effect } from "effect";
+import { waitForStateEndpoint } from "./state-endpoint-readiness.ts";
 
 export interface CloudStateOptions extends CloudflareConfig {
   /** Permanent account infrastructure, deliberately separate from environment resources. */
@@ -158,7 +159,9 @@ export const ensureCloudflareState = async (
   try {
     const route = await Effect.runPromise(client.getWorkerSubdomain(scriptName));
     if (!route.enabled) await Effect.runPromise(client.enableWorkerSubdomain(scriptName));
-    return await authenticate(options, await endpointFor(client, scriptName));
+    const authenticated = await authenticate(options, await endpointFor(client, scriptName));
+    await waitForStateEndpoint({ ...authenticated, accountId: options.accountId });
+    return authenticated;
   } catch {
     throw new StateBootstrapError(
       "Could not enable the account state endpoint. Verify workers.dev is configured for this account, then retry.",

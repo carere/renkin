@@ -5,7 +5,10 @@ import { createAccessClient } from "@renkin/cloudflare-sdk/services/cloudflare-c
 import type { MutationGateway } from "@renkin/cloudflare-sdk/services/cloudflare-client/cloudflare-client";
 import type { ResourceState } from "@renkin/core/models/state";
 import { Effect } from "effect";
-import { accessApplication } from "../../../../../src/contexts/root/models/access.ts";
+import {
+  accessApplication,
+  accessServiceToken,
+} from "../../../../../src/contexts/root/models/access.ts";
 import { cloudflareAccessServices } from "../../../../../src/contexts/root/services/access/cloudflare-access-service.ts";
 
 const provider = (results: unknown[]) =>
@@ -36,6 +39,14 @@ const provider = (results: unknown[]) =>
       const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/client/v4`;
       const gateway: MutationGateway = {
         request: async (request) => {
+          if (request.receiptOnly)
+            return {
+              status: 200,
+              headers: { "content-type": "application/json" },
+              bodyBase64: Buffer.from(JSON.stringify({ success: true, result: {} })).toString(
+                "base64",
+              ),
+            };
           const response = await fetch(`${base}${request.path}`, {
             method: request.method,
             headers: request.headers ?? {},
@@ -141,5 +152,23 @@ it.live("rejects a foreign resource before a mutation", () =>
     ).pipe(Effect.flip);
     expect(String(error.cause)).toContain("ownership");
     expect(fixture.requests).toHaveLength(1);
+  }).pipe(Effect.scoped),
+);
+
+it.live("does not create or rotate a token when its one-time secret receipt is missing", () =>
+  Effect.gen(function* () {
+    const fixture = yield* provider([
+      [{ id: "provider-token", name: "token-allocation", duration: "1h" }],
+    ]);
+    const desired = accessServiceToken("token", { name: "token", duration: "1h" });
+    const service = cloudflareAccessServices({ client: fixture.client, token: "lease" })[
+      desired.type
+    ];
+    if (!service) throw new Error("missing service");
+    const error = yield* Effect.tryPromise(() =>
+      service.apply(desired, "allocation", undefined),
+    ).pipe(Effect.flip);
+    expect(String(error.cause)).toContain("one-time");
+    expect(fixture.requests.map((request) => request.method)).toEqual(["GET"]);
   }).pipe(Effect.scoped),
 );
