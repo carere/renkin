@@ -2,14 +2,29 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
+import { afterAll, vi } from "vitest";
 import {
   ensureCloudflareState,
   findCloudflareState,
 } from "../../../../../src/contexts/root/services/state/bootstrap-cloudflare-state.ts";
 
+const originalFetch = globalThis.fetch;
+const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+  const request = new Request(input, init);
+  if (new URL(request.url).hostname === "renkin-test-state.example-account.workers.dev") {
+    expect(request.headers.get("cf-workers-preview-token")).toBe("preview-token");
+    expect(request.headers.get("authorization")).toBeNull();
+    return new Response("a".repeat(64));
+  }
+  return originalFetch(input, init);
+});
+
+afterAll(() => fetchMock.mockRestore());
+
 const owned = {
-  tags: ["renkin-state-v1"],
+  tags: ["renkin-state-v2"],
   bindings: [
+    { type: "secret_text", name: "RENKIN_STATE_AUTH" },
     { type: "plain_text", name: "ACCOUNT_ID", text: "account" },
     { type: "durable_object_namespace", name: "STATE_COORDINATOR", class_name: "StateCoordinator" },
   ],
@@ -21,7 +36,8 @@ const provider = (observation: unknown, failure?: { status: number; code: number
       const mutations: string[] = [];
       const uploads: string[] = [];
       const server = createServer((request, response) => {
-        if (request.method !== "GET") mutations.push(`${request.method} ${request.url}`);
+        if (request.method !== "GET" && !request.url?.endsWith("/edge-preview"))
+          mutations.push(`${request.method} ${request.url}`);
         const chunks: Buffer[] = [];
         request.on("data", (chunk: Buffer) => chunks.push(chunk));
         request.on("end", () => {
@@ -39,7 +55,11 @@ const provider = (observation: unknown, failure?: { status: number; code: number
                 ? observation
                 : request.url?.endsWith("/workers/subdomain")
                   ? { subdomain: "example-account" }
-                  : { enabled: true },
+                  : request.url?.endsWith("/subdomain/edge-preview")
+                    ? { token: "upload-token" }
+                    : request.url?.endsWith("/edge-preview")
+                      ? { preview_token: "preview-token" }
+                      : { enabled: true },
             }),
           );
         });
@@ -61,7 +81,9 @@ const provider = (observation: unknown, failure?: { status: number; code: number
       Effect.promise(
         () =>
           new Promise<void>((resolve, reject) =>
-            server.close((error) => (error ? reject(error) : resolve())),
+            server.close((error) => {
+              error ? reject(error) : resolve();
+            }),
           ),
       ),
   );
@@ -72,11 +94,14 @@ it.live("reuses owned state without replacing the Worker or keys", () =>
     const result = yield* Effect.promise(() => ensureCloudflareState(boundary.config));
     expect(result.endpoint).toBe("https://renkin-test-state.example-account.workers.dev");
     expect(boundary.uploads).toEqual([]);
+    expect(boundary.mutations).toEqual([]);
+    expect(result.stateAuthToken).toBe("a".repeat(64));
   }).pipe(Effect.scoped),
 );
 
 for (const observation of [
   { ...owned, tags: [] },
+  { ...owned, bindings: owned.bindings.filter((binding) => binding.name !== "RENKIN_STATE_AUTH") },
   { ...owned, bindings: [{ type: "plain_text", name: "ACCOUNT_ID", text: "foreign-account" }] },
 ]) {
   it.live("refuses foreign state infrastructure before mutation", () =>
