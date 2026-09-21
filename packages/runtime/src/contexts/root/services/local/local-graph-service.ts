@@ -9,6 +9,7 @@ import { inspectRequirements } from "../bundler/inspect-requirements.ts";
 import { readBuildResult } from "../bundler/read-build-result.ts";
 import { bundleOptions, readBundle } from "../bundler/worker-bundler.ts";
 import { localAssetOptions } from "./local-build-service.ts";
+import { type LocalDurableObject, localDurableObjects } from "./local-durable-objects.ts";
 import { graphBindings } from "./local-graph-bindings.ts";
 import type { LocalWorker } from "./local-worker-service.ts";
 
@@ -26,6 +27,7 @@ export interface LocalGraphOptions {
   readonly namespaces: Readonly<Record<string, string>>;
   readonly persist: string;
   readonly databases?: Readonly<Record<string, string>>;
+  readonly durableObjects?: Readonly<Record<string, LocalDurableObject>>;
   readonly watch?: boolean;
   readonly onReload?: (id: string) => void;
   readonly onError?: (message: string) => void;
@@ -55,7 +57,7 @@ const workerSettings = (
       if (!database)
         throw new Error(`D1 requirement ${requirement.id} is not declared in the stack.`);
       d1Databases[binding] = database;
-    } else {
+    } else if (requirement.type === "cloudflare.worker-reference") {
       const targetId = requirement.external
         ? `renkin-external-${requirement.external.name}`
         : requirement.id;
@@ -99,6 +101,7 @@ const workerSettings = (
     kvNamespaces,
     d1Databases,
     serviceBindings,
+    ...localDurableObjects(prepared.requirements, options.durableObjects ?? {}),
     unsafeDirectSockets: [{ host: "127.0.0.1", port: worker.port ?? 0 }],
   };
 };

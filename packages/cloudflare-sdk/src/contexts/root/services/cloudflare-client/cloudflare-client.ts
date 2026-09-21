@@ -3,7 +3,7 @@ import * as Retry from "@distilled.cloud/cloudflare/Retry";
 import * as Workers from "@distilled.cloud/cloudflare/workers";
 import { Effect } from "effect";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
-
+import type { DurableObjectExports } from "../../models/durable-object-exports.ts";
 import { createOperationClient } from "./operation-client.ts";
 
 export interface CloudflareConfig {
@@ -34,7 +34,11 @@ export interface MutationGateway {
   readonly request: (request: GatewayRequest, token: string) => Promise<GatewayResponse>;
 }
 
-export type WorkerUpload = Omit<Workers.PutScriptRequest, "accountId">;
+export type WorkerUpload = Omit<Workers.PutScriptRequest, "accountId" | "metadata"> & {
+  readonly metadata: NonNullable<Workers.PutScriptRequest["metadata"]> & {
+    readonly exports?: DurableObjectExports;
+  };
+};
 
 const setup = (config: CloudflareConfig) => {
   if (!config.accountId.trim() || !config.apiToken.trim()) {
