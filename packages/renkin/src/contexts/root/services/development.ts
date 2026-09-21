@@ -12,6 +12,7 @@ import { FileStateRepository } from "@renkin/core/services/state/file-state-repo
 import type { LocalR2S3Options } from "@renkin/runtime/models/local-r2-s3";
 import { startLocalGraph } from "@renkin/runtime/services/local/local-graph-service";
 import { LocalR2RemovalError } from "@renkin/runtime/services/local/local-r2-removal";
+import { LocalWorkflowRecoveryError } from "@renkin/runtime/services/local/workflow-recovery";
 import { Effect } from "effect";
 import { prepareLocalResources } from "./development/local-resources.ts";
 
@@ -95,6 +96,7 @@ export const development = (stack: Stack, options: DevelopmentOptions = {}) =>
       catch: (error) =>
         error instanceof MigrationError ||
         error instanceof LocalR2RemovalError ||
+        error instanceof LocalWorkflowRecoveryError ||
         (error instanceof Error && error.message.startsWith("Deletion protection"))
           ? error
           : new Error("Local application startup failed."),

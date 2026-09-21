@@ -17,7 +17,7 @@ export interface QueueConsumer {
   readonly maxBatchTimeout?: number;
   readonly maxRetries?: number;
   readonly retryDelay?: number;
-  readonly maxConcurrency?: number;
+  readonly maxConcurrency?: number | null;
   readonly deadLetterQueue?: QueueResource;
 }
 export const queue = <Body = unknown>(
@@ -29,7 +29,9 @@ export const queue = <Body = unknown>(
   identity: options.identity ?? "queue",
   properties: {
     deliveryDelay: options.deliveryDelay ?? 0,
-    messageRetentionPeriod: options.messageRetentionPeriod ?? 345600,
+    ...(options.messageRetentionPeriod === undefined
+      ? {}
+      : { messageRetentionPeriod: options.messageRetentionPeriod }),
   },
   protection: { data: true, allowDelete: options.allowDelete ?? false },
   ...(options.retain === undefined ? {} : { retain: options.retain }),

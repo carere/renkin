@@ -8,6 +8,8 @@ Protected D1 databases support typed and native bindings, persistent local stora
 and name-based SQL or Drizzle migrations. See [D1 usage and migrations](docs/d1-migrations.md).
 Connected Workers now support typed/native KV, mutual service bindings, protected
 storage and explicit renames; see [connected Worker usage](docs/connected-workers.md).
+Native cron handlers, queues, durable Workflows and captured email support background
+jobs; see [background jobs and validation](docs/background-jobs.md).
 Additional resources, framework integrations and the release artifact remain in
 progress. See the
 [architecture](docs/architecture.md) for the agreed workspace boundaries and open

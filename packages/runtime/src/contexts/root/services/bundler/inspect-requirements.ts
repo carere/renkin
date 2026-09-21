@@ -71,6 +71,7 @@ export const inspectRequirements = async (
       readonly content: string;
     }[];
   } = { mainModule: "worker.mjs", modules: [] },
+  workflowClasses: readonly string[] = [],
 ): Promise<Requirements> => {
   const runtime = new Miniflare({
     log: new Log(LogLevel.NONE),
@@ -78,7 +79,7 @@ export const inspectRequirements = async (
       {
         type: "ESModule",
         path: "inspect.mjs",
-        contents: `import * as implementation from ${JSON.stringify(`./${artifact.mainModule}`)}; export default {fetch(){const result={};for(const exported of Object.values(implementation)){for(const [name, requirement] of Object.entries(exported?.__renkinRequirements ?? {})){if(name in result && JSON.stringify(result[name])!==JSON.stringify(requirement))throw new Error("Conflicting Worker requirements");result[name]=requirement;}}return Response.json(result)}}`,
+        contents: `import {WorkflowEntrypoint} from "cloudflare:workers";import * as implementation from ${JSON.stringify(`./${artifact.mainModule}`)}; export default {fetch(){for(const name of ${JSON.stringify(workflowClasses)}){if(!(implementation[name]?.prototype instanceof WorkflowEntrypoint))throw new Error("Missing Workflow class export");}const result={};for(const exported of Object.values(implementation)){for(const [name, requirement] of Object.entries(exported?.__renkinRequirements ?? {})){if(name in result && JSON.stringify(result[name])!==JSON.stringify(requirement))throw new Error("Conflicting Worker requirements");result[name]=requirement;}}return Response.json(result)}}`,
       },
       { type: "ESModule", path: artifact.mainModule, contents: source },
       ...artifact.modules.map((module) => ({

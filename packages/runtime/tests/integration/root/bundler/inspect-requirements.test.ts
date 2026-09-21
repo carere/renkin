@@ -31,3 +31,21 @@ it.effect("rejects invalid metadata instead of silently omitting its binding", (
     ).rejects.toThrow("isolated runtime");
   }),
 );
+it.effect(
+  "validates named native Workflow exports and merges inert requirements without instantiating classes",
+  () =>
+    Effect.promise(async () => {
+      const source = `import {WorkflowEntrypoint} from "cloudflare:workers";
+  export class Job extends WorkflowEntrypoint {static __renkinRequirements={JOBS:{type:"cloudflare.queue",id:"Jobs"}};constructor(){super();throw new Error("must not construct")}run(){throw new Error("must not run")}}
+  export default {__renkinRequirements:{FLOW:{type:"cloudflare.workflow",id:"Flow"}}};`;
+      expect(
+        await inspectRequirements(source, "2026-07-30", undefined, undefined, ["Job"]),
+      ).toEqual({
+        JOBS: { type: "cloudflare.queue", id: "Jobs" },
+        FLOW: { type: "cloudflare.workflow", id: "Flow" },
+      });
+      await expect(
+        inspectRequirements(source, "2026-07-30", undefined, undefined, ["Missing"]),
+      ).rejects.toThrow("isolated runtime");
+    }),
+);

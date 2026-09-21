@@ -13,6 +13,20 @@ export const workflowRecoveryWorker = (
   compatibilityDate: "2026-07-30",
   workflows: { ...workflows },
 });
+export class LocalWorkflowRecoveryError extends Error {
+  readonly name = "LocalWorkflowRecoveryError";
+}
+const terminal = (status: string) => ["complete", "errored", "terminated"].includes(status);
+const pauseSettled = async (instance: Awaited<ReturnType<NativeWorkflow["get"]>>) => {
+  const deadline = Date.now() + 5000;
+  while (true) {
+    const { status } = await instance.status();
+    if (status === "paused" || terminal(status)) return status;
+    if (Date.now() > deadline)
+      throw new LocalWorkflowRecoveryError("Local Workflow pause did not settle during recovery.");
+    await sleep(10);
+  }
+};
 const wake = async (
   native: NativeWorkflow,
   record: WorkflowRecoveryRecord,
@@ -27,22 +41,16 @@ const wake = async (
     throw error;
   }
   const current = await instance.status();
-  if (["complete", "errored", "terminated"].includes(current.status)) return;
+  if (terminal(current.status)) return;
   if ((current.status === "paused" || current.status === "waitingForPause") && !record.recovering)
     return;
   if (current.status === "queued" || current.status === "unknown")
-    throw new Error(
+    throw new LocalWorkflowRecoveryError(
       `Local Workflow ${record.id} cannot be recovered from ${current.status}; inspect it before retrying.`,
     );
   await journal.write({ ...record, recovering: true });
   if (current.status !== "paused") await instance.pause();
-  const deadline = Date.now() + 5000;
-  while ((await instance.status()).status !== "paused") {
-    if (Date.now() > deadline)
-      throw new Error("Local Workflow pause did not settle during recovery.");
-    await sleep(10);
-  }
-  await instance.resume();
+  if ((await pauseSettled(instance)) === "paused") await instance.resume();
   await journal.write({ ...record, recovering: false });
 };
 /** Wakes the installed native emulator while preserving its original event and cached steps. */

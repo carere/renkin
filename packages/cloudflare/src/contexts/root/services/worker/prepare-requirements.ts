@@ -20,6 +20,7 @@ export const prepareRequirements = async (
     compatibilityDate,
     compatibilityFlags,
     artifact,
+    ((resource.properties as Record<string, Json>).workflowClasses ?? []) as readonly string[],
   );
   const dependencies = [
     ...new Set([

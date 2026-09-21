@@ -5,7 +5,8 @@ import { Effect } from "effect";
 import { defineStack, development } from "renkin";
 import { kv, queue, worker, workflow } from "renkin/cloudflare";
 
-const source = `import {EmailMessage} from "cloudflare:email";
+const source = `import {NonRetryableError} from "cloudflare:workflows";
+import {EmailMessage} from "cloudflare:email";
 import {Effect} from "effect";import {kv,queue,workflow,email} from "renkin/cloudflare";
 import {defineWorker} from "renkin/worker";import {defineWorkflow} from "renkin/workflow";
 const Store=kv("Store"),Jobs=queue("Jobs"),Flow=workflow("Flow",{worker:"App",className:"Job"});
@@ -21,15 +22,20 @@ export const Job=defineWorkflow({Store,Mail:email({allowedDestinationAddresses:[
    if(context.attempt===1) return yield* Effect.fail(new Error("retry me"));
    return context.attempt;
  }),{retries:{limit:2,delay:"2 seconds",backoff:"constant"}});
+ if(event.payload.fatal)yield* steps.task("fatal",context=>Effect.gen(function*(){
+   yield* Store.put(event.instanceId+"-attempt",String(context.attempt));
+   return yield* Effect.fail(new NonRetryableError("Expected fatal failure"));
+ }),{retries:{limit:2,delay:"1 second"}});
  if(event.payload.wait)yield* steps.waitForEvent("event",{type:"approval",timeout:"30 seconds"});
- yield* steps.sleep("pause",event.payload.sleep??"1 second");
+ if(event.payload.until)yield* steps.sleepUntil("deadline",event.payload.until);
+ else yield* steps.sleep("pause",event.payload.sleep??"1 second");
  yield* steps.task("email",()=>Mail.send(new EmailMessage("sender@example.com","recipient@example.com","From: sender@example.com\\r\\nTo: recipient@example.com\\r\\nMessage-ID: <job@example.com>\\r\\nSubject: Job "+event.instanceId+"\\r\\n\\r\\nCompleted")),{retries:{limit:0,delay:"1 second"}});
  return task;
 }));
 export default defineWorker({Jobs,Flow,Store},({Jobs,Flow,Store})=>({
- scheduled:controller=>Jobs.send({id:"scheduled-"+controller.scheduledTime,cron:controller.cron}),
+ scheduled:(controller,_env,context)=>{context.waitUntil(Store.native.put("scheduled-context","ready"));return Jobs.send({id:"scheduled-"+controller.scheduledTime,cron:controller.cron});},
  queue:batch=>Effect.gen(function*(){for(const message of batch.messages){if(message.body.mode){yield* Store.put(message.body.mode+"-attempts",String(message.attempts));yield* Store.put("batch-size",String(batch.messages.length));if(message.body.mode==="poison")message.retry({delaySeconds:0});else message.ack();continue;}yield* Flow.create({id:message.body.id,params:message.body});message.ack();}}),
- fetch:async request=>{const path=new URL(request.url).pathname.slice(1);if(path==="batch"){await Jobs.native.sendBatch([{body:{mode:"ack"}},{body:{mode:"poison"}}]);return new Response("sent");}if(path.startsWith("event/")){await (await Flow.native.get(path.slice(6))).sendEvent({type:"approval",payload:{approved:true}});return new Response("delivered");}if(path.startsWith("create/")){const instance=await Flow.native.create({id:path.slice(7),params:await request.json()});return Response.json({id:instance.id});}if(path.startsWith("pause/")){await (await Flow.native.get(path.slice(6))).pause();return new Response("paused");}if(path.startsWith("resume/")){await (await Flow.native.get(path.slice(7))).resume();return new Response("resumed");}if(path.startsWith("status/")){const instance=await Flow.native.get(path.slice(7));return Response.json(await instance.status());}return new Response(await Store.native.get(path));}
+ fetch:async request=>{const path=new URL(request.url).pathname.slice(1);if(!path)return new Response("healthy");if(path==="batch"){await Jobs.native.sendBatch([{body:{mode:"ack"}},{body:{mode:"poison"}}]);return new Response("sent");}if(path.startsWith("event/")){await (await Flow.native.get(path.slice(6))).sendEvent({type:"approval",payload:{approved:true}});return new Response("delivered");}if(path.startsWith("create/")){const instance=await Flow.native.create({id:path.slice(7),params:await request.json()});return Response.json({id:instance.id});}if(path.startsWith("pause/")){await (await Flow.native.get(path.slice(6))).pause();return new Response("paused");}if(path.startsWith("resume/")){await (await Flow.native.get(path.slice(7))).resume();return new Response("resumed");}if(path.startsWith("status/")){const instance=await Flow.native.get(path.slice(7));return Response.json(await instance.status());}return new Response(await Store.native.get(path));}
 }));`;
 export const createBackgroundFixture = async () => {
   const root = await mkdtemp(fileURLToPath(new URL("../../fixtures/background-", import.meta.url)));

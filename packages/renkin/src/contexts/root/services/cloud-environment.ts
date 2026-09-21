@@ -1,4 +1,6 @@
 import { cloudflareAccessServices } from "@renkin/cloudflare/services/access/cloudflare-access-service";
+import { cloudflareQueueService } from "@renkin/cloudflare/services/background/cloudflare-queue-service";
+import { cloudflareWorkflowService } from "@renkin/cloudflare/services/background/cloudflare-workflow-service";
 import { cloudflareD1Service } from "@renkin/cloudflare/services/d1/cloudflare-d1-service";
 import { cloudflareKVService } from "@renkin/cloudflare/services/kv/cloudflare-kv-service";
 import { cloudflareR2Service } from "@renkin/cloudflare/services/r2/cloudflare-r2-service";
@@ -11,6 +13,7 @@ import {
 import { CloudflareStateRepository } from "@renkin/cloudflare/services/state/cloudflare-state-repository";
 import { cloudflareWorkerService } from "@renkin/cloudflare/services/worker/cloudflare-worker-service";
 import { createAccessClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/access-client";
+import { createBackgroundClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/background-client";
 import {
   createBootstrapClient,
   createCloudflareClient,
@@ -77,15 +80,21 @@ export const cloudEnvironment = async (
   const r2Client = createR2Client(config, {
     request: (request, token) => state.gateway(stack, environment, token, request),
   });
+  const backgroundClient = createBackgroundClient(config, {
+    request: (request, token) => state.gateway(stack, environment, token, request),
+  });
   const services: ResourceServices = (lease) => ({
     ...cloudflareAccessServices({ client: accessClient, token: lease.token }),
     ...cloudflareSiteServices({ client: siteClient, token: lease.token }),
+    "cloudflare.queue": cloudflareQueueService(backgroundClient, lease.token),
+    "cloudflare.workflow": cloudflareWorkflowService(backgroundClient, lease.token),
     "cloudflare.d1": cloudflareD1Service(d1Client, lease.token),
     "cloudflare.r2": cloudflareR2Service(r2Client, lease.token),
     "cloudflare.kv": cloudflareKVService(kvClient, lease.token),
     "cloudflare.worker": cloudflareWorkerService({
       client,
       siteClient,
+      backgroundClient,
       token: lease.token,
       stack,
       environment,

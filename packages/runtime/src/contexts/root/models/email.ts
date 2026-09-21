@@ -1,4 +1,4 @@
-import type { SendEmail } from "@cloudflare/workers-types";
+import type { EmailMessage, EmailMessageBuilder, SendEmail } from "@cloudflare/workers-types";
 import { Effect } from "effect";
 
 export interface EmailOptions {
@@ -41,7 +41,10 @@ export class EmailError extends Error {
 }
 export const emailClient = (native: NativeEmail, binding: string) => ({
   native,
-  send: (message: Parameters<NativeEmail["send"]>[0]) =>
-    Effect.tryPromise({ try: () => native.send(message), catch: () => new EmailError(binding) }),
+  send: (message: EmailMessage | EmailMessageBuilder) =>
+    Effect.tryPromise({
+      try: () => native.send(message as EmailMessage),
+      catch: () => new EmailError(binding),
+    }),
 });
 export type EmailClient = ReturnType<typeof emailClient>;

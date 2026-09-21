@@ -68,3 +68,47 @@ const ordinaryReference = workerReference("ordinary");
 defineWorker({ ordinary: ordinaryReference }, ({ ordinary }) => ({
   fetch: (request) => ordinary.call((service) => service.fetch(request)),
 }));
+
+import { Layer } from "effect";
+import { queue, workflow } from "renkin/cloudflare";
+import type { QueueBatch } from "renkin/worker";
+import type { defineWorkflow, WorkflowEvent } from "renkin/workflow";
+
+interface Job {
+  readonly id: string;
+}
+const jobs = queue<Job>("Jobs");
+const flow = workflow<Job>("Flow", { worker: "App", className: "Job" });
+const background = defineWorker(
+  { jobs, flow },
+  ({ jobs, flow }) => ({
+    scheduled: () =>
+      Effect.gen(function* () {
+        const greeting = yield* Greeting;
+        yield* jobs.send({ id: greeting.text });
+        // @ts-expect-error Queue body type is preserved through inferred client resolution.
+        yield* jobs.send({ wrong: true });
+      }),
+    queue: (batch: QueueBatch<Job>) =>
+      Effect.gen(function* () {
+        for (const message of batch.messages) {
+          yield* flow.create({ id: message.body.id, params: message.body });
+          // @ts-expect-error Workflow parameter type is preserved through inferred client resolution.
+          yield* flow.create({ params: { wrong: true } });
+        }
+      }),
+  }),
+  Layer.succeed(Greeting)({ text: "hello" }),
+);
+
+const workflowTypes = (define: typeof defineWorkflow) => {
+  const run = (event: WorkflowEvent<Job>) =>
+    Effect.map(Greeting, ({ text }) => ({ id: event.payload.id, text }));
+  // @ts-expect-error Workflow application service requirements need a supplied layer.
+  define({}, run);
+  return define({}, run, Layer.succeed(Greeting)({ text: "hello" }));
+};
+it("keeps typed background clients and Workflow service requirements in the public API", () => {
+  expect(background.queue).toBeTypeOf("function");
+  expect(workflowTypes).toBeTypeOf("function");
+});

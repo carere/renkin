@@ -19,7 +19,7 @@ export const workflow = <Params = unknown>(
 ): WorkflowResource<Params> => ({
   id,
   type: "cloudflare.workflow",
-  identity: options.identity ?? "workflow",
+  identity: JSON.stringify([options.identity ?? "workflow", options.className]),
   properties: { worker: options.worker, className: options.className },
   dependencies: [options.worker],
   protection: { data: true, allowDelete: options.allowDelete ?? false },

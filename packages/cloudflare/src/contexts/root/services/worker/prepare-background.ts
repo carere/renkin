@@ -10,10 +10,11 @@ const consumerPolicy = (value: Readonly<Record<string, Json>>) => {
     ["maxBatchSize", 1, 100],
     ["maxBatchTimeout", 0, 60],
     ["maxRetries", 0, 100],
-    ["retryDelay", 0, 43200],
+    ["retryDelay", 0, 86400],
     ["maxConcurrency", 1, 250],
   ] as const) {
     const configured = value[name];
+    if (name === "maxConcurrency" && configured === null) continue;
     if (
       configured !== undefined &&
       (typeof configured !== "number" ||
@@ -59,6 +60,23 @@ export const prepareBackgroundResources = (
   resources: readonly ResourceDefinition[],
 ): readonly ResourceDefinition[] => {
   validateConsumers(resources);
+  for (const resource of resources.filter((item) => item.type === "cloudflare.queue")) {
+    const properties = object(resource.properties);
+    for (const [name, maximum] of [
+      ["deliveryDelay", 86400],
+      ["messageRetentionPeriod", 1209600],
+    ] as const) {
+      const value = properties[name];
+      if (
+        value !== undefined &&
+        (typeof value !== "number" ||
+          !Number.isInteger(value) ||
+          value < (name === "deliveryDelay" ? 0 : 60) ||
+          value > maximum)
+      )
+        throw new Error(`Invalid queue ${name}.`);
+    }
+  }
   const classes = new Map<string, string[]>();
   for (const resource of resources.filter((item) => item.type === "cloudflare.workflow")) {
     const { worker, className } = object(resource.properties);

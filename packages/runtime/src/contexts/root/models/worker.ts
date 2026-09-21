@@ -41,20 +41,20 @@ export interface WorkerImplementation<Environment, Body = unknown> {
   ): Promise<void>;
 }
 
-export function defineWorker<R extends Requirements, Error = never, Body = unknown>(
+export function defineWorker<R extends Requirements, Body = unknown>(
   requirements: R,
-  factory: (bindings: Resolved<R>) => WorkerHandlers<Record<string, unknown>, Error, never, Body>,
+  factory: (bindings: Resolved<R>) => WorkerHandlers<Record<string, unknown>, unknown, never, Body>,
 ): WorkerImplementation<Record<string, unknown>, Body>;
-export function defineWorker<R extends Requirements, Error, Needs, LayerError, Body = unknown>(
+export function defineWorker<R extends Requirements, Needs, LayerError, Body = unknown>(
   requirements: R,
-  factory: (bindings: Resolved<R>) => WorkerHandlers<Record<string, unknown>, Error, Needs, Body>,
+  factory: (bindings: Resolved<R>) => WorkerHandlers<Record<string, unknown>, unknown, Needs, Body>,
   layer: Layer.Layer<Needs, LayerError>,
 ): WorkerImplementation<Record<string, unknown>, Body>;
-export function defineWorker<Environment = Record<string, unknown>, Error = never, Body = unknown>(
-  handlers: WorkerHandlers<Environment, Error, never, Body>,
+export function defineWorker<Environment = Record<string, unknown>, Body = unknown>(
+  handlers: WorkerHandlers<Environment, unknown, never, Body>,
 ): WorkerImplementation<Environment, Body>;
-export function defineWorker<Environment, Error, Needs, LayerError, Body = unknown>(
-  handlers: WorkerHandlers<Environment, Error, Needs, Body>,
+export function defineWorker<Environment, Needs, LayerError, Body = unknown>(
+  handlers: WorkerHandlers<Environment, unknown, Needs, Body>,
   layer: Layer.Layer<Needs, LayerError>,
 ): WorkerImplementation<Environment, Body>;
 export function defineWorker(

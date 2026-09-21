@@ -14,7 +14,7 @@ export const prepareStack = async (stack: Stack): Promise<Stack> => ({
   resources: prepareBackgroundResources(
     finalizeRequirements(
       await Promise.all(
-        stack.resources.map(async (resource) => {
+        prepareBackgroundResources(stack.resources).map(async (resource) => {
           if (resource.type !== "cloudflare.worker") return prepareD1(resource);
           const options = (resource as WorkerResource).options as WorkerResource["options"] &
             WorkerExtensions;
