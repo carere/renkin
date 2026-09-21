@@ -1,8 +1,8 @@
 import type { KVNamespace } from "@cloudflare/workers-types";
 import { Effect } from "effect";
 import { type D1Client, type D1Requirement, d1Client, type NativeD1 } from "./d1.ts";
-
 import { type NativeR2, type R2Client, type R2Requirement, r2Client } from "./r2.ts";
+import { type R2TokenClient, type R2TokenRequirement, r2TokenClient } from "./r2-token.ts";
 
 export interface KVRequirement {
   readonly type: "cloudflare.kv";
@@ -21,6 +21,7 @@ export type BindingRequirement =
   | KVRequirement
   | D1Requirement
   | R2Requirement
+  | R2TokenRequirement
   | WorkerRequirement<unknown>;
 export type Requirements = Readonly<Record<string, BindingRequirement>>;
 export type NativeKV = KVNamespace;
@@ -60,9 +61,11 @@ export type Resolved<R extends Requirements> = {
       ? D1Client
       : R[K] extends R2Requirement
         ? R2Client
-        : R[K] extends WorkerRequirement<infer Service>
-          ? WorkerClient<Service>
-          : never;
+        : R[K] extends R2TokenRequirement
+          ? R2TokenClient
+          : R[K] extends WorkerRequirement<infer Service>
+            ? WorkerClient<Service>
+            : never;
 };
 export const resolveBindings = <R extends Requirements>(
   requirements: R,
@@ -80,11 +83,13 @@ export const resolveBindings = <R extends Requirements>(
             ? d1Client(native as NativeD1, name)
             : requirement.type === "cloudflare.r2"
               ? r2Client(native as NativeR2, name)
-              : {
-                  native,
-                  call: <A>(operation: (service: unknown) => Promise<A>) =>
-                    call(name, "rpc", () => operation(native)),
-                },
+              : requirement.type === "cloudflare.r2-token"
+                ? r2TokenClient(native)
+                : {
+                    native,
+                    call: <A>(operation: (service: unknown) => Promise<A>) =>
+                      call(name, "rpc", () => operation(native)),
+                  },
       ];
     }),
   ) as Resolved<R>;

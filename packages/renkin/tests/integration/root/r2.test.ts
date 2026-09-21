@@ -117,3 +117,54 @@ it.effect(
       );
     }),
 );
+
+it.effect(
+  "Worker applications sign using an explicit credential binding with only its declared buckets",
+  () =>
+    Effect.gen(function* () {
+      const test = yield* fixture;
+      yield* Effect.promise(async () => {
+        await writeFile(
+          test.entry,
+          `import {Effect} from "effect";import {r2,r2Token} from "renkin/cloudflare";import {defineWorker} from "renkin/worker";import {AwsClient} from "aws4fetch";
+const token=r2Token("Uploads",{buckets:[r2("Files")],permissions:"read-write",expiresAt:"2099-01-01T00:00:00Z"});
+export default defineWorker({Uploads:token},({Uploads})=>({fetch:request=>Effect.promise(async()=>{
+ const config=Uploads.forRequest(request);const signer=new AwsClient({...config,service:"s3"});
+ const signed=await signer.sign(config.endpoint+config.buckets.Files+"/from-app",{method:"PUT",aws:{signQuery:true}});
+ return Response.json({url:signed.url,buckets:config.buckets});
+})}));`,
+        );
+        const { r2Token } = await import("renkin/cloudflare");
+        const stack = defineStack({
+          ...test.stack,
+          resources: [
+            ...test.stack.resources,
+            r2Token("Uploads", {
+              buckets: [r2("Files")],
+              permissions: "read-write",
+              expiresAt: "2099-01-01T00:00:00Z",
+            }),
+          ],
+        });
+        await test.run(async ({ workers, bucket }) => {
+          const app = workers.Api;
+          if (!app) throw new Error("Missing Worker");
+          const result = (await (await app.fetch()).json()) as {
+            url: string;
+            buckets: Record<string, string>;
+          };
+          expect(result.buckets).toEqual({ Files: "Files" });
+          expect(
+            (await fetch(result.url, { method: "PUT", body: "signed by application" })).status,
+          ).toBe(200);
+          expect(
+            await (await bucket("Files")).get("from-app").then((object) => object?.text()),
+          ).toBe("signed by application");
+          expect((await fetch(await signedR2(app.url, "Other", "object"))).status).toBe(404);
+        }, stack);
+        await expect(test.run(async () => {}, stack, false)).rejects.toThrow(
+          "Local application startup failed.",
+        );
+      });
+    }),
+);

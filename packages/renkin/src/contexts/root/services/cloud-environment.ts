@@ -2,6 +2,7 @@ import { cloudflareAccessServices } from "@renkin/cloudflare/services/access/clo
 import { cloudflareD1Service } from "@renkin/cloudflare/services/d1/cloudflare-d1-service";
 import { cloudflareKVService } from "@renkin/cloudflare/services/kv/cloudflare-kv-service";
 import { cloudflareR2Service } from "@renkin/cloudflare/services/r2/cloudflare-r2-service";
+import { cloudflareR2TokenService } from "@renkin/cloudflare/services/r2-token/cloudflare-r2-token-service";
 import { cloudflareSiteServices } from "@renkin/cloudflare/services/site/cloudflare-site-service";
 import {
   type CloudStateOptions,
@@ -11,6 +12,7 @@ import {
 import { CloudflareStateRepository } from "@renkin/cloudflare/services/state/cloudflare-state-repository";
 import { cloudflareWorkerService } from "@renkin/cloudflare/services/worker/cloudflare-worker-service";
 import { createAccessClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/access-client";
+import { createAccountTokenClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/account-token-client";
 import {
   createBootstrapClient,
   createCloudflareClient,
@@ -26,6 +28,8 @@ export interface CloudflareOptions {
   readonly accountId?: string;
   readonly apiToken?: string;
   readonly stateScriptName?: string;
+  /** Separate, explicit account-owned token management authorization. Never persisted in state. */
+  readonly tokenManagementApiToken?: string;
 }
 
 const cloudCredentials = (options: CloudflareOptions = {}): CloudStateOptions => {
@@ -45,6 +49,8 @@ const cloudState = async (options?: CloudflareOptions) => {
   const { endpoint, stateAuthToken } = await ensureCloudflareState(config);
   return {
     config,
+    endpoint,
+    stateAuthToken,
     state: new CloudflareStateRepository({ endpoint, stateAuthToken, apiToken: config.apiToken }),
   };
 };
@@ -54,7 +60,24 @@ export const cloudEnvironment = async (
   environment: string,
   options?: CloudflareOptions,
 ) => {
-  const { config, state } = await cloudState(options);
+  const { config, state, endpoint, stateAuthToken } = await cloudState(options);
+  const managementState = options?.tokenManagementApiToken
+    ? new CloudflareStateRepository({
+        endpoint,
+        stateAuthToken,
+        apiToken: options.tokenManagementApiToken,
+      })
+    : undefined;
+  const accountTokenClient =
+    managementState && options?.tokenManagementApiToken
+      ? createAccountTokenClient(
+          { ...config, apiToken: options.tokenManagementApiToken },
+          {
+            request: (request, token) =>
+              managementState.gateway(stack, environment, token, request),
+          },
+        )
+      : undefined;
   const { subdomain } = await Effect.runPromise(
     createBootstrapClient(config).getAccountSubdomain(),
   );
@@ -81,6 +104,15 @@ export const cloudEnvironment = async (
     ...cloudflareAccessServices({ client: accessClient, token: lease.token }),
     ...cloudflareSiteServices({ client: siteClient, token: lease.token }),
     "cloudflare.d1": cloudflareD1Service(d1Client, lease.token),
+    ...(accountTokenClient
+      ? {
+          "cloudflare.r2-token": cloudflareR2TokenService(
+            accountTokenClient,
+            config.accountId,
+            lease.token,
+          ),
+        }
+      : {}),
     "cloudflare.r2": cloudflareR2Service(r2Client, lease.token),
     "cloudflare.kv": cloudflareKVService(kvClient, lease.token),
     "cloudflare.worker": cloudflareWorkerService({

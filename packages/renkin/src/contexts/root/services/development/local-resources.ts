@@ -40,6 +40,7 @@ export const prepareLocalResources = async (
   const namespaces: Record<string, string> = {};
   const databases: Record<string, string> = {};
   const buckets: Record<string, string> = {};
+  const r2Tokens: Record<string, readonly string[]> = {};
   const workerResources: WorkerResource[] = [];
   for (const resource of stack.resources) {
     const previous =
@@ -56,7 +57,19 @@ export const prepareLocalResources = async (
       databases[resource.id] = state.resources[resource.id]?.physicalId ?? resource.id;
     else if (resource.type === "cloudflare.r2")
       buckets[resource.id] = state.resources[resource.id]?.physicalId ?? resource.id;
-    else if (resource.type === "cloudflare.worker" && "options" in resource)
+    else if (resource.type === "cloudflare.r2-token") {
+      const properties = resource.properties;
+      if (
+        !properties ||
+        typeof properties !== "object" ||
+        Array.isArray(properties) ||
+        !("buckets" in properties) ||
+        !Array.isArray(properties.buckets) ||
+        !properties.buckets.every((id) => typeof id === "string")
+      )
+        throw new Error("Invalid local R2 token buckets.");
+      r2Tokens[resource.id] = properties.buckets as readonly string[];
+    } else if (resource.type === "cloudflare.worker" && "options" in resource)
       workerResources.push(resource as WorkerResource);
     else throw new Error("Unsupported local resource.");
   }
@@ -69,5 +82,6 @@ export const prepareLocalResources = async (
     namespaces,
     databases,
     buckets,
+    r2Tokens,
   };
 };

@@ -55,6 +55,23 @@ const bindings = (
       if (target?.definition.type !== "cloudflare.d1")
         throw new Error("D1 binding target is not provisioned.");
       result.push({ type: "d1", name, databaseId: target.physicalId });
+    } else if (requirement.type === "cloudflare.r2-token") {
+      if (target?.definition.type !== "cloudflare.r2-token" || !target.definition.secretOutputs)
+        throw new Error("R2 credential binding target is not provisioned.");
+      const { accessKeyId, secretAccessKey, endpoint, region, buckets } = object(target.outputs);
+      if (
+        typeof accessKeyId !== "string" ||
+        typeof secretAccessKey !== "string" ||
+        typeof endpoint !== "string" ||
+        region !== "auto" ||
+        !buckets
+      )
+        throw new Error("R2 credential binding is incomplete.");
+      result.push({
+        type: "secret_text",
+        name,
+        text: JSON.stringify({ accessKeyId, secretAccessKey, endpoint, region, buckets }),
+      });
     } else if (requirement.type === "cloudflare.r2") {
       if (target?.definition.type !== "cloudflare.r2")
         throw new Error("R2 binding target is not provisioned.");

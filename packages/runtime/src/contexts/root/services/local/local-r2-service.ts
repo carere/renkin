@@ -1,10 +1,25 @@
 import { fileURLToPath } from "node:url";
 import type { WorkerOptions } from "miniflare";
 import type { Requirements } from "../../models/binding.ts";
-import type { LocalR2S3Options } from "../../models/local-r2-s3.ts";
+import { type LocalR2S3Options, localR2S3Path } from "../../models/local-r2-s3.ts";
 import { bundleWorker } from "../bundler/worker-bundler.ts";
 import type { LocalGraphOptions } from "./local-graph-service.ts";
 
+export const localR2Credentials = (options: LocalGraphOptions, tokenId: string) => {
+  const ids = options.r2Tokens?.[tokenId];
+  if (!options.r2S3 || !ids?.length)
+    throw new Error(
+      "R2 credential bindings require declared buckets and explicit local S3 credentials.",
+    );
+  if (ids.some((id) => !Object.hasOwn(options.buckets ?? {}, id)))
+    throw new Error("Local R2 token bucket is not declared.");
+  return {
+    ...options.r2S3,
+    endpoint: localR2S3Path,
+    region: "auto",
+    buckets: Object.fromEntries(ids.map((id) => [id, id])),
+  };
+};
 export const localR2GatewayName = (id: string) => `__renkin_r2_s3_${id}`;
 export const localR2Source = async (options?: LocalR2S3Options) => {
   if (!options) return undefined;
@@ -36,12 +51,20 @@ export const localR2Workers = (
     const buckets: Record<string, string> = {};
     const r2Buckets: Record<string, string> = {};
     for (const requirement of Object.values(prepared[worker.id]?.requirements ?? {})) {
-      if (requirement.type !== "cloudflare.r2") continue;
-      const id = options.buckets?.[requirement.id];
-      if (!id) throw new Error("Local R2 binding target is not declared.");
-      const binding = `R2_${Object.keys(buckets).length}`;
-      buckets[requirement.id] = binding;
-      r2Buckets[binding] = id;
+      const ids =
+        requirement.type === "cloudflare.r2"
+          ? [requirement.id]
+          : requirement.type === "cloudflare.r2-token"
+            ? Object.keys(localR2Credentials(options, requirement.id).buckets)
+            : [];
+      for (const logicalId of ids) {
+        if (Object.hasOwn(buckets, logicalId)) continue;
+        const id = options.buckets?.[logicalId];
+        if (!id) throw new Error("Local R2 binding target is not declared.");
+        const binding = `R2_${Object.keys(buckets).length}`;
+        buckets[logicalId] = binding;
+        r2Buckets[binding] = id;
+      }
     }
     workers.push({
       name: localR2GatewayName(worker.id),

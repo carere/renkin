@@ -24,3 +24,6 @@ export const d1 = database;
 
 import { r2 as bucket } from "@renkin/cloudflare/models/r2";
 export const r2 = bucket;
+
+import { r2Token as bucketToken } from "@renkin/cloudflare/models/r2-token";
+export const r2Token = bucketToken;

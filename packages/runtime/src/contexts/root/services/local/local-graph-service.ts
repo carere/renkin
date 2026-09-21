@@ -12,7 +12,12 @@ import { readBuildResult } from "../bundler/read-build-result.ts";
 import { bundleOptions, readBundle } from "../bundler/worker-bundler.ts";
 import { localAssetOptions } from "./local-build-service.ts";
 import { graphBindings } from "./local-graph-bindings.ts";
-import { localR2GatewayName, localR2Source, localR2Workers } from "./local-r2-service.ts";
+import {
+  localR2Credentials,
+  localR2GatewayName,
+  localR2Source,
+  localR2Workers,
+} from "./local-r2-service.ts";
 import type { LocalWorker } from "./local-worker-service.ts";
 
 export interface GraphWorker {
@@ -31,6 +36,7 @@ export interface LocalGraphOptions {
   readonly databases?: Readonly<Record<string, string>>;
   readonly buckets?: Readonly<Record<string, string>>;
   readonly r2S3?: LocalR2S3Options;
+  readonly r2Tokens?: Readonly<Record<string, readonly string[]>>;
   readonly watch?: boolean;
   readonly onReload?: (id: string) => void;
   readonly onError?: (message: string) => void;
@@ -46,6 +52,7 @@ const workerSettings = (
   prepared: PreparedWorker,
   options: LocalGraphOptions,
 ): WorkerOptions => {
+  const credentialBindings: Record<string, string> = {};
   const kvNamespaces: Record<string, string> = {};
   const d1Databases: Record<string, string> = {};
   const r2Buckets: Record<string, string> = {};
@@ -61,6 +68,8 @@ const workerSettings = (
       if (!database)
         throw new Error(`D1 requirement ${requirement.id} is not declared in the stack.`);
       d1Databases[binding] = database;
+    } else if (requirement.type === "cloudflare.r2-token") {
+      credentialBindings[binding] = JSON.stringify(localR2Credentials(options, requirement.id));
     } else if (requirement.type === "cloudflare.r2") {
       const bucket = options.buckets?.[requirement.id];
       if (!bucket)
@@ -106,7 +115,7 @@ const workerSettings = (
     ...(worker.build ? localAssetOptions(worker.build) : {}),
     compatibilityDate: worker.compatibilityDate,
     compatibilityFlags: [...(worker.compatibilityFlags ?? ["nodejs_compat"])],
-    bindings: { ...worker.bindings },
+    bindings: { ...worker.bindings, ...credentialBindings },
     kvNamespaces,
     d1Databases,
     r2Buckets,

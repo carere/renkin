@@ -27,6 +27,7 @@ beforeAll(async () => {
           id: "provider-id",
           client_id: "client-id",
           client_secret: "one-time-secret",
+          value: "one-time-account-secret",
           name: "test-allocation",
         },
       });
@@ -158,6 +159,72 @@ it.live("requires persisted exact allocation intent and keeps a new allocation i
         })
       ).status,
     ).toBe(200);
+    expect(dispatches).toBe(before + 1);
+  }),
+);
+
+it.live("fences and encrypts account token receipts without accepting Access-token intent", () =>
+  Effect.promise(async () => {
+    const environment = "account-receipt";
+    const lease = await acquire(environment);
+    const accountMutation = {
+      ...mutation,
+      path: "/accounts/account/tokens",
+      operationKey: "account-token-create:allocation",
+    };
+    await call("write", environment, {
+      token: lease.token,
+      state: JSON.stringify({ ...state, environment }),
+    });
+    expect((await gateway(environment, lease.token, accountMutation)).status).toBe(502);
+    const accountDefinition = { ...definition, type: "cloudflare.r2-token" };
+    const accountPending = {
+      ...pending,
+      change: { ...pending.change, desired: accountDefinition },
+    };
+    await call("write", environment, {
+      token: lease.token,
+      state: JSON.stringify({ ...state, environment, pending: accountPending }),
+    });
+    const before = dispatches;
+    const created = await (await gateway(environment, lease.token, accountMutation)).json();
+    expect(
+      await (
+        await gateway(environment, lease.token, { ...accountMutation, receiptOnly: true })
+      ).json(),
+    ).toEqual(created);
+    expect(dispatches).toBe(before + 1);
+    expect(await (await call("test-raw", environment)).text()).not.toContain(
+      "one-time-account-secret",
+    );
+    const applied = {
+      definition: accountDefinition,
+      physicalId: "provider-id",
+      outputs: {
+        id: "provider-id",
+        accessKeyId: "provider-id",
+        value: "wrong",
+        creationReceipt: accountMutation.operationKey,
+      },
+    };
+    await call("write", environment, {
+      token: lease.token,
+      state: JSON.stringify({ ...state, environment, pending: { ...accountPending, applied } }),
+    });
+    expect(
+      await (
+        await gateway(environment, lease.token, { ...accountMutation, receiptOnly: true })
+      ).json(),
+    ).toEqual(created);
+    applied.outputs.value = "one-time-account-secret";
+    await call("write", environment, {
+      token: lease.token,
+      state: JSON.stringify({ ...state, environment, pending: { ...accountPending, applied } }),
+    });
+    const missing = await (
+      await gateway(environment, lease.token, { ...accountMutation, receiptOnly: true })
+    ).json();
+    expect(JSON.stringify(missing)).not.toContain("one-time-account-secret");
     expect(dispatches).toBe(before + 1);
   }),
 );

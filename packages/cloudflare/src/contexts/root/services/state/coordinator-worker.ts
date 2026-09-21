@@ -345,6 +345,7 @@ export class StateCoordinator {
         ? await decryptState(key, JSON.stringify([1, input.stack, environment]), savedState)
         : undefined,
       receipt.allocationId,
+      receipt.resourceType,
     );
 
     const receiptKey = `receipt:${environment}:${receipt.operationKey}`;
