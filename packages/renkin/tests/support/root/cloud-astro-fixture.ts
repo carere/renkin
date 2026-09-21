@@ -27,26 +27,30 @@ export const astroUrl = (state: Effect.Success<ReturnType<typeof deploy>>, id: s
     throw new Error("Astro Worker URL is missing.");
   return output.url;
 };
-export const astroRead = async (url: string, includes?: string) => {
-  const deadline = Date.now() + 60_000;
+export const astroRead = async (url: string, includes?: string, timeout = 60_000) => {
+  const deadline = Date.now() + timeout;
   let status: number | undefined;
+  let mismatch = false;
   while (Date.now() < deadline) {
     const response = await fetch(url, { signal: AbortSignal.timeout(5000) }).catch(() => undefined);
     status = response?.status;
     if (response?.ok) {
       const body = await response.text();
       if (includes === undefined || body.includes(includes)) return { response, body };
+      mismatch = true;
     }
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
-  throw new Error(`Astro HTTP propagation deadline reached (status ${status ?? "unavailable"}).`);
+  throw new Error(
+    `Astro HTTP propagation deadline reached for ${new URL(url).host}${new URL(url).pathname} (status ${status ?? "network/TLS unavailable"}${mismatch ? "; content mismatch" : ""}).`,
+  );
 };
 const boundedRequests = () => {
   const original = globalThis.fetch;
   const started = Date.now();
   let cleaning = false;
   globalThis.fetch = async (input, init) => {
-    if (!cleaning && Date.now() - started > 300_000)
+    if (!cleaning && Date.now() - started > 480_000)
       throw new Error("Astro scenario deadline reached; cleanup is required.");
     const signal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
     const response = await original(input, {

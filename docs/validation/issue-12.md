@@ -15,7 +15,7 @@ packaging and shared build caching remain separate tickets.
 | Production page generation | Actual official workerd prerender, native resource binding unavailable during generation; explicit Node fallback separately verified. |
 | Configuration and build output | Base paths/trailing slash, alternate config file, Vite source-map hooks, maps retained as build output, assets/headers and separate SSR modules. |
 | Native local behavior | Request-scoped graph bindings, native persistent KV, source reload, browser sessions, no Cloudflare credentials. |
-| Cloud behavior and cleanup | Dedicated maintained cloud scenario exists; actual cloud validation is still pending after the shared state-serialization fix below. |
+| Cloud behavior and cleanup | Maintained cloud scenario passed: static assets/domain, SSR/native KV, all session modes, stable identities and exact resource/environment cleanup. |
 
 ## Local evidence
 
@@ -52,7 +52,7 @@ An alternate config regression also verified Astro's root-relative config path
 semantics. Session settings at the resource boundary override file-level drivers
 so provisioned KV and runtime behavior agree.
 
-## Cloud investigation and cleanup
+## Cloud validation and cleanup
 
 All scopes used the explicitly authorized test account and prefix, the canonical
 `renkin-test-state-v2` backend, and an exact unique hostname. No backend upgrade
@@ -77,11 +77,36 @@ was performed by this ticket.
   executable recipe options. The maintained real-file-state regression passes
   initial deployment, repeated deployment and removal without `DataCloneError`.
   Astro built-artifact/session and native development regressions also pass with
-  that fix. This is local evidence; no cloud rerun has occurred after the fix.
+  that fix. The final cloud run below independently confirms the fix.
 - The actual SSR build artifact passed local asset session/upload and SDK
   multi-module publication through an inert capture gateway: 22 script parts,
   nested chunks preserved, approximately 655 KB multipart payload. This proves
   local serialization, not real provider acceptance.
+
+The maintained cloud suite passed with exit code zero in **260.32 seconds** for
+`renkin-test-astro-fadc1fd5/preview`. It checked:
+
+- static generated workerd output, headers and navigation on workers.dev, with no
+  static session KV;
+- HTTPS routing on the exact hostname
+  `renkin-test-astro-fadc1fd5.renkin-test.carere.dev`;
+- per-request SSR rendering, native CONTENT KV reads, workerd-generated output
+  with CONTENT unavailable during page generation, and automatic session cookies
+  incrementing from one to two;
+- replacing automatic SESSION with an explicit VISITS namespace while preserving
+  the Worker physical ID and removing the old disposable session namespace;
+- disabling sessions while preserving the explicitly retained VISITS resource's
+  physical ID and reporting sessions disabled at runtime;
+- removal of the exact owned domain, both Workers and both remaining namespaces,
+  followed by an empty environment listing.
+
+An earlier post-fix run, `renkin-test-astro-d256e2df/preview`, reached successful
+deployment but exhausted the original 60-second custom-hostname readiness wait.
+Its exact resources and environment were cleaned. The final scenario gives only
+new-domain propagation a 180-second allowance; Worker checks retain 60-second
+bounds. Diagnostics distinguish a returned HTTP status/content mismatch from
+network/TLS unavailability. The entire scenario and every request remain bounded,
+with a separate cleanup allowance. No provider write is blindly retried.
 
 ## Provenance and boundary
 
