@@ -9,7 +9,7 @@ release-artifact verification remains the separate #14 boundary.
 | Criterion | Evidence |
 | --- | --- |
 | Five services and three frontends | Public `full-graph` fixture starts Auth, API, Jobs, Notifications, Tracking, Console SPA, Customer Hub SPA and Storefront SSR. Review and Companion are absent. |
-| Clean provider-free startup | Fresh copied consumer, stripped credentials/proxies, fresh XDG configuration, disabled keyring, legacy-profile denial and OS loopback-only enforcement. The macOS run passed; Linux namespace validation awaits CI. |
+| Clean provider-free startup | Fresh copied consumer, stripped credentials/proxies, fresh XDG configuration, disabled keyring, legacy-profile denial and OS loopback-only enforcement. Both macOS sandbox and Linux network-namespace runs passed. |
 | Native behavior and restart | Real D1 migrations, KV authentication, queue→Workflow→captured email→SQLite DO/alarm, retry/DLQ and scheduled dispatch; frontend HMR, Worker reload, persisted data/stable DO identity and a separate isolated stack. |
 | Trusted browser R2 forwarding | Real Chromium signed PUT/GET reaches native R2 through the frontend origin; tampered signatures fail, the reserved endpoint precedes SPA fallback and normal routes remain available. |
 | Four framework modes | Actual TanStack Solid SPA/SSR and Astro static/SSR compile tests invalidate on shared source, lock/config/public inputs and stage values. Two differently bound declarations share one raw compile and retain separate binding wrappers. |
@@ -36,7 +36,9 @@ release-artifact verification remains the separate #14 boundary.
   ownership with the active cloud test; together these cover all 42 public
   integration tests. The two new HTTP-boundary regressions passed separately too.
 - Strict TypeScript project build, Biome and Knip passed at the final
-  checkpoint. The Linux branch requires CI; a macOS pass does not validate it.
+  checkpoint. After merge `06e117a`, all 210 tests across 13 populated suites and
+  required static checks passed locally and in [Linux CI](https://github.com/carere/renkin/actions/runs/35621947210),
+  including the network-denied graph with the original user identity restored.
 
 The source-workspace API and actual compilers/native runtimes were exercised.
 Framework source maps remain adjacent to captured entries as auxiliary output;

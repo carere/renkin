@@ -15,8 +15,8 @@ The specification and issue acceptance criteria remain authoritative.
 | [#10: Serve a protected application on its domain](https://github.com/carere/renkin/issues/10) | #4 | Complete; merged and closed |
 | [#11: Run and deploy TanStack Start Solid applications](https://github.com/carere/renkin/issues/11) | #10, #5 | Complete; merged and closed |
 | [#12: Run and deploy Astro sites](https://github.com/carere/renkin/issues/12) | #10, #5 | Complete; merged and closed |
-| [#13: Run the complete application graph with reliable build reuse](https://github.com/carere/renkin/issues/13) | #12, #11, #9, #8, #7, #6 | In progress in isolated worktree |
-| [#14: Deliver and validate the first release artifact](https://github.com/carere/renkin/issues/14) | #13 | Pending |
+| [#13: Run the complete application graph with reliable build reuse](https://github.com/carere/renkin/issues/13) | #12, #11, #9, #8, #7, #6 | Complete; merged and closed |
+| [#14: Deliver and validate the first release artifact](https://github.com/carere/renkin/issues/14) | #13 | In progress in isolated worktree |
 
 ## Validation
 
@@ -80,3 +80,13 @@ were revoked. See [TanStack evidence](../tanstack-sites.md) and
 [Linux CI](https://github.com/carere/renkin/actions/runs/35610196784) passed all
 193 tests and static checks on the combined checkpoint. Ticket #13 is active; release packaging and final
 review remain pending.
+
+Ticket #13 is complete after merge `06e117a`: all 210 behavioral tests across
+13 populated suites and required static checks passed locally and in
+[Linux CI](https://github.com/carere/renkin/actions/runs/35621947210). This includes
+OS-enforced provider-free graph startup on macOS and Linux. The separate Cloudflare
+graph test passed native service flow, signed uploads, one accepted email and a
+provider-observed cron update with all three frontend builds reused. All 17 resources
+and the successful environment were removed; both earlier failed scopes were also
+fully cleaned. See [graph and build evidence](../validation/issue-13.md).
+Release packaging and installed-consumer validation are active in ticket #14.
