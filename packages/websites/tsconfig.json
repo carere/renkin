@@ -4,5 +4,16 @@
     "outDir": "../../.moon/cache/types/packages/websites"
   },
   "files": [],
-  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "*.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "*.ts"],
+  "references": [
+    {
+      "path": "../cloudflare"
+    },
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../runtime"
+    }
+  ]
 }

@@ -14,6 +14,7 @@ import { startLocalGraph } from "@renkin/runtime/services/local/local-graph-serv
 import { LocalR2RemovalError } from "@renkin/runtime/services/local/local-r2-removal";
 import { LocalWorkflowRecoveryError } from "@renkin/runtime/services/local/workflow-recovery";
 import { Effect } from "effect";
+import { frameworkSessions } from "./development/framework-sessions.ts";
 import { prepareLocalResources } from "./development/local-resources.ts";
 
 export interface DevelopmentOptions {
@@ -40,20 +41,31 @@ const migrateDatabases = async (
 };
 
 const start = async (input: Stack, options: DevelopmentOptions) => {
-  const stack = await prepareStack(input);
   const directory = resolve(options.directory ?? ".renkin");
   const environment = options.environment ?? "local";
   const repository = new FileStateRepository(directory);
-  const lease = await repository.acquire(stack.name, environment);
+  const lease = await repository.acquire(input.name, environment);
+  const frameworks = frameworkSessions();
   let graph: Awaited<ReturnType<typeof startLocalGraph>> | undefined;
   const close = async () => {
     try {
-      await graph?.close();
+      try {
+        await frameworks.close();
+      } finally {
+        await graph?.close();
+      }
     } finally {
       await lease.release();
     }
   };
   try {
+    const stack = await prepareStack(
+      await frameworks.prepare(
+        input,
+        resolve(directory, "frameworks", input.name, environment),
+        options.watch ?? true,
+      ),
+    );
     const persist = resolve(directory, "data", stack.name, environment);
     const { state, ...resources } = await prepareLocalResources(
       stack,
@@ -70,6 +82,7 @@ const start = async (input: Stack, options: DevelopmentOptions) => {
       onError: (message) => options.progress?.(message),
     });
     await migrateDatabases(stack, graph);
+    await frameworks.connect(graph);
     for (const key of Object.keys(state.outputs)) delete state.outputs[key];
     for (const [id, localWorker] of Object.entries(graph.workers)) {
       state.outputs[id] = { value: { url: localWorker.url } };

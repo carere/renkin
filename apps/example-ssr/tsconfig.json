@@ -1,8 +1,17 @@
 {
   "extends": "../../tsconfig.options.json",
   "compilerOptions": {
-    "outDir": "../../.moon/cache/types/apps/example-ssr"
+    "outDir": "../../.moon/cache/types/apps/example-ssr",
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["node", "vite/client"]
   },
   "files": [],
-  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "*.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "*.ts"],
+  "references": [
+    {
+      "path": "../../packages/renkin"
+    }
+  ]
 }

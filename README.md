@@ -15,8 +15,9 @@ R2 buckets, opt-in local presigned uploads and scoped preview credentials are de
 [R2 and preview usage](docs/r2-and-previews.md).
 Native cron handlers, queues, durable Workflows and captured email support background
 jobs; see [background jobs and validation](docs/background-jobs.md).
-Additional resources, framework integrations and the release artifact remain in
-progress. See the
+TanStack Start Solid SPA/SSR builds, native development bindings and runnable
+examples are described in [TanStack sites](docs/tanstack-sites.md).
+Additional integrations and the release artifact remain in progress. See the
 [architecture](docs/architecture.md) for the agreed workspace boundaries and open
 decisions.
 
