@@ -1,3 +1,4 @@
+import { cloudflareKVService } from "@renkin/cloudflare/services/kv/cloudflare-kv-service";
 import {
   type CloudStateOptions,
   ensureCloudflareState,
@@ -9,6 +10,7 @@ import {
   createBootstrapClient,
   createCloudflareClient,
 } from "@renkin/cloudflare-sdk/services/cloudflare-client/cloudflare-client";
+import { createKVClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/kv-client";
 import type { ResourceServices } from "@renkin/core/services/resource/resource-service";
 import { Effect } from "effect";
 
@@ -52,7 +54,11 @@ export const cloudEnvironment = async (
   const client = createCloudflareClient(config, {
     request: (request, token) => state.gateway(stack, environment, token, request),
   });
+  const kvClient = createKVClient(config, {
+    request: (request, token) => state.gateway(stack, environment, token, request),
+  });
   const services: ResourceServices = (lease) => ({
+    "cloudflare.kv": cloudflareKVService(kvClient, lease.token),
     "cloudflare.worker": cloudflareWorkerService({
       client,
       token: lease.token,
