@@ -18,7 +18,8 @@
         "tests/fixtures/**/vite.config.mts",
         "vitest.cloud.config.ts",
         "release.ts",
-        "vitest.release.config.ts"
+        "vitest.release.config.ts",
+        "vitest.release-cloud.config.ts"
       ],
       "ignoreDependencies": ["cloudflare"]
     },
