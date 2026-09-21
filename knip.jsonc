@@ -13,7 +13,12 @@
     "apps/website": { "entry": ["build.ts", "renkin.ts"], "ignoreDependencies": ["cloudflare"] },
     "packages/cloudflare": { "entry": ["vitest.cloud.config.ts"] },
     "packages/renkin": {
-      "entry": ["tests/fixtures/**/*.ts", "vitest.cloud.config.ts"]
+      "entry": [
+        "tests/fixtures/**/*.ts",
+        "tests/fixtures/**/vite.config.mts",
+        "vitest.cloud.config.ts"
+      ],
+      "ignoreDependencies": ["cloudflare"]
     },
     ".": {
       "entry": [],
