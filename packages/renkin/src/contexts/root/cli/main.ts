@@ -7,14 +7,16 @@ import { Effect } from "effect";
 import {
   deploy,
   development,
+  inspectRecovery,
   listEnvironments,
   planDeployment,
   readOutputs,
+  reconcileOperation,
   removeEnvironment,
 } from "../api.ts";
 
 const usage =
-  "Usage: renkin dev|plan|deploy [--file renkin.ts] [--env name] [--yes] [--force]; renkin list|outputs|remove --stack name [--env name]. Use --local only with list or outputs.";
+  "Usage: renkin dev|plan|deploy [--file renkin.ts] [--env name] [--yes] [--force]; renkin list|outputs|remove|inspect|reconcile --stack name [--env name]. Use --local only with list or outputs.";
 class CommandError extends Error {
   readonly name = "CommandError";
 }
@@ -73,6 +75,44 @@ const runDevelopment = async (): Promise<void> => {
     if (!controller.signal.aborted) throw error;
   });
 };
+const runRecovery = async (
+  environment: string,
+  cloudflare: { stateScriptName?: string },
+): Promise<boolean> => {
+  if (command === "inspect") {
+    console.log(
+      JSON.stringify(
+        await Effect.runPromise(inspectRecovery(required("stack"), environment, cloudflare)),
+      ),
+    );
+    return true;
+  }
+  if (command !== "reconcile") return false;
+  const outcome = required("outcome");
+  if (!["completed", "not-applied"].includes(outcome) || !flag("provider-settled"))
+    throw new CommandError(
+      "Reconciliation requires --outcome completed|not-applied and --provider-settled. Time elapsed or resource absence cannot establish provider settlement.",
+    );
+  const decision = {
+    operationId: required("operation"),
+    outcome: outcome as "completed" | "not-applied",
+    operator: required("operator"),
+    evidence: required("evidence"),
+    providerSettled: true as const,
+  };
+  const stack = required("stack");
+  process.stderr.write(`${decision.outcome} ${decision.operationId} in ${stack}/${environment}\n`);
+  process.stderr.write(
+    "Record the operator's provider settlement assertion and clear this exact quarantine. A delayed provider request cannot be fenced by Renkin.\n",
+  );
+  if (!flag("yes") && !(await confirm())) throw new CommandError("Reconciliation cancelled.");
+  console.log(
+    JSON.stringify(
+      await Effect.runPromise(reconcileOperation(stack, environment, decision, cloudflare)),
+    ),
+  );
+  return true;
+};
 const run = async (): Promise<void> => {
   if (flag("local") && !["list", "outputs"].includes(command ?? ""))
     throw new Error("--local is supported only by list and outputs; use dev for local execution.");
@@ -80,6 +120,7 @@ const run = async (): Promise<void> => {
   const cloudflare = {
     ...(option("state-worker") ? { stateScriptName: option("state-worker") as string } : {}),
   };
+  if (await runRecovery(environment, cloudflare)) return;
   const readOptions = {
     cloudflare,
     ...(flag("local")

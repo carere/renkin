@@ -16,3 +16,10 @@ export const listEnvironments = list;
 export const readOutputs = outputs;
 
 export const planDeployment = preview;
+
+import {
+  inspectRecovery as inspect,
+  reconcileOperation as reconcile,
+} from "./services/recovery.ts";
+export const inspectRecovery = inspect;
+export const reconcileOperation = reconcile;

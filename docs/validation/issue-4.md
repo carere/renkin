@@ -14,17 +14,18 @@ versions in `bun.lock`. These results concern ticket #4, not the complete releas
   the Vitest runner executing under Bun itself.
 - SDK: 22 tests passed, covering released Distilled HTTP behavior, authentication,
   bounded throttling retry, multipart uploads and the protected-preview protocol.
-- Cloudflare: 16 tests passed through the actual SDK HTTP boundary and Miniflare
+- Cloudflare: 19 tests passed through the actual SDK HTTP boundary and Miniflare
   Durable Objects, including expired crashed-client leases, stale requests,
   encryption and state-authentication rejection. The real lease-expiry test takes
   approximately 60 seconds.
 - Runtime: one real workerd HTTP/source-watch test passed.
-- Public package: five tests passed, covering ordinary and Effect Workers through
+- Public package: six tests passed, covering ordinary and Effect Workers through
   public entrypoints, typed Effect requirements, separate-process JSON reads,
-  and one-command dev startup/reload with provider credentials absent.
+  one-command dev startup/reload with provider credentials absent, and explicit
+  reconciliation assertion enforcement.
 - The populated Moon tasks were executed. Untouched workspace projects still
   contain empty suites; they are not included in this behavioral claim.
-- Linux is configured in CI; no Linux execution is claimed by this local record.
+- The parent task subsequently verified all 55 initial tests in Linux CI.
 
 ## Authorized Cloudflare checks
 
@@ -63,12 +64,17 @@ and Durable Object class. Only the secured v2 state service remains.
 
 ## Limits still tracked by the parent specification
 
-The rare failure window where the coordinator loses its process after journaling
-but before a provider dispatch can be proved complete remains quarantined. It
-is never interpreted as permission for an overlapping or stale mutation.
-The parent task is resolving the required operator workflow for this ambiguous
-provider outcome; the current state is not a claim of unlimited automatic crash
-recovery. Ordinary deployment-client crashes are covered independently.
+The user accepted explicit operator reconciliation for the rare ambiguous provider
+outcome window, recorded in ADR 0007. Default quarantine remains in place.
+Three additional real Durable Object integration tests verify both settlement
+outcomes, exact operation identity, encrypted audit receipts, preserved pending
+state, stale-request fencing and rejection of reconciliation/takeover while a
+provider dispatch remains active after lease expiry. A separate Bun CLI test
+verifies that `--yes --force` cannot replace an explicit settlement assertion.
+The full 19-test Cloudflare integration suite and five-test public integration
+suite passed after this addition, along with TypeScript, Biome and Knip.
+These recovery tests are local controlled tests; no live ambiguous Cloudflare
+request was intentionally induced.
 
-This slice does not validate a packed package, Linux execution, additional
-resource adapters, framework integrations or the complete application graph.
+This slice does not validate a packed package, additional resource adapters,
+framework integrations or the complete application graph.

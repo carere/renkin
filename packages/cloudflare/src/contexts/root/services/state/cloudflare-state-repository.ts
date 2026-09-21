@@ -4,6 +4,14 @@ import {
   type StateLease,
   type StateRepository,
 } from "@renkin/core/services/state/state-repository";
+import {
+  type ReconciliationDecision,
+  type ReconciliationReceipt,
+  type RecoveryInspection,
+  validDecision,
+  validInspection,
+  validReceipt,
+} from "./reconciliation.ts";
 import type { CoordinatorRequest, GatewayRequest, GatewayResponse } from "./state-protocol.ts";
 
 export interface CloudflareStateOptions {
@@ -51,6 +59,29 @@ export class CloudflareStateRepository implements StateRepository {
     } catch {
       throw new StateError("invalid", "Cloud state returned an invalid response.");
     }
+  }
+  async inspect(stack: string, environment: string): Promise<RecoveryInspection> {
+    const value = await this.call<unknown>("inspect", { stack, environment });
+    if (!validInspection(value)) throw new StateError("invalid", "Recovery inspection is invalid.");
+    return value;
+  }
+  async reconcile(
+    stack: string,
+    environment: string,
+    decision: ReconciliationDecision,
+  ): Promise<ReconciliationReceipt> {
+    if (!validDecision(decision))
+      throw new StateError(
+        "invalid",
+        "Reconciliation requires exact operation identity, outcome, operator, evidence and explicit provider settlement.",
+      );
+    const value = await this.call<unknown>("reconcile", { stack, environment, decision });
+    if (!validReceipt(value))
+      throw new StateError(
+        "invalid",
+        "Reconciliation receipt is invalid; inspect the exact operation before retrying.",
+      );
+    return value;
   }
   async read(stack: string, environment: string): Promise<EnvironmentState | undefined> {
     const value = await this.call<string | null>("read", { stack, environment });
