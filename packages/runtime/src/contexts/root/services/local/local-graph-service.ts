@@ -252,6 +252,31 @@ const watchGraph = async (
   }
 };
 
+const exposedWorkers = async (
+  session: GraphSession,
+  contexts: ReadonlyMap<string, BuildContext>,
+  declaredWorkers: ReadonlySet<string>,
+) => {
+  const runtime = session.runtime;
+  if (!runtime) throw new Error("Local graph is not running.");
+  const workers: Record<string, LocalWorker> = {};
+  for (const worker of session.options.workers) {
+    if (!declaredWorkers.has(worker.id)) continue;
+    const url = String(await runtime.unsafeGetDirectURL(worker.id));
+    workers[worker.id] = {
+      url,
+      fetch: (path = "/", init) => fetch(new URL(path, url), init),
+      reload: async () => {
+        if (worker.build) await reloadArtifact(worker, session);
+        else await contexts.get(worker.id)?.rebuild();
+        await session.pending;
+      },
+      close: async () => {},
+    };
+  }
+  return workers;
+};
+
 export const startLocalGraph = async (
   options: LocalGraphOptions,
 ): Promise<{
@@ -260,13 +285,13 @@ export const startLocalGraph = async (
   bindings: (workerId: string) => Promise<Record<string, unknown>>;
   close: () => Promise<void>;
 }> => {
+  const declaredWorkers = new Set(options.workers.map((worker) => worker.id));
   const graphWorkers = [...options.workers];
   options = { ...options, workers: graphWorkers };
   const contexts = new Map<string, BuildContext>();
   const watchers: FSWatcher[] = [];
   const prepared: Record<string, PreparedWorker> = {};
   let runtime: Miniflare | undefined;
-  const pending = Promise.resolve();
   const settings = () => ({
     host: "127.0.0.1",
     port: 0,
@@ -290,7 +315,13 @@ export const startLocalGraph = async (
         : []),
     ],
   });
-  const session: GraphSession = { runtime, prepared, pending, options, settings };
+  const session: GraphSession = {
+    runtime,
+    prepared,
+    pending: Promise.resolve(),
+    options,
+    settings,
+  };
   const close = async () => {
     for (const watcher of watchers) watcher.close();
     await Promise.all([...contexts.values()].map((context) => context.dispose()));
@@ -302,20 +333,7 @@ export const startLocalGraph = async (
     runtime = new Miniflare(settings());
     session.runtime = runtime;
     await runtime.ready;
-    const workers: Record<string, LocalWorker> = {};
-    for (const worker of options.workers) {
-      const url = String(await runtime.unsafeGetDirectURL(worker.id));
-      workers[worker.id] = {
-        url,
-        fetch: (path = "/", init) => fetch(new URL(path, url), init),
-        reload: async () => {
-          if (worker.build) await reloadArtifact(worker, session);
-          else await contexts.get(worker.id)?.rebuild();
-          await session.pending;
-        },
-        close: async () => {},
-      };
-    }
+    const workers = await exposedWorkers(session, contexts, declaredWorkers);
     await watchGraph(options, contexts, watchers, session);
     const readyRuntime = runtime;
     return {

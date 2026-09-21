@@ -1,3 +1,4 @@
+import type { KVNamespace } from "@cloudflare/workers-types";
 import { Effect } from "effect";
 import { type D1Client, type D1Requirement, d1Client, type NativeD1 } from "./d1.ts";
 
@@ -16,31 +17,7 @@ export interface WorkerRequirement<
 }
 export type BindingRequirement = KVRequirement | D1Requirement | WorkerRequirement<unknown>;
 export type Requirements = Readonly<Record<string, BindingRequirement>>;
-export interface NativeKV {
-  get(key: string, type?: "text"): Promise<string | null>;
-  get<T = unknown>(key: string, type: "json"): Promise<T | null>;
-  get(key: string, type: "arrayBuffer"): Promise<ArrayBuffer | null>;
-  get(key: string, type: "stream"): Promise<ReadableStream | null>;
-  getWithMetadata<T = string, M = unknown>(
-    key: string,
-    options?: { type?: "text" | "json"; cacheTtl?: number },
-  ): Promise<{ value: T | null; metadata: M | null; cacheStatus?: string | null }>;
-  put(
-    key: string,
-    value: string | ArrayBuffer | ArrayBufferView | ReadableStream,
-    options?: { expiration?: number; expirationTtl?: number; metadata?: unknown },
-  ): Promise<void>;
-  delete(key: string): Promise<void>;
-  list<M = unknown>(options?: {
-    prefix?: string;
-    limit?: number;
-    cursor?: string;
-  }): Promise<{
-    keys: { name: string; expiration?: number; metadata?: M }[];
-    list_complete: boolean;
-    cursor?: string;
-  }>;
-}
+export type NativeKV = KVNamespace;
 export class BindingError extends Error {
   readonly name = "BindingError";
   constructor(

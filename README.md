@@ -4,6 +4,8 @@ An Effect-based infrastructure toolkit for Cloudflare. This repository currently
 provides a Bun/Moon monorepo and an initial Worker deployment slice: ordinary and
 Effect HTTP Workers, local hot reload, encrypted shared state, lifecycle recovery,
 and JSON inspection APIs. See [Worker usage and validation](docs/worker-first-slice.md).
+Connected Workers now support typed/native KV, mutual service bindings, protected
+storage and explicit renames; see [connected Worker usage](docs/connected-workers.md).
 Additional resources, framework integrations and the release artifact remain in
 progress. See the
 [architecture](docs/architecture.md) for the agreed workspace boundaries and open
