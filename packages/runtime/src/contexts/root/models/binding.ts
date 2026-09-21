@@ -5,7 +5,9 @@ export interface KVRequirement {
   readonly type: "cloudflare.kv";
   readonly id: string;
 }
-export interface WorkerRequirement<Service = { fetch(request: Request): Promise<Response> }> {
+export interface WorkerRequirement<
+  Service = { fetch(request: Request | string | URL, init?: RequestInit): Promise<Response> },
+> {
   readonly type: "cloudflare.worker-reference";
   readonly id: string;
   readonly entrypoint?: string;
@@ -99,14 +101,18 @@ export const resolveBindings = <R extends Requirements>(
       ];
     }),
   ) as Resolved<R>;
-export const workerReference = <Service = { fetch(request: Request): Promise<Response> }>(
+export const workerReference = <
+  Service = { fetch(request: Request | string | URL, init?: RequestInit): Promise<Response> },
+>(
   id: string,
   options: { readonly entrypoint?: string } = {},
-): WorkerRequirement<Service> => ({ type: "cloudflare.worker-reference", id, ...options });
-export const externalWorker = <Service = { fetch(request: Request): Promise<Response> }>(
+): WorkerRequirement<NoInfer<Service>> => ({ type: "cloudflare.worker-reference", id, ...options });
+export const externalWorker = <
+  Service = { fetch(request: Request | string | URL, init?: RequestInit): Promise<Response> },
+>(
   name: string,
   options: { readonly entrypoint?: string; readonly localEntry?: string } = {},
-): WorkerRequirement<Service> => ({
+): WorkerRequirement<NoInfer<Service>> => ({
   type: "cloudflare.worker-reference",
   id: name,
   ...(options.entrypoint ? { entrypoint: options.entrypoint } : {}),

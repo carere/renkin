@@ -33,6 +33,7 @@ const input = (definition: ResourceDefinition): Metadata => {
 const bindings = (
   definition: ResourceDefinition,
   resources: Readonly<Record<string, ResourceState>>,
+  ignoreRemovedWorkers = false,
 ): NonNullable<Metadata["bindings"]> => {
   const properties = object(definition.properties);
   const result: NonNullable<Metadata["bindings"]> = Object.entries(
@@ -56,6 +57,7 @@ const bindings = (
       result.push({ type: "d1", name, databaseId: target.physicalId });
     } else if (requirement.type === "cloudflare.worker-reference") {
       const external = requirement.external ? object(requirement.external) : undefined;
+      if (!external && !target && ignoreRemovedWorkers) continue;
       const service = external?.name ?? target?.physicalId;
       if (
         typeof service !== "string" ||
@@ -94,6 +96,15 @@ interface WorkerServiceOptions {
   readonly subdomain: string;
 }
 
+const configurationHash = (
+  definition: ResourceDefinition,
+  resolved: NonNullable<Metadata["bindings"]>,
+) =>
+  createHash("sha256")
+    .update(canonical(definition.properties))
+    .update(JSON.stringify(resolved))
+    .digest("hex");
+
 const publishWorker = async (
   options: WorkerServiceOptions,
   resource: ResourceState,
@@ -103,10 +114,7 @@ const publishWorker = async (
   force = false,
 ) => {
   const resolved = bindings(resource.definition, resources);
-  const hash = createHash("sha256")
-    .update(canonical(resource.definition.properties))
-    .update(JSON.stringify(resolved))
-    .digest("hex");
+  const hash = configurationHash(resource.definition, resolved);
   if (force || !tags.includes(`renkin-config:${hash}`)) {
     const publication = await prepareWorkerPublication(resource, options.siteClient, options.token);
     await Effect.runPromise(
@@ -127,14 +135,78 @@ const publishWorker = async (
   }
 };
 
+const detachCallers = async (
+  target: ResourceState,
+  resources: Readonly<Record<string, ResourceState>>,
+  options: WorkerServiceOptions,
+  marker: (id: string) => string,
+  verifyOwner: (
+    name: string,
+    ownershipId: string,
+  ) => Promise<Awaited<ReturnType<typeof observeWorker>>>,
+): Promise<void> => {
+  for (const caller of Object.values(resources)) {
+    if (caller.definition.type !== "cloudflare.worker") continue;
+    const observed = await verifyOwner(
+      caller.physicalId,
+      caller.ownershipId ?? caller.definition.id,
+    );
+    if (
+      !observed?.bindings?.some(
+        (binding) => binding.type === "service" && binding.service === target.physicalId,
+      )
+    )
+      continue;
+    const expected = bindings(caller.definition, resources, true);
+    const candidate = expected.map((binding) => {
+      if (binding.type !== "service") return binding;
+      const current = observed.bindings?.find((item) => item.name === binding.name);
+      return current?.type === "service" && current.service === target.physicalId
+        ? { ...binding, service: target.physicalId }
+        : binding;
+    });
+    if (
+      !observed.tags?.includes(`renkin-config:${configurationHash(caller.definition, candidate)}`)
+    )
+      throw new Error(
+        "Owned caller configuration changed; reconcile it before removing its target.",
+      );
+    const publication = await prepareWorkerPublication(caller, options.siteClient, options.token);
+    const resolved = expected.filter(
+      (binding) => binding.type !== "service" || binding.service !== target.physicalId,
+    );
+    await Effect.runPromise(
+      options.client.putWorker(
+        {
+          scriptName: caller.physicalId,
+          metadata: {
+            ...input(caller.definition),
+            ...publication.metadata,
+            bindings: [...resolved, ...(publication.metadata.bindings ?? [])],
+            tags: [
+              marker(caller.physicalId),
+              `renkin-config:${configurationHash(caller.definition, resolved)}`,
+              `renkin-detached:${target.physicalId}`,
+            ],
+          },
+          files: publication.files,
+        },
+        options.token,
+      ),
+    );
+  }
+};
+const observeWorker = (options: WorkerServiceOptions, name: string) =>
+  Effect.runPromise(
+    options.client
+      .getWorker(name)
+      .pipe(Effect.catchTag("WorkerNotFound", () => Effect.succeed(undefined))),
+  );
+
 export const cloudflareWorkerService = (options: WorkerServiceOptions): ResourceService => {
   const marker = (id: string) => `renkin:${options.stack}:${options.environment}:${id}`;
   const verifyOwner = async (name: string, ownershipId: string) => {
-    const existing = await Effect.runPromise(
-      options.client
-        .getWorker(name)
-        .pipe(Effect.catchTag("WorkerNotFound", () => Effect.succeed(undefined))),
-    );
+    const existing = await observeWorker(options, name);
     if (
       existing &&
       !existing.tags?.some((tag) => tag === marker(name) || tag === marker(ownershipId))
@@ -182,9 +254,10 @@ export const cloudflareWorkerService = (options: WorkerServiceOptions): Resource
       );
       await finalizeWorkerPublication(resource, options.siteClient, options.token);
     },
-    remove: async (resource) => {
+    remove: async (resource, resources = {}) => {
       if (!(await verifyOwner(resource.physicalId, resource.ownershipId ?? resource.definition.id)))
         return;
+      await detachCallers(resource, resources, options, marker, verifyOwner);
       await Effect.runPromise(
         options.client
           .deleteWorker(resource.physicalId, options.token)

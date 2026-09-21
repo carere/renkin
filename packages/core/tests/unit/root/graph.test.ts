@@ -13,6 +13,98 @@ const definition = (id: string): ResourceDefinition => ({
   properties: {},
 });
 
+it.effect(
+  "redirects every caller before deleting a replaced mutual target and recovers deletion",
+  () =>
+    Effect.gen(function* () {
+      const state = new InMemoryStateRepository();
+      state.value = emptyState("app", "dev");
+      for (const id of ["a", "b"]) {
+        state.value.resources[id] = {
+          definition: definition(id),
+          physicalId: `old-${id}`,
+          outputs: null,
+        };
+      }
+      const events: string[] = [];
+      let fail = true;
+      const stack = {
+        name: "app",
+        resources: [{ ...definition("b"), identity: "replacement" }, definition("a")],
+      };
+      const options = {
+        environment: "dev",
+        state,
+        yes: true,
+        services: () => ({
+          worker: {
+            deferredBindings: true,
+            refresh: true,
+            apply: async () => null,
+            bind: async (resource: { definition: ResourceDefinition }) => {
+              events.push(`bind:${resource.definition.id}`);
+            },
+            remove: async () => {
+              events.push("delete:old-b");
+              expect(events).toContain("bind:a");
+              if (fail) throw new Error("interrupted after callers were redirected");
+            },
+          },
+        }),
+      };
+      expect((yield* Effect.exit(deploy(stack, options)))._tag).toBe("Failure");
+      expect(events).toEqual(["bind:b", "bind:a", "delete:old-b"]);
+      state.value = state.written;
+      const replacement = state.value?.resources.b?.physicalId;
+      expect(replacement).not.toBe("old-b");
+      fail = false;
+      const result = yield* deploy(stack, options);
+      expect(result.resources.b?.physicalId).toBe(replacement);
+      expect(result.pending).toBeUndefined();
+    }),
+);
+
+it.effect("finishes interrupted bindings before removing graph targets", () =>
+  Effect.gen(function* () {
+    const state = new InMemoryStateRepository();
+    state.value = emptyState("app", "dev");
+    const target = { definition: definition("target"), physicalId: "target", outputs: null };
+    const caller = { definition: definition("caller"), physicalId: "caller", outputs: null };
+    Object.assign(state.value.resources, { target, caller });
+    state.value.bindings = [
+      {
+        change: { id: "caller", kind: "create", desired: caller.definition },
+        physicalId: "caller",
+        phase: "bindings",
+        applied: caller,
+      },
+    ];
+    const events: string[] = [];
+    yield* deploy(
+      { name: "app", resources: [] },
+      {
+        environment: "dev",
+        state,
+        yes: true,
+        services: () => ({
+          worker: {
+            deferredBindings: true,
+            apply: async () => null,
+            bind: async (_resource, resources) => {
+              expect(resources.target).toBeDefined();
+              events.push("bind");
+            },
+            remove: async () => {
+              events.push("remove");
+            },
+          },
+        }),
+      },
+    );
+    expect(events).toEqual(["bind", "remove", "remove"]);
+  }),
+);
+
 it.effect("provisions mutual call targets before binding and recovers binding interruption", () =>
   Effect.gen(function* () {
     const state = new InMemoryStateRepository();
