@@ -1,5 +1,6 @@
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { defineStack, development } from "renkin";
@@ -20,9 +21,13 @@ const run = (
   );
 const writeApplication = async (root: string) => {
   await writeFile(
+    join(root, "resources.mjs"),
+    'import {kv} from "renkin/cloudflare"; export const Cache=kv("Cache");',
+  );
+  await writeFile(
     join(root, "a.mjs"),
-    `import {Effect} from "effect";import {defineWorker,workerReference} from "renkin/worker";import {kv} from "renkin/cloudflare";
-  export default defineWorker({CACHE:kv("Cache"), B:workerReference("B",{entrypoint:"Service"})},({CACHE,B})=>({fetch:(request)=>Effect.gen(function*(){
+    `import {Effect} from "effect";import {defineWorker,workerReference} from "renkin/worker";import {Cache} from "./resources.mjs";
+  export default defineWorker({CACHE:Cache, B:workerReference("B",{entrypoint:"Service"})},({CACHE,B})=>({fetch:(request)=>Effect.gen(function*(){
     const path=new URL(request.url).pathname;
     if(path==="/echo")return new Response("from-a");
     if(path==="/write"){yield* CACHE.put("key","saved");return new Response("ok");}
@@ -41,6 +46,8 @@ const writeApplication = async (root: string) => {
   export default defineWorker({A:workerReference("A")},()=>({fetch:()=>new Response("b")}));`,
   );
 };
+const sharedCache = async (root: string): Promise<ReturnType<typeof kv>> =>
+  (await import(pathToFileURL(join(root, "resources.mjs")).href)).Cache;
 
 it.effect(
   "runs mutual named RPC, resolved KV clients and persistent native data across restart and rename",
@@ -48,12 +55,11 @@ it.effect(
     Effect.promise(async () => {
       const root = await mkdtemp(join(process.cwd(), "tests/fixtures/connected-"));
       const directory = join(root, "state");
-      const cache = kv("Cache");
       await writeApplication(root);
       const stack = defineStack({
         name: "connected",
         resources: [
-          cache,
+          await sharedCache(root),
           worker("A", { entry: join(root, "a.mjs"), compatibilityDate: "2026-07-30" }),
           worker("B", { entry: join(root, "b.mjs"), compatibilityDate: "2026-07-30" }),
         ],
@@ -88,8 +94,11 @@ it.effect(
           stack,
         );
         await writeFile(
-          join(root, "a.mjs"),
-          (await readFile(join(root, "a.mjs"), "utf8")).replace('kv("Cache")', 'kv("Renamed")'),
+          join(root, "resources.mjs"),
+          (await readFile(join(root, "resources.mjs"), "utf8")).replace(
+            'kv("Cache")',
+            'kv("Renamed")',
+          ),
         );
         const renamed = defineStack({
           ...stack,

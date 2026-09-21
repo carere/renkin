@@ -109,13 +109,13 @@
       "name": "@renkin/runtime",
       "version": "0.0.0",
       "dependencies": {
+        "@cloudflare/workers-types": "^5.20260921.1",
         "effect": "^4.0.0-rc.115",
         "esbuild": "^0.28.2",
         "ignore": "^7.0.9",
         "miniflare": "^4.20260730.0",
       },
       "devDependencies": {
-        "@cloudflare/workers-types": "^5.20260921.1",
         "@effect/vitest": "^4.0.0-rc.115",
         "drizzle-orm": "^0.45.3",
         "vitest": "^5.0.0",
