@@ -169,17 +169,28 @@ const serviceToken = ({ client, token }: Options): ResourceService => ({
       ...object(definition.properties),
       name: ownershipName,
     } as unknown as AccessServiceTokenInput;
+    const creationReceipt = previous
+      ? object(previous.outputs).creationReceipt
+      : `access-token-create:${allocation}`;
+    const replayed =
+      !previous && typeof creationReceipt === "string"
+        ? await Effect.runPromise(client.replayServiceToken(desired, token, creationReceipt))
+        : undefined;
     const tokens = await all((page) => Effect.runPromise(client.listServiceTokens(page)));
-    let observed = tokens.find((item) =>
-      previous ? item.id === previous.physicalId : item.name === ownershipName,
-    );
-    let secret = previous ? object(previous.outputs).clientSecret : undefined;
+    let observed = replayed?.id
+      ? replayed
+      : tokens.find((item) =>
+          previous ? item.id === previous.physicalId : item.name === ownershipName,
+        );
+    let secret = previous ? object(previous.outputs).clientSecret : replayed?.clientSecret;
     if (!observed) {
       if (previous)
         throw new Error(
           "The managed Access service token is missing; explicit replacement is required.",
         );
-      const created = await Effect.runPromise(client.createServiceToken(desired, token));
+      const created = await Effect.runPromise(
+        client.createServiceToken(desired, token, String(creationReceipt)),
+      );
       secret = created.clientSecret;
       observed = created;
     } else {
@@ -194,7 +205,7 @@ const serviceToken = ({ client, token }: Options): ResourceService => ({
     if (typeof secret !== "string" || !secret)
       throw new Error("Cloudflare did not return the new Access token secret.");
     const fresh = await Effect.runPromise(client.getServiceToken(id(observed)));
-    return result({ ...fresh, clientSecret: secret }, ownershipName);
+    return result({ ...fresh, clientSecret: secret, creationReceipt }, ownershipName);
   },
   remove: async (resource) => {
     const observed = (await all((page) => Effect.runPromise(client.listServiceTokens(page)))).find(

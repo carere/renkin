@@ -13,7 +13,8 @@ export const createSiteClient = (config: CloudflareConfig, gateway: MutationGate
       write(Workers.putDomain({ ...input, accountId }), token),
     deleteDomain: (domainId: string, token: string) =>
       write(Workers.deleteDomain({ accountId, domainId }), token),
-    listDestinations: () => read(Workers.listObservabilityDestinations({ accountId })),
+    listDestinations: (page = 1) =>
+      read(Workers.listObservabilityDestinations({ accountId, page, perPage: 100 })),
     createDestination: (input: DestinationInput, token: string) =>
       write(Workers.createObservabilityDestination({ ...input, accountId }), token),
     updateDestination: (

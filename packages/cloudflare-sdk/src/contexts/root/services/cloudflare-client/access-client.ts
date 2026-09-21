@@ -38,8 +38,17 @@ export const createAccessClient = (config: CloudflareConfig, gateway: MutationGa
       read(Access.getAccessServiceTokenForAccount({ accountId, serviceTokenId })),
     listServiceTokens: (page = 1) =>
       read(Access.listAccessServiceTokensForAccount({ accountId, page, perPage: 100 })),
-    createServiceToken: (input: AccessServiceTokenInput, token: string) =>
-      write(Access.createAccessServiceTokenForAccount({ ...input, accountId }), token),
+    createServiceToken: (input: AccessServiceTokenInput, token: string, operationKey?: string) =>
+      write(
+        Access.createAccessServiceTokenForAccount({ ...input, accountId }),
+        token,
+        operationKey ? { operationKey } : {},
+      ),
+    replayServiceToken: (input: AccessServiceTokenInput, token: string, operationKey: string) =>
+      write(Access.createAccessServiceTokenForAccount({ ...input, accountId }), token, {
+        operationKey,
+        receiptOnly: true,
+      }),
     updateServiceToken: (serviceTokenId: string, input: AccessServiceTokenInput, token: string) =>
       write(
         Access.updateAccessServiceTokenForAccount({ ...input, accountId, serviceTokenId }),
