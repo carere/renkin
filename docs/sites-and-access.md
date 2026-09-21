@@ -60,7 +60,9 @@ application's policies; omitting policies preserves them.
 
 A protected custom domain must refer to its Access application, and its Worker
 must disable `workersDev`. Renkin verifies application coverage before publishing
-the domain and disables Worker preview URLs. Resource ownership is checked before
+the domain and disables Worker preview URLs. A private Worker closes these
+alternate origins before uploading application code; a failed closure prevents
+publication. Resource ownership is checked before
 updates or deletion. Replacing a managed Worker moves its existing owned domain
 to the replacement. Cloudflare automatically issues the domain certificate;
 [Cloudflare documents that deleting a domain does not remove its certificate](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/#certificates).

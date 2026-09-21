@@ -48,7 +48,7 @@ it.live(
         const lease = (await (await call(emulator, "acquire", "large")).json()) as {
           token: string;
         };
-        const state = JSON.stringify({ source: "unique-secret-" + "a".repeat(10 * 1024 * 1024) });
+        const state = JSON.stringify({ source: `unique-secret-${"a".repeat(10 * 1024 * 1024)}` });
         expect((await call(emulator, "write", "large", { token: lease.token, state })).status).toBe(
           200,
         );
