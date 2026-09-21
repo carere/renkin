@@ -215,13 +215,22 @@ const execute = async (stack: Stack, options: DeployOptions): Promise<Environmen
       await applyChange(change, state, lease, services);
     }
     await finishBindings();
+    // A recovered binding may describe the previous source. Apply the current
+    // declarations after that durable graph has completed, never silently skip it.
+    for (const change of plan(stack, state).filter((item) => item.kind !== "unchanged")) {
+      await applyChange(change, state, lease, services);
+    }
+    await finishBindings();
     Object.keys(state.outputs).forEach((key) => {
       delete state.outputs[key];
     });
     Object.assign(
       state.outputs,
       Object.fromEntries(
-        Object.entries(state.resources).map(([id, resource]) => [id, { value: resource.outputs }]),
+        Object.entries(state.resources).map(([id, resource]) => [
+          id,
+          { value: resource.outputs, secret: resource.definition.secretOutputs ?? false },
+        ]),
       ),
       stack.outputs ?? {},
     );

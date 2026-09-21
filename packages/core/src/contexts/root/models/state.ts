@@ -65,6 +65,7 @@ const definition = (value: unknown): boolean =>
       value.dependencies.every((id) => typeof id === "string"))) &&
   (value.references === undefined ||
     (Array.isArray(value.references) && value.references.every((id) => typeof id === "string"))) &&
+  (value.secretOutputs === undefined || typeof value.secretOutputs === "boolean") &&
   (value.retain === undefined || typeof value.retain === "boolean") &&
   (value.protection === undefined ||
     (record(value.protection) &&
