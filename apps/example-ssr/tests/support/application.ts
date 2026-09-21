@@ -30,6 +30,7 @@ const inspectBrowser = async (browser: Browser, url: string) => {
     await page.getByRole("link", { name: "Details", exact: true }).click();
     await page.getByRole("heading", { name: "SSR details" }).waitFor();
     assert.deepEqual(errors, []);
+    assert.deepEqual(failedResponses, []);
     return page;
   } catch (cause) {
     throw new Error(
