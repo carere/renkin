@@ -32,7 +32,7 @@ const setup = async () => {
   const name = `${prefix}-${randomUUID().slice(0, 8)}`;
   const permanentName = `${name}-permanent`;
   const options = { environment: "graph", yes: true, cloudflare: { stateScriptName } };
-  const permanentEntry = join(root, "permanent.ts");
+  const permanentEntry = join(root, "permanent.mjs");
   await writeFile(permanentEntry, 'export default {fetch(){return new Response("permanent")}}');
   const permanent = defineStack({
     name: permanentName,
@@ -42,8 +42,8 @@ const setup = async () => {
     name,
     resources: [
       kv("Cache"),
-      worker("A", { entry: join(root, "a.ts"), compatibilityDate: "2026-09-21" }),
-      worker("B", { entry: join(root, "b.ts"), compatibilityDate: "2026-09-21" }),
+      worker("A", { entry: join(root, "a.mjs"), compatibilityDate: "2026-09-21" }),
+      worker("B", { entry: join(root, "b.mjs"), compatibilityDate: "2026-09-21" }),
     ],
   });
   console.info(
@@ -63,7 +63,7 @@ const setup = async () => {
 };
 const writeApplication = async (root: string, externalName: string) => {
   await writeFile(
-    join(root, "a.ts"),
+    join(root, "a.mjs"),
     `import {Effect} from "effect";import {defineWorker,workerReference,externalWorker} from "renkin/worker";import {kv} from "renkin/cloudflare";
       export default defineWorker({CACHE:kv("Cache"),B:workerReference("B",{entrypoint:"Service"}),REVIEW:externalWorker(${JSON.stringify(externalName)})},({CACHE,B,REVIEW})=>({fetch:(request)=>Effect.gen(function*(){
         const path=new URL(request.url).pathname;
@@ -76,7 +76,7 @@ const writeApplication = async (root: string, externalName: string) => {
       })}));`,
   );
   await writeFile(
-    join(root, "b.ts"),
+    join(root, "b.mjs"),
     'import {WorkerEntrypoint} from "cloudflare:workers";import {defineWorker,workerReference} from "renkin/worker";export class Service extends WorkerEntrypoint {async message(){return "b:"+await (await this.env.A.fetch("https://a/echo")).text();}} export default defineWorker({A:workerReference("A")},()=>({fetch:()=>new Response("b")}));',
   );
 };
@@ -103,7 +103,7 @@ const checkProtection = async (scenario: Scenario) => {
   expect(await read(scenario.name, scenario)).toEqual(before);
 };
 const checkRename = async (scenario: Scenario, id: string | undefined, url: string) => {
-  const entry = join(scenario.root, "a.ts");
+  const entry = join(scenario.root, "a.mjs");
   await writeFile(entry, (await readFile(entry, "utf8")).replace('kv("Cache")', 'kv("Renamed")'));
   scenario.desired = defineStack({
     ...scenario.desired,

@@ -37,6 +37,39 @@ const serviceFor = (
   return service;
 };
 
+const applyPending = async (
+  op: PendingOperation,
+  service: ResourceService,
+  state: EnvironmentState,
+  lease: StateLease,
+): Promise<PendingOperation> => {
+  if (!op.change.desired) throw new Error("Pending apply lacks a resource definition.");
+  const outputs = await service.apply(
+    op.change.desired,
+    op.physicalId,
+    op.change.previous,
+    state.resources,
+  );
+  const physicalId =
+    service.resolvePhysicalId?.(op.change.desired, op.physicalId, outputs) ?? op.physicalId;
+  if (!physicalId) throw new Error("Provider did not return a resource identity.");
+  op = {
+    ...op,
+    physicalId,
+    phase: "bindings",
+    applied: {
+      definition: op.change.desired,
+      physicalId,
+      outputs,
+      ownershipId:
+        op.change.previous?.ownershipId ?? op.change.previous?.definition.id ?? op.change.id,
+    },
+  };
+  state.pending = op;
+  await lease.write(state);
+  return op;
+};
+
 const resume = async (
   state: EnvironmentState,
   lease: StateLease,
@@ -48,30 +81,17 @@ const resume = async (
   if (!op) return;
   assertProtection([op.change]);
   const service = serviceFor(op, services);
-  if (op.phase === "apply" && op.change.desired) {
-    const outputs = await service.apply(
-      op.change.desired,
-      op.physicalId,
-      op.change.previous,
-      state.resources,
-    );
-    const physicalId =
-      service.resolvePhysicalId?.(op.change.desired, op.physicalId, outputs) ?? op.physicalId;
-    if (!physicalId) throw new Error("Provider did not return a resource identity.");
-    op = {
-      ...op,
-      physicalId,
-      phase: "bindings",
-      applied: {
-        definition: op.change.desired,
-        physicalId,
-        outputs,
-        ownershipId:
-          op.change.previous?.ownershipId ?? op.change.previous?.definition.id ?? op.change.id,
-      },
-    };
-    state.pending = op;
+  if (op.phase === "apply" && op.change.desired) op = await applyPending(op, service, state, lease);
+  if (
+    op.phase === "remove-previous" &&
+    op.change.kind === "replace" &&
+    service.deferredBindings &&
+    defer
+  ) {
+    state.bindings = [...(state.bindings ?? []), op];
+    delete state.pending;
     await lease.write(state);
+    return;
   }
   if (op.phase === "bindings" && op.applied && service.deferredBindings && defer) {
     state.resources[op.change.id] = op.applied;
@@ -95,6 +115,12 @@ const resume = async (
     op = { ...op, phase: "remove-previous" };
     state.pending = op;
     await lease.write(state);
+    if (service.deferredBindings && op.change.kind === "replace") {
+      state.bindings = [...(state.bindings ?? []), op];
+      delete state.pending;
+      await lease.write(state);
+      return;
+    }
   }
   if (
     (op.phase === "remove" || (op.phase === "remove-previous" && op.change.kind === "replace")) &&
@@ -103,7 +129,8 @@ const resume = async (
     const oldType = op.change.previous.definition.type;
     const previousService = services[oldType];
     if (!previousService) throw new Error(`No adapter registered for resource type ${oldType}.`);
-    if (!op.change.previous.definition.retain) await previousService.remove(op.change.previous);
+    if (!op.change.previous.definition.retain)
+      await previousService.remove(op.change.previous, state.resources);
   }
   if (op.phase === "remove") delete state.resources[op.change.id];
   delete state.pending;
@@ -223,6 +250,8 @@ const execute = async (stack: Stack, options: DeployOptions): Promise<Environmen
       delete state.bindings;
     };
     for (const original of plan(stack, state, options.force)) {
+      // Complete a durable binding graph before removing any of its targets.
+      if (original.kind === "remove" || original.kind === "retain") continue;
       if (state.bindings?.some((operation) => operation.change.id === original.id)) continue;
       const service = original.desired ? services[original.desired.type] : undefined;
       const change =

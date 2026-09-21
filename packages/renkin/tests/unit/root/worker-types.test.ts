@@ -63,3 +63,8 @@ it.effect("resolves native and typed Effect clients once at the implementation b
 defineWorker({ cache }, () => ({
   fetch: () => Effect.map(Greeting, ({ text }) => new Response(text)),
 }));
+
+const ordinaryReference = workerReference("ordinary");
+defineWorker({ ordinary: ordinaryReference }, ({ ordinary }) => ({
+  fetch: (request) => ordinary.call((service) => service.fetch(request)),
+}));

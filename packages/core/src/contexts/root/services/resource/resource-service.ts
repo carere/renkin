@@ -23,7 +23,10 @@ export interface ResourceService {
     currentDesired?: ResourceDefinition,
     options?: { readonly force?: boolean },
   ): Promise<void>;
-  remove(resource: ResourceState): Promise<void>;
+  remove(
+    resource: ResourceState,
+    resources?: Readonly<Record<string, ResourceState>>,
+  ): Promise<void>;
 }
 
 export type ResourceServices = (lease: StateLease) => Readonly<Record<string, ResourceService>>;
