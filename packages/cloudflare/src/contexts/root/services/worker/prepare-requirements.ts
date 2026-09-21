@@ -6,8 +6,21 @@ export const prepareRequirements = async (
   source: string,
   compatibilityDate: string,
   compatibilityFlags: readonly string[],
+  artifact?: {
+    readonly mainModule: string;
+    readonly modules: readonly {
+      readonly name: string;
+      readonly type: string;
+      readonly content: string;
+    }[];
+  },
 ): Promise<ResourceDefinition> => {
-  const requirements = await inspectRequirements(source, compatibilityDate, compatibilityFlags);
+  const requirements = await inspectRequirements(
+    source,
+    compatibilityDate,
+    compatibilityFlags,
+    artifact,
+  );
   const dependencies = [
     ...new Set([
       ...(resource.dependencies ?? []),

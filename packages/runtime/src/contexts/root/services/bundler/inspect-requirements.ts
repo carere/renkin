@@ -45,6 +45,14 @@ export const inspectRequirements = async (
   source: string,
   compatibilityDate: string,
   compatibilityFlags: readonly string[] = ["nodejs_compat"],
+  artifact: {
+    readonly mainModule: string;
+    readonly modules: readonly {
+      readonly name: string;
+      readonly type: string;
+      readonly content: string;
+    }[];
+  } = { mainModule: "worker.mjs", modules: [] },
 ): Promise<Requirements> => {
   const runtime = new Miniflare({
     log: new Log(LogLevel.NONE),
@@ -52,10 +60,21 @@ export const inspectRequirements = async (
       {
         type: "ESModule",
         path: "inspect.mjs",
-        contents:
-          'import implementation from "./worker.mjs"; export default {fetch(){return Response.json(implementation.__renkinRequirements ?? {})}}',
+        contents: `import implementation from ${JSON.stringify(`./${artifact.mainModule}`)}; export default {fetch(){return Response.json(implementation.__renkinRequirements ?? {})}}`,
       },
-      { type: "ESModule", path: "worker.mjs", contents: source },
+      { type: "ESModule", path: artifact.mainModule, contents: source },
+      ...artifact.modules.map((module) => ({
+        type:
+          module.type === "application/wasm"
+            ? ("CompiledWasm" as const)
+            : module.type === "text/plain"
+              ? ("Text" as const)
+              : module.type === "application/octet-stream"
+                ? ("Data" as const)
+                : ("ESModule" as const),
+        path: module.name,
+        contents: Buffer.from(module.content, "base64"),
+      })),
     ],
     modulesRoot: "/",
     compatibilityDate,
