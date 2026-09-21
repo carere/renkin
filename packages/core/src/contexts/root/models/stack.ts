@@ -17,6 +17,7 @@ export interface ResourceDefinition {
   readonly references?: readonly string[];
   readonly protection?: { readonly data: boolean; readonly allowDelete: boolean };
   readonly retain?: boolean;
+  readonly secretOutputs?: boolean;
 }
 
 export interface Output {

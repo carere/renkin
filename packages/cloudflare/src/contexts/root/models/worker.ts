@@ -1,7 +1,8 @@
 import type { ResourceDefinition } from "@renkin/core/models/stack";
+import type { WorkerExtensions } from "./worker-extensions.ts";
 
-export interface WorkerOptions {
-  readonly entry: string;
+export interface WorkerOptions extends WorkerExtensions {
+  readonly entry?: string;
   readonly compatibilityDate: string;
   readonly compatibilityFlags?: readonly string[];
   readonly bindings?: Readonly<Record<string, string>>;
@@ -26,7 +27,11 @@ export const worker = (id: string, options: WorkerOptions): WorkerResource => ({
   dependencies: options.dependencies?.map((resource) => resource.id) ?? [],
   protection: { data: options.data ?? false, allowDelete: options.allowDelete ?? false },
   properties: {
-    entry: options.entry,
+    entry: options.entry ?? options.build?.entry ?? "",
+    workersDev: options.workersDev ?? true,
+    ...(options.observability
+      ? { observability: JSON.parse(JSON.stringify(options.observability)) }
+      : {}),
     compatibilityDate: options.compatibilityDate,
     compatibilityFlags: options.compatibilityFlags ?? ["nodejs_compat"],
     bindings: options.bindings ?? {},
