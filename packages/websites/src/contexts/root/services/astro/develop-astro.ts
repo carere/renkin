@@ -41,6 +41,10 @@ export const developAstro = async (
             ),
           },
         };
+  const configuredServer =
+    typeof options.config?.server === "function"
+      ? options.config.server({ command: "dev" })
+      : options.config?.server;
   const server = await dev({
     logLevel: "silent",
     ...options.config,
@@ -57,7 +61,11 @@ export const developAstro = async (
     adapter: { name: "renkin:astro-development", hooks: {} },
     // Astro 7's programmatic config defaults its driver generic to never.
     session: session as NonNullable<AstroInlineConfig["session"]>,
-    server: { host: "127.0.0.1", port: 0, ...options.config?.server },
+    server: {
+      host: "127.0.0.1",
+      ...configuredServer,
+      port: options.port ?? configuredServer?.port ?? 0,
+    },
     vite: {
       ...options.config?.vite,
       plugins: [bridge.plugin, ...(options.config?.vite?.plugins ?? [])],
@@ -65,7 +73,9 @@ export const developAstro = async (
     },
   });
   if (context.onReload) server.watcher.on("change", context.onReload);
-  const url = `http://127.0.0.1:${server.address.port}`;
+  const address = server.address.address;
+  const host = address === "::" || address === "0.0.0.0" ? "127.0.0.1" : address;
+  const url = `http://${host.includes(":") ? `[${host}]` : host}:${server.address.port}`;
   const close = async () => {
     await server.stop();
     await bridge.close();

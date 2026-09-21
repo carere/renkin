@@ -4,6 +4,8 @@ import type { AstroInlineConfig } from "astro";
 /** Astro owns page generation; Renkin owns bindings and deployment. */
 export interface AstroBuildOptions {
   readonly root: string;
+  /** Frontend development port; zero chooses an available port. */
+  readonly port?: number;
   readonly output: "static" | "server";
   readonly compatibilityDate: string;
   readonly compatibilityFlags?: readonly string[];

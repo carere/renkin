@@ -54,8 +54,8 @@ also discovers framework recipes. The Astro development server handles source
 reload; a single Renkin Miniflare 4 graph owns local native storage and persistent
 state. No Cloudflare login is required. Development uses request-scoped bindings
 and a native KV session driver; it does not start the official adapter's separate
-Miniflare 5 storage graph. Configure a frontend port with
-`config: { server: { port: 4321 } }`. Native file watching is the default; explicit
+Miniflare 5 storage graph. Configure a frontend port with `port: 4321` or
+`config: { server: { port: 4321 } }`; the resource port takes precedence. Native file watching is the default; explicit
 Vite `server.watch.usePolling` is available for environments without native events.
 
 `bun moon run example-static:build` and `bun moon run website:build` produce `dist/`

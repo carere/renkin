@@ -164,8 +164,10 @@ it.effect(
           compatibilityDate,
           configFile: false,
           sessionKVBindingName: false,
+          port: 0,
           config: {
             logLevel: "silent",
+            server: { host: "localhost" },
             vite: { server: { watch: { usePolling: true, interval: 50 } } },
           },
         });
