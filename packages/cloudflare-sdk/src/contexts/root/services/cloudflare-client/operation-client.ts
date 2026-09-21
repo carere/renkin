@@ -1,0 +1,65 @@
+import * as Credentials from "@distilled.cloud/cloudflare/Credentials";
+import * as Retry from "@distilled.cloud/cloudflare/Retry";
+import { Effect, Schedule } from "effect";
+import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
+import type { CloudflareConfig, MutationGateway } from "./cloudflare-client.ts";
+
+/** Shared SDK transport: account-fenced mutations never retry an unknown outcome. */
+export const createOperationClient = (config: CloudflareConfig, gateway: MutationGateway) => {
+  const credentials = Credentials.fromApiToken(config);
+  const mutationFetch =
+    (token: string): typeof globalThis.fetch =>
+    async (input, init) => {
+      const request = new Request(input, init);
+      const url = new URL(request.url);
+      const base = new URL(config.apiBaseUrl ?? Credentials.DEFAULT_API_BASE_URL);
+      if (
+        url.origin !== base.origin ||
+        !url.pathname.startsWith(
+          `${base.pathname.replace(/\/$/, "")}/accounts/${encodeURIComponent(config.accountId)}/`,
+        )
+      ) {
+        throw new Error("Cloudflare mutation is outside the configured account");
+      }
+      const headers = Object.fromEntries(request.headers);
+      delete headers.authorization;
+      const body = await request.arrayBuffer();
+      const response = await gateway.request(
+        {
+          method: request.method,
+          path: `${url.pathname.slice(base.pathname.replace(/\/$/, "").length)}${url.search}`,
+          headers,
+          ...(body.byteLength ? { bodyBase64: Buffer.from(body).toString("base64") } : {}),
+        },
+        token,
+      );
+      return new Response(
+        response.bodyBase64 === undefined ? null : Buffer.from(response.bodyBase64, "base64"),
+        {
+          status: response.status,
+          headers: response.headers,
+        },
+      );
+    };
+  const write = <A, E, R>(operation: Effect.Effect<A, E, R>, token: string) =>
+    operation.pipe(
+      Retry.none,
+      Effect.provide(credentials),
+      Effect.provide(FetchHttpClient.layer),
+      Effect.provideService(FetchHttpClient.Fetch, mutationFetch(token)),
+    );
+  const read = <A, E, R>(operation: Effect.Effect<A, E, R>) =>
+    operation.pipe(
+      Retry.policy({
+        while: (error: unknown) =>
+          typeof error === "object" &&
+          error !== null &&
+          "_tag" in error &&
+          error._tag === "TooManyRequests",
+        schedule: Schedule.recurs(2).pipe(Schedule.addDelay(() => Effect.succeed("100 millis"))),
+      }),
+      Effect.provide(credentials),
+      Effect.provide(FetchHttpClient.layer),
+    );
+  return { read, write };
+};
