@@ -26,7 +26,12 @@ release-artifact verification remains the separate #14 boundary.
 - Focused full-graph regression passed again after adding email-attempt observation,
   disabling retries for the email-containing Workflow task and preserving the
   invoking Linux user's ownership after network namespace setup.
-- Strict TypeScript project build and Biome passed at the cloud-test preparation
+- The provider-free prepared-cloud-graph regression passed: all 17 resources remain
+  explicitly deletable and unretained after actual compilation/dependency expansion,
+  the durable definition is structured-cloneable, the real planner produces 17
+  creates, and frontend Worker references resolve by identity without reintroducing
+  original protected resource definitions.
+- Strict TypeScript project build, Biome and Knip passed at the cloud-test preparation
   checkpoint. The Linux branch requires CI; a macOS pass does not validate it.
 
 The source-workspace API and actual compilers/native runtimes were exercised.
