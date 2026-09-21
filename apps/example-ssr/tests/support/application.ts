@@ -5,9 +5,10 @@ import { resolve } from "node:path";
 import { Effect } from "effect";
 import { type Browser, chromium } from "playwright";
 import { defineStack, development, type WorkerBuildResult } from "renkin";
-import { tanstackStart, worker } from "renkin/cloudflare";
+import { worker } from "renkin/cloudflare";
 import { buildTanStack } from "renkin/vite";
 import { site } from "../../resources.ts";
+import { createBuildProbe } from "./build-probe.ts";
 
 const inspectBrowser = async (browser: Browser, url: string) => {
   const page = await browser.newPage();
@@ -42,21 +43,8 @@ const check = async () => {
   const previousPolling = process.env.RENKIN_TEST_POLLING;
   process.env.RENKIN_TEST_POLLING = "true";
   const browser = await chromium.launch({ headless: true });
-  let before = 0;
-  let after = 0;
-  const declared = tanstackStart("Site", {
-    ...site.website,
-    port: 0,
-    configFile: "./vite.config.ts",
-    beforeBuild: () => {
-      before++;
-    },
-    afterBuild: (result) => {
-      after++;
-      assert.equal(result.compatibilityDate, "2026-07-30");
-      assert.deepEqual(result.compatibilityFlags, ["nodejs_compat"]);
-    },
-  });
+  const probe = await createBuildProbe(site);
+  const declared = probe.site;
   const run = (resource: ReturnType<typeof worker>, check: (url: string) => Promise<void>) =>
     Effect.runPromise(
       Effect.scoped(
@@ -84,8 +72,7 @@ const check = async () => {
     });
     await writeFile(detail, original);
     const build = await buildTanStack(declared);
-    assert.equal(before, 1);
-    assert.equal(after, 1);
+    probe.verify();
     await inspectBuild(build);
     const { builder: _builder, ...options } = declared.options;
     await run(worker("Site", { ...options, build }), async (url) => {
@@ -100,6 +87,7 @@ const check = async () => {
   } finally {
     await writeFile(detail, original);
     await browser.close();
+    await probe.close();
     await rm(directory, { recursive: true, force: true });
     if (previousPolling === undefined) delete process.env.RENKIN_TEST_POLLING;
     else process.env.RENKIN_TEST_POLLING = previousPolling;

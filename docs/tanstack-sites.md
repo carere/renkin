@@ -87,7 +87,10 @@ the site depend on that Access application. Domain and Access behavior is shared
 with ordinary Workers.
 
 `buildTanStack(site)` from `renkin/vite` returns the public `WorkerBuildResult`,
-including the binding metadata wrapper, modules and asset directory. It can be
+including the binding metadata wrapper, modules and asset directory. Host build
+and development modules load by file URL so ordinary Worker bundlers do not
+traverse Vite or native tooling; release packaging must retain those module files
+and the build subprocess entry alongside their declarations. It can be
 passed to `worker("Site", { build, ... })` for a separately built artifact. Keep
 the site's dependency declarations and constants when doing that. No bundler or
 upload-specific type is required of external builders. Automatic cache reuse is
