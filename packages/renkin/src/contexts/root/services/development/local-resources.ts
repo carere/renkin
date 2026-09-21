@@ -1,0 +1,73 @@
+import { randomUUID } from "node:crypto";
+import type { WorkerResource } from "@renkin/cloudflare/models/worker";
+import type { Stack } from "@renkin/core/models/stack";
+import type { Change, EnvironmentState } from "@renkin/core/models/state";
+import { plan } from "@renkin/core/use-cases/plan";
+import { renamedState } from "@renkin/core/use-cases/rename";
+import { removeLocalR2Objects } from "@renkin/runtime/services/local/local-r2-removal";
+
+const r2Removals = (changes: Iterable<Change>) =>
+  [...changes].flatMap((change) => {
+    if (
+      (change.kind !== "remove" && change.kind !== "replace") ||
+      change.previous?.definition.type !== "cloudflare.r2" ||
+      change.previous.definition.retain
+    )
+      return [];
+    const properties = (change.desired ?? change.previous.definition).properties;
+    return [
+      {
+        physicalId: change.previous.physicalId,
+        forceDestroy:
+          !!properties &&
+          typeof properties === "object" &&
+          !Array.isArray(properties) &&
+          "forceDestroy" in properties &&
+          properties.forceDestroy === true,
+      },
+    ];
+  });
+
+export const prepareLocalResources = async (
+  stack: Stack,
+  state: EnvironmentState,
+  persist: string,
+) => {
+  const changes = new Map(plan(stack, state).map((change) => [change.id, change]));
+  await removeLocalR2Objects(persist, r2Removals(changes.values()));
+
+  state = renamedState(stack, state);
+  const namespaces: Record<string, string> = {};
+  const databases: Record<string, string> = {};
+  const buckets: Record<string, string> = {};
+  const workerResources: WorkerResource[] = [];
+  for (const resource of stack.resources) {
+    const previous =
+      changes.get(resource.id)?.kind === "replace" ? undefined : state.resources[resource.id];
+    state.resources[resource.id] = {
+      definition: resource,
+      physicalId: previous?.physicalId ?? randomUUID(),
+      outputs: previous?.outputs ?? null,
+      ownershipId: previous?.ownershipId ?? resource.id,
+    };
+    if (resource.type === "cloudflare.kv")
+      namespaces[resource.id] = state.resources[resource.id]?.physicalId ?? resource.id;
+    else if (resource.type === "cloudflare.d1")
+      databases[resource.id] = state.resources[resource.id]?.physicalId ?? resource.id;
+    else if (resource.type === "cloudflare.r2")
+      buckets[resource.id] = state.resources[resource.id]?.physicalId ?? resource.id;
+    else if (resource.type === "cloudflare.worker" && "options" in resource)
+      workerResources.push(resource as WorkerResource);
+    else throw new Error("Unsupported local resource.");
+  }
+  for (const id of Object.keys(state.resources))
+    if (!stack.resources.some((resource) => resource.id === id)) delete state.resources[id];
+
+  return {
+    state,
+    workers: workerResources.map((resource) => ({ id: resource.id, ...resource.options })),
+    namespaces,
+    databases,
+    buckets,
+  };
+};

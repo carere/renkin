@@ -21,3 +21,6 @@ export const observabilityDestination = destination;
 
 import { d1 as database } from "@renkin/cloudflare/models/d1";
 export const d1 = database;
+
+import { r2 as bucket } from "@renkin/cloudflare/models/r2";
+export const r2 = bucket;

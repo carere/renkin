@@ -18,6 +18,7 @@ const inspect = (value: unknown): Requirements => {
     if (
       item.type !== "cloudflare.kv" &&
       item.type !== "cloudflare.d1" &&
+      item.type !== "cloudflare.r2" &&
       item.type !== "cloudflare.worker-reference"
     )
       throw new Error("Unsupported Worker requirement.");

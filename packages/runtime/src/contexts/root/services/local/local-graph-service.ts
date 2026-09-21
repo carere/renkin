@@ -5,11 +5,14 @@ import { Miniflare, type WorkerOptions } from "miniflare";
 import type { Requirements } from "../../models/binding.ts";
 import type { WorkerBuildResult } from "../../models/build-result.ts";
 import type { NativeD1 } from "../../models/d1.ts";
+import type { LocalR2S3Options } from "../../models/local-r2-s3.ts";
+import type { NativeR2 } from "../../models/r2.ts";
 import { inspectRequirements } from "../bundler/inspect-requirements.ts";
 import { readBuildResult } from "../bundler/read-build-result.ts";
 import { bundleOptions, readBundle } from "../bundler/worker-bundler.ts";
 import { localAssetOptions } from "./local-build-service.ts";
 import { graphBindings } from "./local-graph-bindings.ts";
+import { localR2GatewayName, localR2Source, localR2Workers } from "./local-r2-service.ts";
 import type { LocalWorker } from "./local-worker-service.ts";
 
 export interface GraphWorker {
@@ -26,6 +29,8 @@ export interface LocalGraphOptions {
   readonly namespaces: Readonly<Record<string, string>>;
   readonly persist: string;
   readonly databases?: Readonly<Record<string, string>>;
+  readonly buckets?: Readonly<Record<string, string>>;
+  readonly r2S3?: LocalR2S3Options;
   readonly watch?: boolean;
   readonly onReload?: (id: string) => void;
   readonly onError?: (message: string) => void;
@@ -43,6 +48,7 @@ const workerSettings = (
 ): WorkerOptions => {
   const kvNamespaces: Record<string, string> = {};
   const d1Databases: Record<string, string> = {};
+  const r2Buckets: Record<string, string> = {};
   const serviceBindings: Record<string, string | { name: string; entrypoint: string }> = {};
   for (const [binding, requirement] of Object.entries(prepared.requirements)) {
     if (requirement.type === "cloudflare.kv") {
@@ -55,6 +61,11 @@ const workerSettings = (
       if (!database)
         throw new Error(`D1 requirement ${requirement.id} is not declared in the stack.`);
       d1Databases[binding] = database;
+    } else if (requirement.type === "cloudflare.r2") {
+      const bucket = options.buckets?.[requirement.id];
+      if (!bucket)
+        throw new Error(`R2 requirement ${requirement.id} is not declared in the stack.`);
+      r2Buckets[binding] = bucket;
     } else {
       const targetId = requirement.external
         ? `renkin-external-${requirement.external.name}`
@@ -98,8 +109,9 @@ const workerSettings = (
     bindings: { ...worker.bindings },
     kvNamespaces,
     d1Databases,
+    r2Buckets,
     serviceBindings,
-    unsafeDirectSockets: [{ host: "127.0.0.1", port: worker.port ?? 0 }],
+    unsafeDirectSockets: [{ host: "127.0.0.1", port: options.r2S3 ? 0 : (worker.port ?? 0) }],
   };
 };
 
@@ -263,7 +275,11 @@ const exposedWorkers = async (
   const workers: Record<string, LocalWorker> = {};
   for (const worker of session.options.workers) {
     if (!declaredWorkers.has(worker.id)) continue;
-    const url = String(await runtime.unsafeGetDirectURL(worker.id));
+    const url = String(
+      await runtime.unsafeGetDirectURL(
+        session.options.r2S3 ? localR2GatewayName(worker.id) : worker.id,
+      ),
+    );
     workers[worker.id] = {
       url,
       fetch: (path = "/", init) => fetch(new URL(path, url), init),
@@ -283,6 +299,7 @@ export const startLocalGraph = async (
 ): Promise<{
   workers: Record<string, LocalWorker>;
   database: (id: string) => Promise<NativeD1>;
+  bucket: (id: string) => Promise<NativeR2>;
   bindings: (workerId: string) => Promise<Record<string, unknown>>;
   close: () => Promise<void>;
 }> => {
@@ -293,11 +310,13 @@ export const startLocalGraph = async (
   const watchers: FSWatcher[] = [];
   const prepared: Record<string, PreparedWorker> = {};
   let runtime: Miniflare | undefined;
+  const r2Source = await localR2Source(options.r2S3);
   const settings = () => ({
     host: "127.0.0.1",
     port: 0,
     defaultPersistRoot: options.persist,
     workers: [
+      ...localR2Workers(options, prepared, r2Source),
       ...options.workers.map((worker) => {
         const source = prepared[worker.id];
         if (!source) throw new Error("Worker has not built.");
@@ -336,7 +355,11 @@ export const startLocalGraph = async (
     await runtime.ready;
     const workers = await exposedWorkers(session, contexts, declaredWorkers);
     await watchGraph(options, contexts, watchers, session);
-    return { workers, close, ...graphBindings(runtime, prepared, options.databases) };
+    return {
+      workers,
+      close,
+      ...graphBindings(runtime, prepared, options.databases, options.buckets),
+    };
   } catch (error) {
     await close();
     throw error;

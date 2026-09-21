@@ -55,6 +55,16 @@ const bindings = (
       if (target?.definition.type !== "cloudflare.d1")
         throw new Error("D1 binding target is not provisioned.");
       result.push({ type: "d1", name, databaseId: target.physicalId });
+    } else if (requirement.type === "cloudflare.r2") {
+      if (target?.definition.type !== "cloudflare.r2")
+        throw new Error("R2 binding target is not provisioned.");
+      const jurisdiction = object(target.definition.properties).jurisdiction;
+      result.push({
+        type: "r2_bucket",
+        name,
+        bucketName: target.physicalId,
+        ...(typeof jurisdiction === "string" && jurisdiction !== "default" ? { jurisdiction } : {}),
+      });
     } else if (requirement.type === "cloudflare.worker-reference") {
       const external = requirement.external ? object(requirement.external) : undefined;
       if (!external && !target && ignoreRemovedWorkers) continue;

@@ -2,6 +2,8 @@ import type { KVNamespace } from "@cloudflare/workers-types";
 import { Effect } from "effect";
 import { type D1Client, type D1Requirement, d1Client, type NativeD1 } from "./d1.ts";
 
+import { type NativeR2, type R2Client, type R2Requirement, r2Client } from "./r2.ts";
+
 export interface KVRequirement {
   readonly type: "cloudflare.kv";
   readonly id: string;
@@ -15,7 +17,11 @@ export interface WorkerRequirement<
   readonly external?: { readonly name: string; readonly localEntry?: string };
   readonly serviceType?: Service;
 }
-export type BindingRequirement = KVRequirement | D1Requirement | WorkerRequirement<unknown>;
+export type BindingRequirement =
+  | KVRequirement
+  | D1Requirement
+  | R2Requirement
+  | WorkerRequirement<unknown>;
 export type Requirements = Readonly<Record<string, BindingRequirement>>;
 export type NativeKV = KVNamespace;
 export class BindingError extends Error {
@@ -52,9 +58,11 @@ export type Resolved<R extends Requirements> = {
     ? KVClient
     : R[K] extends D1Requirement
       ? D1Client
-      : R[K] extends WorkerRequirement<infer Service>
-        ? WorkerClient<Service>
-        : never;
+      : R[K] extends R2Requirement
+        ? R2Client
+        : R[K] extends WorkerRequirement<infer Service>
+          ? WorkerClient<Service>
+          : never;
 };
 export const resolveBindings = <R extends Requirements>(
   requirements: R,
@@ -70,11 +78,13 @@ export const resolveBindings = <R extends Requirements>(
           ? kvClient(native as NativeKV, name)
           : requirement.type === "cloudflare.d1"
             ? d1Client(native as NativeD1, name)
-            : {
-                native,
-                call: <A>(operation: (service: unknown) => Promise<A>) =>
-                  call(name, "rpc", () => operation(native)),
-              },
+            : requirement.type === "cloudflare.r2"
+              ? r2Client(native as NativeR2, name)
+              : {
+                  native,
+                  call: <A>(operation: (service: unknown) => Promise<A>) =>
+                    call(name, "rpc", () => operation(native)),
+                },
       ];
     }),
   ) as Resolved<R>;
