@@ -17,6 +17,8 @@ export interface GatewayRequest {
   readonly path: string;
   readonly bodyBase64?: string;
   readonly headers?: Record<string, string>;
+  /** Only accepted for the account's exact Workers asset upload endpoint. */
+  readonly assetUploadToken?: string;
 }
 
 export interface GatewayResponse {
