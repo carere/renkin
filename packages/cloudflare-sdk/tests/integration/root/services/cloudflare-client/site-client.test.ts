@@ -48,7 +48,10 @@ it.effect(
         }).formData(),
       );
       const part = form.get("hash") as File;
-      expect(part.type).toBe("text/html");
+      // Bun's multipart parser drops File.type despite a correct serialized Content-Type.
+      expect(Buffer.from(request?.bodyBase64 ?? "", "base64").toString()).toMatch(
+        /content-type: text\/html(?:;[^\r\n]*)?\r\n/i,
+      );
       expect(yield* Effect.promise(() => part.text())).toBe("aGVsbG8=");
     }),
 );

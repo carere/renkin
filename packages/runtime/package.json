@@ -10,6 +10,7 @@
   "dependencies": {
     "effect": "^4.0.0-rc.115",
     "esbuild": "^0.28.2",
+    "ignore": "^7.0.9",
     "miniflare": "^4.20260730.0"
   },
   "devDependencies": {

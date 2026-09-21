@@ -112,17 +112,34 @@ export const finalizeWorkerPublication = async (
   const properties = object(resource.definition.properties);
   if (properties.observability) {
     const desired = object(properties.observability);
-    if (typeof desired.redactQueryString === "boolean") {
+    const settings = await Effect.runPromise(client.getWorkerSettings(resource.physicalId));
+    if (
+      typeof desired.redactQueryString === "boolean" &&
+      settings.observability?.redactQueryString !== desired.redactQueryString
+    ) {
       await Effect.runPromise(
         client.patchWorkerSettings(
           resource.physicalId,
-          { observability: { redact_query_string: desired.redactQueryString } },
+          { observability: wireObservability({ ...settings.observability, ...desired }) },
           token,
         ),
       );
     }
   }
-  await Effect.runPromise(
-    client.setWorkerSubdomain(resource.physicalId, properties.workersDev !== false, token),
+  const observed = await Effect.runPromise(client.getWorkerSubdomain(resource.physicalId));
+  if (observed.enabled !== (properties.workersDev !== false) || observed.previewsEnabled !== false)
+    await Effect.runPromise(
+      client.setWorkerSubdomain(resource.physicalId, properties.workersDev !== false, token),
+    );
+};
+
+const wireObservability = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(wireObservability);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => [
+      key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`),
+      wireObservability(item),
+    ]),
   );
 };

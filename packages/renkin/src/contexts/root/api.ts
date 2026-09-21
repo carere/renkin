@@ -17,6 +17,13 @@ export const readOutputs = outputs;
 
 export const planDeployment = preview;
 
+import type {
+  WorkerBuildResult as BuildResult,
+  AssetRouting as Routing,
+} from "@renkin/runtime/models/build-result";
+export type WorkerBuildResult = BuildResult;
+export type AssetRouting = Routing;
+
 import {
   inspectRecovery as inspect,
   reconcileOperation as reconcile,
