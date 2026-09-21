@@ -175,10 +175,14 @@ export class StateCoordinator {
     );
     if (!this.valid(environment, input.token) || this.get(`operation:${environment}`))
       return response({ error: "Lease expired or operation is unresolved." }, 409);
-    if (prepared.alreadyAbsent)
+    if (prepared.completedResult !== undefined)
       return response({
         status: 200,
-        bodyBase64: encodeBytes(new TextEncoder().encode('{"success":true,"result":{}}')),
+        bodyBase64: encodeBytes(
+          new TextEncoder().encode(
+            JSON.stringify({ success: true, result: prepared.completedResult }),
+          ),
+        ),
         headers: { "content-type": "application/json" },
       });
     this.put(`operation:${environment}`, prepared.operation);

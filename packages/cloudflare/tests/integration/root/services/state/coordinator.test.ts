@@ -4,6 +4,7 @@ import { afterAll, beforeAll, expect, it } from "vitest";
 
 let emulator: Miniflare;
 let acceptedTags: string[] = [];
+let subdomainEnabled = false;
 beforeAll(async () => {
   const bundle = await build({
     entryPoints: [
@@ -24,6 +25,18 @@ beforeAll(async () => {
     bindings: { ACCOUNT_ID: "test-account" },
     durableObjects: { STATE_COORDINATOR: { className: "StateCoordinator", useSQLite: true } },
     outboundService: async (request: EmulatorRequest) => {
+      const path = new URL(request.url).pathname;
+      if (path.includes("invalid-route"))
+        return Response.json({ errors: [{ code: 7003 }] }, { status: 404 });
+      if (path.includes("already-missing"))
+        return Response.json({ errors: [{ code: 10007 }] }, { status: 404 });
+      if (path.endsWith("/subdomain")) {
+        if (request.method === "POST") {
+          subdomainEnabled = ((await request.json()) as { enabled: boolean }).enabled;
+          return new Response("response lost after acceptance", { status: 503 });
+        }
+        return Response.json({ result: { enabled: subdomainEnabled } });
+      }
       if (request.method === "PUT") {
         const form = await request.formData();
         const metadata = JSON.parse(String(form.get("metadata"))) as { tags: string[] };
@@ -144,3 +157,55 @@ it("recovers a crashed lease holder after its accepted upload and fences the old
     ).status,
   ).toBe(409);
 }, 75_000);
+
+it("recovers subdomain configuration and skips an already-applied duplicate", async () => {
+  const environment = "subdomain";
+  const lease = (await (await call("acquire", { environment })).json()) as { token: string };
+  const request = {
+    method: "POST",
+    path: "/accounts/test-account/workers/scripts/worker/subdomain",
+    headers: { "content-type": "application/json" },
+    bodyBase64: Buffer.from(JSON.stringify({ enabled: true })).toString("base64"),
+  };
+  expect(
+    (
+      (await (await call("mutate", { environment, token: lease.token, request })).json()) as {
+        status: number;
+      }
+    ).status,
+  ).toBe(503);
+  expect((await call("release", { environment, token: lease.token })).status).toBe(200);
+  const next = (await (await call("acquire", { environment })).json()) as { token: string };
+  expect(
+    (
+      (await (await call("mutate", { environment, token: next.token, request })).json()) as {
+        status: number;
+      }
+    ).status,
+  ).toBe(200);
+});
+it("treats only WorkerNotFound as absence before delete", async () => {
+  const environment = "delete-errors";
+  const lease = (await (await call("acquire", { environment })).json()) as { token: string };
+  expect(
+    (
+      await call("mutate", {
+        environment,
+        token: lease.token,
+        request: { method: "DELETE", path: "/accounts/test-account/workers/scripts/invalid-route" },
+      })
+    ).status,
+  ).toBe(502);
+  expect(
+    (
+      await call("mutate", {
+        environment,
+        token: lease.token,
+        request: {
+          method: "DELETE",
+          path: "/accounts/test-account/workers/scripts/already-missing",
+        },
+      })
+    ).status,
+  ).toBe(200);
+});
