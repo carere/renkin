@@ -47,9 +47,20 @@ export const astro = (id: string, options: AstroOptions): AstroResource => {
     id,
     { ...options, bindings },
     {
-      build: async () => (await import("../services/astro/build-astro.ts")).buildAstro(options),
-      develop: async (context) =>
-        (await import("../services/astro/develop-astro.ts")).developAstro(options, context),
+      build: async () => {
+        const entry = new URL("../services/astro/build-astro.ts", import.meta.url);
+        const module = (await import(
+          entry.href
+        )) as typeof import("../services/astro/build-astro.ts");
+        return module.buildAstro(options);
+      },
+      develop: async (context) => {
+        const entry = new URL("../services/astro/develop-astro.ts", import.meta.url);
+        const module = (await import(
+          entry.href
+        )) as typeof import("../services/astro/develop-astro.ts");
+        return module.developAstro(options, context);
+      },
     },
   );
   return { ...resource, ...(sessionKV ? { sessionKV } : {}) };

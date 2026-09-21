@@ -1,5 +1,5 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { mkdir, realpath, writeFile } from "node:fs/promises";
+import { relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type {
   WorkerDevelopmentContext,
@@ -28,7 +28,7 @@ export const developAstro = async (
   context: WorkerDevelopmentContext,
 ): Promise<WorkerDevelopmentSession> => {
   const bridge = createPlatformBridge();
-  const root = resolve(options.root);
+  const root = await realpath(resolve(options.root));
   const session =
     options.output === "static" || options.sessionKVBindingName === false
       ? false
@@ -47,7 +47,12 @@ export const developAstro = async (
     root,
     ...(options.configFile === undefined
       ? {}
-      : { configFile: options.configFile === false ? false : resolve(root, options.configFile) }),
+      : {
+          configFile:
+            options.configFile === false
+              ? false
+              : relative(root, resolve(root, options.configFile)),
+        }),
     output: options.output,
     adapter: { name: "renkin:astro-development", hooks: {} },
     // Astro 7's programmatic config defaults its driver generic to never.

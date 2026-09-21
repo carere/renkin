@@ -1,11 +1,13 @@
 import { createHash } from "node:crypto";
-import { mkdir, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readdir, realpath, writeFile } from "node:fs/promises";
 import { dirname, extname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import cloudflare from "@astrojs/cloudflare";
 import type { WorkerBuildResult } from "@renkin/runtime/models/build-result";
-import { type AstroConfig, build } from "astro";
+import { type AstroConfig, type AstroInlineConfig, build } from "astro";
+import { sessionDrivers } from "astro/config";
 import type { AstroBuildOptions } from "../../models/astro-options.ts";
+import { adapterResolution } from "./adapter-resolution.ts";
 
 const moduleTypes: Readonly<Record<string, string>> = {
   ".js": "application/javascript+module",
@@ -35,7 +37,7 @@ const prepareConfiguration = async (
   options: AstroBuildOptions,
   context: { readonly directory?: string },
 ) => {
-  const root = resolve(options.root);
+  const root = await realpath(resolve(options.root));
   const identity = createHash("sha256").update(root).digest("hex").slice(0, 16);
   const directory = resolve(context.directory ?? resolve(root, ".renkin"), "astro", identity);
   await mkdir(directory, { recursive: true, mode: 0o700 });
@@ -62,27 +64,78 @@ const assetDirectory = (config: AstroConfig): string =>
       .map(() => ".."),
   );
 
+const buildResult = async (
+  options: AstroBuildOptions,
+  config: AstroConfig,
+  clientDirectory: string | undefined,
+): Promise<WorkerBuildResult> => {
+  const compatibility = {
+    compatibilityDate: options.compatibilityDate,
+    compatibilityFlags: options.compatibilityFlags ?? ["nodejs_compat"],
+  };
+  if (options.output === "static") {
+    const entry = resolve(fileURLToPath(config.outDir), "server", "static-worker.mjs");
+    await mkdir(dirname(entry), { recursive: true });
+    await writeFile(
+      entry,
+      "export default {fetch(request, env) {return env.ASSETS.fetch(request)}};\n",
+    );
+    return {
+      entry,
+      ...compatibility,
+      assets: {
+        directory: clientDirectory ?? fileURLToPath(config.build.client),
+        config: { notFoundHandling: "404-page", ...options.assetRouting },
+      },
+    };
+  }
+  const entry = fileURLToPath(new URL(config.build.serverEntry, config.build.server));
+  return {
+    entry,
+    modules: await modulesIn(dirname(entry), entry),
+    ...compatibility,
+    assets: {
+      directory: clientDirectory ?? fileURLToPath(config.build.client),
+      config: { notFoundHandling: "none", ...options.assetRouting },
+    },
+  };
+};
+
 /** Runs the official adapter. High-level resource bindings are attached only after page generation. */
-export const buildAstro = async (
+const runBuild = async (
   options: AstroBuildOptions,
   context: { readonly directory?: string } = {},
 ): Promise<WorkerBuildResult> => {
-  const { root, directory, configPath } = await prepareConfiguration(options, context);
+  const { root, configPath } = await prepareConfiguration(options, context);
   let resolvedConfig: AstroConfig | undefined;
   let clientDirectory: string | undefined;
   await build({
     logLevel: "silent",
     ...options.config,
     root,
+    vite: {
+      logLevel: "silent",
+      ...options.config?.vite,
+      plugins: [adapterResolution(), ...(options.config?.vite?.plugins ?? [])],
+    },
     ...(options.configFile === undefined
       ? {}
-      : { configFile: options.configFile === false ? false : resolve(root, options.configFile) }),
+      : {
+          configFile:
+            options.configFile === false
+              ? false
+              : relative(root, resolve(root, options.configFile)),
+        }),
     output: options.output,
-    ...(options.output === "static" || options.sessionKVBindingName === false
-      ? { session: false }
-      : options.session
-        ? { session: options.session }
-        : {}),
+    // The resource boundary owns the driver, even if a loaded config sets another one.
+    session: (options.output === "static" || options.sessionKVBindingName === false
+      ? false
+      : {
+          ...options.session,
+          driver: sessionDrivers.cloudflareKVBinding({
+            binding: options.sessionKVBindingName ?? "SESSION",
+          }),
+        }) as NonNullable<AstroInlineConfig["session"]>,
     adapter: cloudflare({
       configPath,
       remoteBindings: false,
@@ -107,33 +160,18 @@ export const buildAstro = async (
   });
   if (!resolvedConfig) throw new Error("Astro did not produce a resolved build configuration.");
   const config: AstroConfig = resolvedConfig;
-  const compatibility = {
-    compatibilityDate: options.compatibilityDate,
-    compatibilityFlags: options.compatibilityFlags ?? ["nodejs_compat"],
-  };
-  if (options.output === "static") {
-    const entry = resolve(directory, "static-worker.mjs");
-    await writeFile(
-      entry,
-      "export default {fetch(request, env) {return env.ASSETS.fetch(request)}};\n",
-    );
-    return {
-      entry,
-      ...compatibility,
-      assets: {
-        directory: clientDirectory ?? fileURLToPath(config.build.client),
-        config: { notFoundHandling: "404-page", ...options.assetRouting },
-      },
-    };
-  }
-  const entry = fileURLToPath(new URL(config.build.serverEntry, config.build.server));
-  return {
-    entry,
-    modules: await modulesIn(dirname(entry), entry),
-    ...compatibility,
-    assets: {
-      directory: clientDirectory ?? fileURLToPath(config.build.client),
-      config: { notFoundHandling: "none", ...options.assetRouting },
-    },
-  };
+  return buildResult(options, config, clientDirectory);
+};
+
+// Astro's official adapter shares compiler/runtime setup within the process.
+// Overlapping builds can close another build's prerender dispatcher.
+let previousBuild: Promise<unknown> = Promise.resolve();
+
+export const buildAstro = (
+  options: AstroBuildOptions,
+  context: { readonly directory?: string } = {},
+): Promise<WorkerBuildResult> => {
+  const result = previousBuild.then(() => runBuild(options, context));
+  previousBuild = result.catch(() => undefined);
+  return result;
 };

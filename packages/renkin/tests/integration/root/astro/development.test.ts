@@ -148,7 +148,7 @@ it.effect(
           configFile: false,
           sessionKVBindingName: false,
           config: {
-            logLevel: "info",
+            logLevel: "silent",
             vite: { server: { watch: { usePolling: true, interval: 50 } } },
           },
         });

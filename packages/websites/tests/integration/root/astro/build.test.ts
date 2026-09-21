@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -54,6 +54,7 @@ it.effect(
   () =>
     Effect.promise(async () => {
       const directory = await mkdtemp(resolve(tmpdir(), "renkin-astro-ssr-"));
+      let sourceMapHookCalls = 0;
       let graph: Awaited<ReturnType<typeof startLocalGraph>> | undefined;
       try {
         const build = await buildAstro(
@@ -62,11 +63,32 @@ it.effect(
             output: "server",
             compatibilityDate: "2026-07-30",
             configFile: false,
-            config: { outDir: resolve(directory, "dist"), logLevel: "silent" },
+            config: {
+              outDir: resolve(directory, "dist"),
+              logLevel: "silent",
+              vite: {
+                build: { sourcemap: true },
+                plugins: [
+                  {
+                    name: "source-map-hook",
+                    writeBundle: () => {
+                      sourceMapHookCalls++;
+                    },
+                  },
+                ],
+              },
+            },
           },
           { directory },
         );
         expect(build.modules?.length).toBeGreaterThan(1);
+        expect(sourceMapHookCalls).toBeGreaterThan(0);
+        expect(
+          (await readdir(resolve(directory, "dist/server"), { recursive: true })).some((file) =>
+            file.endsWith(".map"),
+          ),
+        ).toBe(true);
+        expect(build.modules?.some((module) => module.path.endsWith(".map"))).toBe(false);
         graph = await startLocalGraph({
           workers: [{ id: "ssr", build, compatibilityDate: "2026-07-30" }],
           namespaces: {},
@@ -133,4 +155,51 @@ it.effect(
       }
     }),
   60_000,
+);
+
+it.effect(
+  "builds concurrent static and SSR projects through symlinked roots without sharing compiler state",
+  () =>
+    Effect.promise(async () => {
+      const directory = await mkdtemp(resolve(tmpdir(), "renkin-astro-concurrent-"));
+      try {
+        for (const project of ["static", "server"])
+          await symlink(
+            fileURLToPath(new URL(`../../../support/root/astro/${project}/`, import.meta.url)),
+            resolve(directory, project),
+            "dir",
+          );
+        const results = await Promise.all(
+          ["static", "server"].map((project) =>
+            buildAstro(
+              {
+                root: resolve(directory, project),
+                output: project === "static" ? "static" : "server",
+                compatibilityDate: "2026-07-30",
+                configFile: false,
+                config: {
+                  outDir: resolve(directory, `${project}-dist`),
+                  logLevel: "silent",
+                  build: { inlineStylesheets: "never" },
+                },
+              },
+              { directory },
+            ),
+          ),
+        );
+        for (const result of results) {
+          const captured = await readBuildResult(result);
+          expect(
+            Object.keys(captured.assets?.files ?? {}).some((path) => path.endsWith(".css")),
+          ).toBe(true);
+        }
+        expect(
+          await readFile(resolve(results[0]?.assets?.directory ?? "", "index.html"), "utf8"),
+        ).toContain("Static Astro");
+        expect(results[1]?.modules?.length).toBeGreaterThan(1);
+      } finally {
+        await rm(directory, { recursive: true, force: true });
+      }
+    }),
+  90_000,
 );

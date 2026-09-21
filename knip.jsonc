@@ -3,6 +3,12 @@
   "workspaces": {
     // Runtime-provided cloudflare:workers is a workerd built-in, not the cloudflare npm package.
     "packages/runtime": { "ignoreDependencies": ["cloudflare"] },
+    "packages/websites": {
+      "entry": ["tests/support/**/*.astro"],
+      "ignoreDependencies": ["cloudflare"]
+    },
+    "apps/example-static": { "entry": ["build.ts", "renkin.ts"] },
+    "apps/website": { "entry": ["build.ts", "renkin.ts"], "ignoreDependencies": ["cloudflare"] },
     "packages/cloudflare": { "entry": ["vitest.cloud.config.ts"] },
     "packages/renkin": {
       "entry": ["tests/fixtures/**/*.ts", "vitest.cloud.config.ts"]
