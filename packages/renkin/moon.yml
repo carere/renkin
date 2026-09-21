@@ -30,3 +30,7 @@ tasks:
     command: vitest run --config vitest.release-cloud.config.ts --project preparation
     options:
       cache: false
+  test-astro:
+    command: vitest run --root tests/fixtures/astro-ssr --project integration
+    options:
+      cache: false

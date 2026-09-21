@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { expect, it } from "@effect/vitest";
+import { applicationPaths } from "#test-support/root/release/applications.ts";
 import { cloudSuites } from "#test-support/root/release/cloud/catalog.ts";
 import { prepareInstalledCloud } from "#test-support/root/release/cloud/prepare.ts";
 import { runInstalledCloud } from "#test-support/root/release/cloud/run.ts";
@@ -17,8 +18,7 @@ it("prepares every maintained cloud suite without provider calls or private pack
       join(packageRoot, "package.json"),
       JSON.stringify({ name: "renkin", bin: { renkin: "cli.js" } }),
     );
-    for (const app of ["example-spa", "example-ssr", "example-static", "website"])
-      await mkdir(join(directory, "apps", app), { recursive: true });
+    for (const app of applicationPaths) await mkdir(join(directory, app), { recursive: true });
     await prepareInstalledCloud(resolve("../.."), directory);
     const base = await realpath(join(directory, "packages/renkin/tests"));
     const resolveImport = createRequire(join(directory, "packages/renkin/package.json")).resolve;

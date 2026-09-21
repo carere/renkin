@@ -7,6 +7,8 @@ import { type FrameworkWorkerOptions, frameworkWorker } from "./framework-worker
 
 export interface AstroOptions extends AstroBuildOptions, FrameworkWorkerOptions {}
 export interface AstroResource extends WorkerResource {
+  /** Framework configuration shared with the Astro CLI integration. */
+  readonly astro: AstroOptions;
   /** The generated or explicitly supplied session namespace, when sessions are enabled. */
   readonly sessionKV?: KVResource;
 }
@@ -63,5 +65,5 @@ export const astro = (id: string, options: AstroOptions): AstroResource => {
       },
     },
   );
-  return { ...resource, ...(sessionKV ? { sessionKV } : {}) };
+  return { ...resource, astro: { ...options, bindings }, ...(sessionKV ? { sessionKV } : {}) };
 };

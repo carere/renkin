@@ -3,6 +3,6 @@ import { renkin } from "renkin/astro";
 import { site } from "./renkin.ts";
 export default defineConfig({
   site: "https://example.test",
-  trailingSlash: "always",
+  trailingSlash: "never",
   integrations: [renkin(site)],
 });

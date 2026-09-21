@@ -1,11 +1,11 @@
 {
-  "name": "@renkin/website",
+  "name": "renkin-astro-ssr-fixture",
   "version": "0.0.0",
   "private": true,
-  "description": "Astro marketing and documentation site.",
+  "description": "Package-owned Astro SSR validation fixture.",
   "type": "module",
   "imports": {
-    "#project/*": "./*"
+    "#test-fixtures/astro-ssr/*": "./*"
   },
   "dependencies": {
     "astro": "^7.3.3",

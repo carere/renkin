@@ -44,6 +44,7 @@
     "@tanstack/solid-query": "^5.103.2",
     "@tanstack/solid-router": "^1.170.36",
     "@tanstack/solid-start": "^1.168.54",
+    "astro": "^7.3.3",
     "aws4fetch": "^1.0.20",
     "esbuild": "^0.28.2",
     "playwright": "^1.63.0",

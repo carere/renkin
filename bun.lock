@@ -68,21 +68,6 @@
         "vitest": "^5.0.0",
       },
     },
-    "apps/website": {
-      "name": "@renkin/website",
-      "version": "0.0.0",
-      "dependencies": {
-        "astro": "^7.3.3",
-        "effect": "^4.0.0-rc.115",
-        "renkin": "workspace:*",
-      },
-      "devDependencies": {
-        "@cloudflare/workers-types": "^5.20260921.1",
-        "@effect/vitest": "^4.0.0-rc.115",
-        "playwright": "^1.63.0",
-        "vitest": "^5.0.0",
-      },
-    },
     "packages/cloudflare": {
       "name": "@renkin/cloudflare",
       "version": "0.0.0",
@@ -144,6 +129,7 @@
         "@tanstack/solid-query": "^5.103.2",
         "@tanstack/solid-router": "^1.170.36",
         "@tanstack/solid-start": "^1.168.54",
+        "astro": "^7.3.3",
         "aws4fetch": "^1.0.20",
         "esbuild": "^0.28.2",
         "playwright": "^1.63.0",
@@ -616,8 +602,6 @@
     "@renkin/runtime": ["@renkin/runtime@workspace:packages/runtime"],
 
     "@renkin/testing": ["@renkin/testing@workspace:packages/testing"],
-
-    "@renkin/website": ["@renkin/website@workspace:apps/website"],
 
     "@renkin/websites": ["@renkin/websites@workspace:packages/websites"],
 

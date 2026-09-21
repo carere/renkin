@@ -16,13 +16,12 @@ tasks:
       cache: false
       persistent: true
   build:
-    command: bun build.ts
+    command: bun --bun astro build
     inputs:
       - src/**/*
       - public/**/*
       - astro.config.ts
       - renkin.ts
-      - build.ts
     outputs:
       - dist
       - .renkin/build-result.json

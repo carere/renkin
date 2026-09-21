@@ -6,9 +6,6 @@
   "include": ["*.ts", "scripts/**/*.ts"],
   "references": [
     {
-      "path": "./apps/website"
-    },
-    {
       "path": "./apps/example-spa"
     },
     {

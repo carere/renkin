@@ -46,7 +46,7 @@ try {
   const restored = await buildAstro(external);
   assert.equal(await readFile(restored.entry, "utf8"), source);
   assert.ok(JSON.parse(await readFile(resolve(root, ".renkin/build-result.json"), "utf8")).entry);
-  console.log("Public Moon → Bun → buildAstro nesting and verified reuse passed.");
+  console.log("Public Moon → Astro CLI nesting and verified reuse passed.");
 } finally {
   await rm(temporary, { recursive: true, force: true });
 }

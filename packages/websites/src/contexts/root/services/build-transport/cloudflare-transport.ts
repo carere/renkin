@@ -42,7 +42,7 @@ const loadMiniflare = (path: string, undici: string) => {
 export const initializeCloudflareTransport = () => {
   if (!process.versions.bun) return;
   const bun = (globalThis as typeof globalThis & { Bun: Loader }).Bun;
-  const owners = [import.meta.url, import.meta.resolve("@astrojs/cloudflare")];
+  const owners = [import.meta.url, createRequire(import.meta.url).resolve("@astrojs/cloudflare")];
   for (const owner of owners) {
     const plugin = createRequire(owner).resolve("@cloudflare/vite-plugin/package.json");
     const require = createRequire(plugin);

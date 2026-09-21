@@ -1,14 +1,31 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
+import { promisify } from "node:util";
 import type { KVNamespace } from "@cloudflare/workers-types";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { chromium } from "playwright";
+import type { WorkerBuildResult } from "renkin";
 import { defineStack, development } from "renkin";
-import { buildAstro } from "renkin/astro";
 import { worker } from "renkin/cloudflare";
-import { site } from "#project/renkin.ts";
+import { site } from "#test-fixtures/astro-ssr/renkin.ts";
+
+const buildSite = async (directory: string): Promise<WorkerBuildResult> => {
+  await promisify(execFile)(process.execPath, ["--no-env-file", "--bun", "astro", "build"], {
+    cwd: site.astro.root,
+    env: {
+      ...process.env,
+      WRANGLER_REGISTRY_PATH: resolve(directory, "registry"),
+      MINIFLARE_REGISTRY_PATH: resolve(directory, "miniflare"),
+      WRANGLER_LOG_PATH: resolve(directory, "wrangler.log"),
+    },
+    timeout: 60_000,
+    maxBuffer: 300_000,
+  });
+  return JSON.parse(await readFile(resolve(site.astro.root, ".renkin/build-result.json"), "utf8"));
+};
 
 it.effect(
   "runs the built SSR website with native bindings, sessions and workerd page generation",
@@ -17,7 +34,7 @@ it.effect(
       const directory = await mkdtemp(resolve(tmpdir(), "renkin-website-example-"));
       const browser = await chromium.launch({ headless: true });
       try {
-        const build = await buildAstro(site);
+        const build = await buildSite(directory);
         const { builder: _builder, ...options } = site.options;
         await Effect.runPromise(
           Effect.scoped(

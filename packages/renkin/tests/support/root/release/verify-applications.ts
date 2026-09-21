@@ -1,15 +1,16 @@
 import { join } from "node:path";
+import { applicationPaths } from "./applications.ts";
 import { execute, type InstalledConsumer } from "./consumer.ts";
 
 export const verifyApplications = async (consumer: InstalledConsumer) => {
   const failures: Error[] = [];
-  for (const name of ["example-spa", "example-ssr", "example-static", "website"]) {
+  for (const name of applicationPaths) {
     try {
       const result = await execute(
         process.execPath,
         ["--bun", "vitest", "run", "--project", "integration"],
         {
-          cwd: join(consumer.directory, "apps", name),
+          cwd: join(consumer.directory, name),
           env: consumer.env,
           timeout: 150000,
           maxBuffer: 300000,

@@ -1,0 +1,10 @@
+{
+  "extends": "../../../../../tsconfig.options.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "emitDeclarationOnly": false
+  },
+  "files": [],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "*.ts"]
+}

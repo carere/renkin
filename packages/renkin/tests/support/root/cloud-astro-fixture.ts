@@ -121,7 +121,7 @@ export const createCloudAstroFixture = () => {
       compatibilityDate: "2026-07-30",
     });
     const ssr = astro("ssr", {
-      root: fileURLToPath(new URL("../../../../../apps/website/", import.meta.url)),
+      root: fileURLToPath(new URL("../../fixtures/astro-ssr/", import.meta.url)),
       output: "server",
       compatibilityDate: "2026-07-30",
       allowDelete: true,

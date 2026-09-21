@@ -1,4 +1,4 @@
-import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import type { Plugin } from "vite";
 
 /** Resolve the adapter's virtual entrypoints from its owning dependency, including isolated installs. */
@@ -8,6 +8,6 @@ export const adapterResolution = (): Plugin => ({
   resolveId(source) {
     if (source.startsWith("/@astrojs/cloudflare/")) source = source.slice(1);
     if (source === "@astrojs/cloudflare" || source.startsWith("@astrojs/cloudflare/"))
-      return fileURLToPath(import.meta.resolve(source));
+      return createRequire(import.meta.url).resolve(source);
   },
 });

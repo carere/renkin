@@ -3,6 +3,7 @@ import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { promisify } from "node:util";
+import { applicationPaths } from "./applications.ts";
 
 export const execute = promisify(execFile);
 const consumerEnvironment = (directory: string) => ({
@@ -28,11 +29,16 @@ const graphManifest = JSON.stringify({
   type: "module",
   imports: { "#test-fixtures/full-graph/*": "./*" },
 });
-const applications = ["example-spa", "example-ssr", "example-static", "website"];
+
 const appDependencies = async (root: string) => {
   const dependencies: Record<string, string> = {};
-  for (const name of applications) {
-    const manifest = JSON.parse(await readFile(join(root, "apps", name, "package.json"), "utf8"));
+  for (const name of applicationPaths) {
+    const manifest = JSON.parse(
+      await readFile(
+        join(root, name, name.startsWith("apps/") ? "package.json" : "fixture.json"),
+        "utf8",
+      ),
+    );
     Object.assign(dependencies, manifest.dependencies, manifest.devDependencies);
   }
   const owner = JSON.parse(await readFile(join(root, "packages/renkin/package.json"), "utf8"));
@@ -43,14 +49,19 @@ const appDependencies = async (root: string) => {
   return dependencies;
 };
 const copyApplications = async (root: string, directory: string) => {
-  for (const name of applications) {
-    const destination = join(directory, "apps", name);
-    await copy(join(root, "apps", name), destination);
+  for (const name of applicationPaths) {
+    const destination = join(directory, name);
+    await copy(join(root, name), destination);
     const config = JSON.parse(await readFile(join(destination, "tsconfig.json"), "utf8"));
     delete config.references;
     delete config.compilerOptions.outDir;
     await writeFile(join(destination, "tsconfig.json"), JSON.stringify(config, null, 2));
-    const manifest = JSON.parse(await readFile(join(destination, "package.json"), "utf8"));
+    const manifest = JSON.parse(
+      await readFile(
+        join(destination, name.startsWith("apps/") ? "package.json" : "fixture.json"),
+        "utf8",
+      ),
+    );
     manifest.dependencies.renkin = JSON.parse(
       await readFile(join(directory, "node_modules/renkin/package.json"), "utf8"),
     ).version;

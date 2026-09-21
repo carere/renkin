@@ -10,12 +10,13 @@
       // The scoped build bridge resolves these from the official plugin's own dependency tree.
       "ignoreDependencies": ["cloudflare", "miniflare", "undici", "wrangler"]
     },
-    "apps/example-static": { "entry": ["build.ts", "renkin.ts"] },
-    "apps/website": { "entry": ["build.ts", "renkin.ts"], "ignoreDependencies": ["cloudflare"] },
+    "apps/example-static": { "entry": ["renkin.ts"] },
     "packages/cloudflare": { "entry": ["vitest.cloud.config.ts"] },
     "packages/renkin": {
+      "ignore": ["tests/fixtures/**/.astro/**"],
       "entry": [
         "tests/fixtures/**/*.ts",
+        "tests/fixtures/**/*.astro",
         "tests/fixtures/**/vite.config.mts",
         "vitest.cloud.config.ts",
         "release.ts",

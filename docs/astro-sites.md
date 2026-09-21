@@ -48,7 +48,7 @@ boundary so the provisioned resources match the runtime.
 
 ## Build and development
 
-Run `bun moon run example-static:dev` or `bun moon run website:dev` from this
+Run `bun moon run example-static:dev` from this
 checkout. These tasks use public `renkin dev`. Programmatic `development(stack)`
 also discovers framework recipes. The Astro development server handles source
 reload; a single Renkin Miniflare 4 graph owns local native storage and persistent
@@ -58,8 +58,12 @@ Miniflare 5 storage graph. Configure a frontend port with `port: 4321` or
 `config: { server: { port: 4321 } }`; the resource port takes precedence. Native file watching is the default; explicit
 Vite `server.watch.usePolling` is available for environments without native events.
 
-`bun moon run example-static:build` and `bun moon run website:build` produce `dist/`
-and `.renkin/build-result.json`. `buildAstro(site)` from `renkin/astro` returns the
+Configure `integrations: [renkin(site)]` in `astro.config.ts`, importing `renkin`
+from `renkin/astro` and the original site declaration from your infrastructure module.
+Then `bun --bun astro build` produces `dist/` and `.renkin/build-result.json` without
+a custom build script. The example Moon build task runs that same Astro CLI.
+Renkin owns the Cloudflare adapter; do not also configure another adapter.
+See the [README example](../README.md#astro-use-the-normal-build-command). `buildAstro(site)` from `renkin/astro` returns the
 shared `WorkerBuildResult`, including native requirement metadata, without
 provisioning infrastructure. Deploying the resource invokes this builder
 automatically. Existing explicit Worker build artifacts and custom domains use
@@ -86,14 +90,14 @@ adapter's module graph, including its Wasm or text modules.
 ## Validation
 
 The static example checks actual workerd generation, navigation and asset headers.
-The SSR website checks dynamic routes, native KV, cookie sessions and prerendered
+The package-owned SSR fixture checks dynamic routes, native KV, cookie sessions and prerendered
 pages. Owning package tests cover default/existing/disabled sessions, persistence,
 source reload, base paths, Node fallback, styled components through symlinked
 roots, and concurrent build requests. Run these without credentials:
 
 ```sh
 bun moon run websites:test-integration renkin:test-integration
-bun moon run example-static:test-integration website:test-integration
+bun moon run example-static:test-integration renkin:test-astro
 ```
 
 The separately invoked `packages/renkin/tests/cloud/root/astro.test.ts` requires

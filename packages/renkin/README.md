@@ -27,7 +27,7 @@ install a second incompatible Effect runtime beside the application.
 | `renkin/durable-object` | Native workerd Durable Object class helpers |
 | `renkin/workflow` | Native workerd Workflow class helpers |
 | `renkin/vite` | TanStack Solid SPA/SSR Vite plugin and build helper |
-| `renkin/astro` | Astro static/SSR build helper and configuration types |
+| `renkin/astro` | Astro CLI integration, programmatic build helper and configuration types |
 
 Durable Object and Workflow runtime entries belong inside Workers executed by
 workerd; importing them into an ordinary Bun host process is not a runtime test.
@@ -35,6 +35,23 @@ TypeScript projects should use `moduleResolution: "Bundler"` and `skipLibCheck: 
 with the supported framework dependencies. Application types and Effect requirements
 remain checked. The release validation record explains the upstream Astro declaration
 closure separately from Renkin's declarations.
+
+## Astro builds
+
+Use `renkin(site)` from `renkin/astro` in `astro.config.ts`:
+
+```ts
+import { defineConfig } from "astro/config";
+import { renkin } from "renkin/astro";
+import { site } from "./renkin.ts";
+export default defineConfig({ integrations: [renkin(site)] });
+```
+
+Run `bunx --bun astro build`. Astro compiles the site and the integration writes
+`.renkin/build-result.json`; no custom `build.ts` is required. The integration owns
+the Cloudflare adapter. `buildAstro(site)` remains available for programmatic use.
+The [repository README](https://github.com/carere/renkin#readme) is the primary
+usage guide, including stack declarations, development, deployment and bindings.
 
 ## Usage guides
 

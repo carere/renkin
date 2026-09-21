@@ -11,7 +11,6 @@ that record distinguishes release candidates, completed checks and compatibility
 
 | Workspace | Responsibility |
 | --- | --- |
-| `apps/website` | Astro marketing and documentation site. |
 | `apps/example-spa` | TanStack Start with Solid, SPA example and validation app. |
 | `apps/example-ssr` | TanStack Start with Solid, SSR example and validation app. |
 | `apps/example-static` | Astro SSG example and validation app. |
@@ -188,7 +187,7 @@ validation needs are:
 This list defines the selected behavior rather than all capabilities of each platform.
 The example apps exercise SPA, SSR and SSG paths; package-owned tests and separate
 real-cloud suites validate their owning behavior. `apps/example-static` exercises Astro static output,
-and `apps/website` is the runnable Astro SSR fixture with native bindings and sessions.
+and `packages/renkin/tests/fixtures/astro-ssr` preserves Astro SSR coverage for native bindings and sessions. Usage documentation lives in the root README; no marketing/documentation website is maintained.
 
 ## Deliberate limits
 

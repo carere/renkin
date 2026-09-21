@@ -65,7 +65,7 @@ jobs:
           bun moon run --concurrency 1 runtime:test-integration renkin:test-unit renkin:test-integration -- --no-file-parallelism
           bun moon run --concurrency 1 renkin:test-release-preparation -- --no-file-parallelism
           bun moon run --concurrency 1 websites:test-unit websites:test-integration example-spa:test-integration example-ssr:test-unit example-ssr:test-integration -- --no-file-parallelism
-          bun moon run --concurrency 1 example-static:test-integration website:test-integration -- --no-file-parallelism
+          bun moon run --concurrency 1 example-static:test-integration renkin:test-astro -- --no-file-parallelism
 
       - name: Ensure checks leave tracked files unchanged
         run: git diff --exit-code

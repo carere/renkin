@@ -7,3 +7,5 @@ export const buildAstro = (site: AstroResource) => {
 };
 export type { AstroOptions, AstroResource } from "@renkin/websites/models/astro";
 export type { AstroBuildOptions } from "@renkin/websites/models/astro-options";
+
+export { renkin } from "@renkin/websites/services/astro/integration";

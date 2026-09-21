@@ -56,6 +56,6 @@ export const verifyBuilds = async (consumer: InstalledConsumer, root: string) =>
       maxBuffer: 200000,
     },
   );
-  assert.match(nesting.stdout, /Public Moon → Bun → buildAstro nesting and verified reuse passed/);
-  return "Installed snapshot/source-map recovery and Moon → Bun → buildAstro passed.";
+  assert.match(nesting.stdout, /Public Moon → Astro CLI nesting and verified reuse passed/);
+  return "Installed snapshot/source-map recovery and Moon → Astro CLI passed.";
 };

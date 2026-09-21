@@ -1,11 +1,13 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
+import { promisify } from "node:util";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { type Browser, chromium } from "playwright";
+import type { WorkerBuildResult } from "renkin";
 import { defineStack, development } from "renkin";
-import { buildAstro } from "renkin/astro";
 import { worker } from "renkin/cloudflare";
 import { site } from "#project/renkin.ts";
 
@@ -51,7 +53,20 @@ it.effect(
       const directory = await mkdtemp(resolve(tmpdir(), "renkin-static-example-"));
       const browser = await chromium.launch({ headless: true });
       try {
-        const build = await buildAstro(site);
+        await promisify(execFile)(process.execPath, ["--no-env-file", "--bun", "astro", "build"], {
+          cwd: site.astro.root,
+          env: {
+            ...process.env,
+            WRANGLER_REGISTRY_PATH: resolve(directory, "registry"),
+            MINIFLARE_REGISTRY_PATH: resolve(directory, "miniflare"),
+            WRANGLER_LOG_PATH: resolve(directory, "wrangler.log"),
+          },
+          timeout: 60_000,
+          maxBuffer: 300_000,
+        });
+        const build: WorkerBuildResult = JSON.parse(
+          await readFile(resolve(site.astro.root, ".renkin/build-result.json"), "utf8"),
+        );
         const { builder: _builder, ...options } = site.options;
         expect(site.sessionKV).toBeUndefined();
         expect(site.dependencies).toEqual([]);

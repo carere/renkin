@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { lstat, mkdir, readdir, readFile, realpath, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative } from "node:path";
+import { applicationPaths } from "../applications.ts";
 import { adaptCloudSource } from "./adapt.ts";
 import {
   cloudSuites,
@@ -42,8 +43,8 @@ const installedConsumer = async (root: string, directory: string) => {
   const pkg = JSON.parse(await readFile(join(packageRoot, "package.json"), "utf8"));
   if (pkg.name !== "renkin" || !pkg.bin || JSON.stringify(pkg).includes("workspace:"))
     throw new Error("Cloud consumer requires the standalone installed Renkin artifact.");
-  for (const app of ["example-spa", "example-ssr", "example-static", "website"])
-    if (!inside(consumer, await realpath(join(consumer, "apps", app))))
+  for (const app of applicationPaths)
+    if (!inside(consumer, await realpath(join(consumer, app))))
       throw new Error("Installed framework root escapes consumer.");
   return consumer;
 };

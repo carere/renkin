@@ -10,7 +10,5 @@ it("runs Moon through the public external builder without recursive output-lock 
     ["--no-env-file", script],
     { timeout: 60_000 },
   );
-  expect(result.stdout.trim()).toBe(
-    "Public Moon → Bun → buildAstro nesting and verified reuse passed.",
-  );
+  expect(result.stdout.trim()).toBe("Public Moon → Astro CLI nesting and verified reuse passed.");
 }, 70_000);

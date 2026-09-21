@@ -79,7 +79,9 @@ The Moon task runs `bun --no-env-file build.ts`. Renkin validates its own local
 reuse before invoking Moon; the child public builder also validates reuse. The
 forced Moon invocation avoids restoring an incomplete or checkout-specific
 manifest from a separate task cache. This does not add a remote artifact cache.
-`buildAstro(site)` from `renkin/astro` supports the same pattern. A direct command
+For Astro, configure `renkin(site)` in `astro.config.ts` and use
+`["bun", "--bun", "astro", "build"]`: the integration writes the manifest automatically.
+`buildAstro(site)` remains available for programmatic builds. A direct command
 such as `["bun", "--no-env-file", "build.ts"]` works without Moon.
 
 `withBuildCommand` preserves the site's native binding metadata, dependencies and

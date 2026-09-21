@@ -24,5 +24,6 @@
     {
       "path": "../websites"
     }
-  ]
+  ],
+  "exclude": ["tests/fixtures/**/.astro/**", "tests/fixtures/**/dist/**"]
 }
