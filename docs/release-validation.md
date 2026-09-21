@@ -98,6 +98,21 @@ the same eight public subpaths. This is local validation of the standards candid
 actual Cloudflare acceptance remains the separate multi-candidate record above.
 No provider calls, emails or publication were performed for these review fixes.
 
+### Hosted cold-start follow-up
+
+Hosted Linux and macOS artifact jobs for merge `5cecbdc` subsequently failed the
+first development SSR request with a poisoned native binding; source CI passed.
+Vite optimizer writes were inside the forwarding Worker's recursively watched
+parent directory and triggered a runtime reload during that request. Revision
+`2d0b93ae1eed8efebc900db1a93bcb3125625d0a` isolates the Worker artifact from the
+optimizer directory. A real Vite/Miniflare regression reproduced the exact error
+before the change and now passes, including a positive check that Worker edits
+still reload. Four affected source suites passed 14 tests, and static checks passed.
+Its clean local macOS archive
+`a7e06b38d203d095049969622b82da32310ed985e55de08bf0400aa551224468` passed the full
+installed-consumer harness in 36.11 seconds. Hosted revalidation is pending for this
+follow-up; it did not repeat Cloudflare acceptance or send email.
+
 ## Maintained installed-consumer checks
 
 The harness installs the actual tarball into a fresh directory outside the

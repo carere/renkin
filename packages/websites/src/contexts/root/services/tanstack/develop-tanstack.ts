@@ -43,7 +43,8 @@ export const developTanStack = async (
     return {
       url,
       build: await frameworkStartup("create-forwarding-build", () =>
-        bridge.forwardingBuild(context.directory, url, {}),
+        // The graph watches this directory recursively; optimizer writes must not reload native bindings.
+        bridge.forwardingBuild(resolve(cacheRoot, "worker"), url, {}),
       ),
       connect: bridge.connect,
       close: async () => {
