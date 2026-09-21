@@ -65,7 +65,12 @@ export const receiptIntent = (state: string | undefined, allocationId: string): 
 export const receiptAcknowledgements = (
   state: string,
 ): { key: string; resource: Record<string, unknown> }[] => {
-  const current = object(JSON.parse(state));
+  let current: Record<string, unknown> | undefined;
+  try {
+    current = object(JSON.parse(state));
+  } catch {
+    return [];
+  }
   const candidates = [
     ...Object.values(object(current?.resources) ?? {}),
     object(object(current?.pending)?.applied),
