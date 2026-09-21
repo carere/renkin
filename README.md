@@ -90,8 +90,8 @@ synchronization of that field is disabled.
 GitHub Actions runs the same checks, verifies Conventional Commits and PR titles,
 and checks for configuration drift. It needs no Cloudflare credentials. Review
 [AGENTS.md](AGENTS.md) and the individual `.agents/skills/*/SKILL.md` files for
-agent workflows. The repository has no chosen project license yet; settle that and
-third-party notices before importing source or publishing.
+agent workflows. Apache 2.0 is the chosen project license; prepare its license
+file and applicable third-party notices before importing source or publishing.
 
 ## Remote cache credentials
 
