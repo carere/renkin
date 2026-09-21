@@ -29,7 +29,8 @@ export const prepareRequirements = async (
           (item) =>
             item.type === "cloudflare.kv" ||
             item.type === "cloudflare.d1" ||
-            item.type === "cloudflare.queue",
+            item.type === "cloudflare.queue" ||
+            item.type === "cloudflare.r2",
         )
         .map((item) => item.id),
     ]),

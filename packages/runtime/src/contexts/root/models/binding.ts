@@ -3,6 +3,7 @@ import { Effect } from "effect";
 import { type D1Client, type D1Requirement, d1Client, type NativeD1 } from "./d1.ts";
 import { type EmailClient, type EmailRequirement, emailClient, type NativeEmail } from "./email.ts";
 import { type NativeQueue, type QueueClient, type QueueRequirement, queueClient } from "./queue.ts";
+import { type NativeR2, type R2Client, type R2Requirement, r2Client } from "./r2.ts";
 import {
   type NativeWorkflow,
   type WorkflowClient,
@@ -26,6 +27,7 @@ export interface WorkerRequirement<
 export type BindingRequirement =
   | KVRequirement
   | D1Requirement
+  | R2Requirement
   | WorkerRequirement<unknown>
   | QueueRequirement
   | WorkflowRequirement
@@ -66,15 +68,17 @@ export type Resolved<R extends Requirements> = {
     ? KVClient
     : R[K] extends D1Requirement
       ? D1Client
-      : R[K] extends QueueRequirement<infer Body>
-        ? QueueClient<Body>
-        : R[K] extends WorkflowRequirement<infer Params>
-          ? WorkflowClient<Params>
-          : R[K] extends EmailRequirement
-            ? EmailClient
-            : R[K] extends WorkerRequirement<infer Service>
-              ? WorkerClient<Service>
-              : never;
+      : R[K] extends R2Requirement
+        ? R2Client
+        : R[K] extends QueueRequirement<infer Body>
+          ? QueueClient<Body>
+          : R[K] extends WorkflowRequirement<infer Params>
+            ? WorkflowClient<Params>
+            : R[K] extends EmailRequirement
+              ? EmailClient
+              : R[K] extends WorkerRequirement<infer Service>
+                ? WorkerClient<Service>
+                : never;
 };
 export const resolveBindings = <R extends Requirements>(
   requirements: R,
@@ -90,17 +94,19 @@ export const resolveBindings = <R extends Requirements>(
           ? kvClient(native as NativeKV, name)
           : requirement.type === "cloudflare.d1"
             ? d1Client(native as NativeD1, name)
-            : requirement.type === "cloudflare.queue"
-              ? queueClient(native as NativeQueue, name)
-              : requirement.type === "cloudflare.workflow"
-                ? workflowClient(native as NativeWorkflow, name)
-                : requirement.type === "cloudflare.email"
-                  ? emailClient(native as NativeEmail, name)
-                  : {
-                      native,
-                      call: <A>(operation: (service: unknown) => Promise<A>) =>
-                        call(name, "rpc", () => operation(native)),
-                    },
+            : requirement.type === "cloudflare.r2"
+              ? r2Client(native as NativeR2, name)
+              : requirement.type === "cloudflare.queue"
+                ? queueClient(native as NativeQueue, name)
+                : requirement.type === "cloudflare.workflow"
+                  ? workflowClient(native as NativeWorkflow, name)
+                  : requirement.type === "cloudflare.email"
+                    ? emailClient(native as NativeEmail, name)
+                    : {
+                        native,
+                        call: <A>(operation: (service: unknown) => Promise<A>) =>
+                          call(name, "rpc", () => operation(native)),
+                      },
       ];
     }),
   ) as Resolved<R>;

@@ -1,6 +1,7 @@
 import { cloudflareAccessServices } from "@renkin/cloudflare/services/access/cloudflare-access-service";
 import { cloudflareD1Service } from "@renkin/cloudflare/services/d1/cloudflare-d1-service";
 import { cloudflareKVService } from "@renkin/cloudflare/services/kv/cloudflare-kv-service";
+import { cloudflareR2Service } from "@renkin/cloudflare/services/r2/cloudflare-r2-service";
 import { cloudflareSiteServices } from "@renkin/cloudflare/services/site/cloudflare-site-service";
 import {
   type CloudStateOptions,
@@ -16,6 +17,7 @@ import {
 } from "@renkin/cloudflare-sdk/services/cloudflare-client/cloudflare-client";
 import { createD1Client } from "@renkin/cloudflare-sdk/services/cloudflare-client/d1-client";
 import { createKVClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/kv-client";
+import { createR2Client } from "@renkin/cloudflare-sdk/services/cloudflare-client/r2-client";
 import { createSiteClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/site-client";
 import type { ResourceServices } from "@renkin/core/services/resource/resource-service";
 import { Effect } from "effect";
@@ -72,10 +74,14 @@ export const cloudEnvironment = async (
   const d1Client = createD1Client(config, {
     request: (request, token) => state.gateway(stack, environment, token, request),
   });
+  const r2Client = createR2Client(config, {
+    request: (request, token) => state.gateway(stack, environment, token, request),
+  });
   const services: ResourceServices = (lease) => ({
     ...cloudflareAccessServices({ client: accessClient, token: lease.token }),
     ...cloudflareSiteServices({ client: siteClient, token: lease.token }),
     "cloudflare.d1": cloudflareD1Service(d1Client, lease.token),
+    "cloudflare.r2": cloudflareR2Service(r2Client, lease.token),
     "cloudflare.kv": cloudflareKVService(kvClient, lease.token),
     "cloudflare.worker": cloudflareWorkerService({
       client,

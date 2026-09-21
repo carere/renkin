@@ -23,6 +23,7 @@ const inspect = (value: unknown): Requirements => {
       item.type !== "cloudflare.queue" &&
       item.type !== "cloudflare.workflow" &&
       item.type !== "cloudflare.email" &&
+      item.type !== "cloudflare.r2" &&
       item.type !== "cloudflare.worker-reference"
     )
       throw new Error("Unsupported Worker requirement.");

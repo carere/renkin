@@ -2,13 +2,20 @@ import type { Miniflare } from "miniflare";
 import type { Requirements } from "../../models/binding.ts";
 import { guardD1, type NativeD1 } from "../../models/d1.ts";
 
+import type { NativeR2 } from "../../models/r2.ts";
+
 export const graphBindings = (
   runtime: Miniflare,
   prepared: Readonly<Record<string, { readonly requirements: Requirements }>>,
   databaseIds: Readonly<Record<string, string>> | undefined,
+  bucketIds?: Readonly<Record<string, string>>,
 ) => {
   const databases = new Map<string, Promise<NativeD1>>();
   return {
+    bucket: async (id: string): Promise<NativeR2> => {
+      if (!bucketIds?.[id]) throw new Error("R2 resource is not declared.");
+      return (await runtime.getR2Bucket(id, "__renkin_buckets")) as unknown as NativeR2;
+    },
     bindings: async (workerId: string): Promise<Record<string, unknown>> => {
       const bindings = await runtime.getBindings(workerId);
       for (const [name, requirement] of Object.entries(prepared[workerId]?.requirements ?? {})) {
