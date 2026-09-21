@@ -11,7 +11,8 @@
     "./worker": "./src/contexts/root/worker.ts",
     "./durable-object": "./src/contexts/root/durable-object.ts",
     "./workflow": "./src/contexts/root/workflow.ts",
-    "./astro": "./src/contexts/root/astro.ts"
+    "./astro": "./src/contexts/root/astro.ts",
+    "./vite": "./src/contexts/root/vite.ts"
   },
   "bin": {
     "renkin": "./src/contexts/root/cli/main.ts"

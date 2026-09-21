@@ -2,6 +2,8 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     // Runtime-provided cloudflare:workers is a workerd built-in, not the cloudflare npm package.
+    "apps/example-spa": { "entry": ["renkin.ts"], "ignoreDependencies": ["cloudflare"] },
+    "apps/example-ssr": { "entry": ["renkin.ts"], "ignoreDependencies": ["cloudflare"] },
     "packages/runtime": { "ignoreDependencies": ["cloudflare"] },
     "packages/websites": {
       "entry": ["tests/support/**/*.astro"],

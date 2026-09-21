@@ -40,3 +40,6 @@ export const r2Token = bucketToken;
 
 import { astro as astroSite } from "@renkin/websites/models/astro";
 export const astro = astroSite;
+
+import { tanstackStart as tanstack } from "@renkin/websites/models/tanstack";
+export const tanstackStart = tanstack;
