@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import type { EnvironmentState } from "@renkin/core/models/state";
 import { Effect } from "effect";
 import { deploy, listEnvironments, removeEnvironment } from "renkin";
+import { boundRequests } from "./bounded-fetch.ts";
 import { cloudGraph } from "./cloud-stack.ts";
 
 const authorizedGraphScope = () => {
@@ -35,21 +36,6 @@ const authorizedGraphScope = () => {
     expiresAt: new Date(env.RENKIN_CLOUDFLARE_AUTHORIZED_UNTIL ?? "")
       .toISOString()
       .replace(/\.\d{3}Z$/, "Z"),
-  };
-};
-
-const boundRequests = () => {
-  const original = globalThis.fetch;
-  globalThis.fetch = (input, init) => {
-    const signal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
-    const timeout = AbortSignal.timeout(60000);
-    return original(input, {
-      ...init,
-      signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
-    });
-  };
-  return () => {
-    globalThis.fetch = original;
   };
 };
 
