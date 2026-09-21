@@ -20,8 +20,20 @@ The specification and issue acceptance criteria remain authoritative.
 
 ## Validation
 
-No ticket acceptance suite has completed yet. The scaffold CI passed for the
-initial tracking commit; it is not behavioral evidence.
+Ticket #4 has a working foundation checkpoint. Credential-free local tests cover
+the public Worker API, HTTP reload, ownership, lifecycle recovery, process locks,
+encrypted state and provider adapters. Real Cloudflare validation passed Worker
+create/update/HTTP reads, shared redacted outputs, independent CLI reads and removal.
+Separate restricted-token checks passed and revoked both temporary tokens.
+
+The secured test state service remains account infrastructure. The superseded
+test service was removed after verifying ownership and the absence of temporary
+application Workers. Linux CI on the implementation is still pending.
+
+Ticket #4 is not yet complete: a cloud coordinator crash during an unobservable
+provider mutation can leave an ambiguous outcome. The implementation stops safely;
+the exceptional recovery policy is awaiting clarification. No other ticket is
+claimed complete, and the PR remains a draft.
 
 An isolated local HTTP probe against published `@distilled.cloud/cloudflare`
 1.0.0-rc.12 with Effect 4.0.0-rc.115 verified bearer authentication, distinct
