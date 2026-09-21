@@ -1,3 +1,11 @@
+import { ChunkedStateStorage } from "./chunked-state-storage.ts";
+import {
+  acknowledgesReceipt,
+  type MutationReceipt,
+  receiptAcknowledgements,
+  receiptIntent,
+  receiptRequest,
+} from "./mutation-receipts.ts";
 import { type ReconciliationReceipt, summarizeOperation, validDecision } from "./reconciliation.ts";
 import { decryptState, encryptState, newStateKey } from "./state-cipher.ts";
 import { type CoordinatorRequest, encodeBytes, type GatewayResponse } from "./state-protocol.ts";
@@ -36,6 +44,7 @@ const response = (value: unknown, status = 200) => Response.json(value, { status
 /** One coordinator per stack; each environment has an independent lease and journal. */
 export class StateCoordinator {
   private readonly activeDispatches = new Set<string>();
+  private readonly stateStorage: ChunkedStateStorage;
   constructor(
     private readonly ctx: Context,
     private readonly env: CoordinatorEnvironment,
@@ -43,6 +52,7 @@ export class StateCoordinator {
     ctx.storage.sql.exec(
       "CREATE TABLE IF NOT EXISTS records (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
     );
+    this.stateStorage = new ChunkedStateStorage(ctx.storage.sql);
     // Synchronous insert-if-absent makes concurrent bootstrap select exactly one random key.
     ctx.storage.sql.exec(
       "INSERT OR IGNORE INTO records VALUES ('encryption-key', ?)",
@@ -97,7 +107,7 @@ export class StateCoordinator {
       .toArray()[0]?.value;
     if (!key) return response({ error: "Encryption key is unavailable." }, 502);
     if (action === "read") {
-      const encrypted = this.get<string>(`state:${environment}`);
+      const encrypted = this.stateStorage.read(environment);
       return response(encrypted === undefined ? null : await decryptState(key, context, encrypted));
     }
     if (action === "inspect") return this.inspect(input.stack, environment, key);
@@ -118,15 +128,36 @@ export class StateCoordinator {
       return response(null);
     }
     if (action === "write") {
-      if (typeof input.state !== "string") return response({ error: "Invalid state." }, 400);
-      const encrypted = await encryptState(key, context, input.state);
-      if (!this.valid(environment, input.token))
-        return response({ error: "Deployment lease expired." }, 409);
-      this.put(`state:${environment}`, encrypted);
-      return response(null);
+      return this.writeState(input, environment, key, context);
     }
     if (action === "mutate") return this.mutate(request, input, environment);
     return response({ error: "Unknown operation." }, 404);
+  }
+  private async writeState(
+    input: CoordinatorRequest,
+    environment: string,
+    key: string,
+    context: string,
+  ): Promise<Response> {
+    if (typeof input.state !== "string") return response({ error: "Invalid state." }, 400);
+    const encrypted = await encryptState(key, context, input.state);
+    const acknowledged: string[] = [];
+    for (const candidate of receiptAcknowledgements(input.state)) {
+      const receiptKey = `receipt:${environment}:${candidate.key}`;
+      const saved = this.get<string>(receiptKey);
+      if (!saved) continue;
+      const receipt = JSON.parse(
+        await decryptState(key, JSON.stringify([1, input.stack, environment, receiptKey]), saved),
+      ) as MutationReceipt;
+      if (acknowledgesReceipt(candidate.resource, receipt)) acknowledged.push(receiptKey);
+    }
+    if (!this.valid(environment, input.token))
+      return response({ error: "Deployment lease expired." }, 409);
+    this.ctx.storage.transactionSync(() => {
+      this.stateStorage.write(environment, encrypted);
+      for (const receiptKey of acknowledged) this.remove(receiptKey);
+    });
+    return response(null);
   }
   private async inspect(stack: string, environment: string, key: string): Promise<Response> {
     const rows = this.ctx.storage.sql
@@ -275,6 +306,11 @@ export class StateCoordinator {
           !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(mutation.assetUploadToken)))
     )
       return response({ error: "Invalid asset upload authorization." }, 400);
+    const receipt = await receiptRequest(mutation, this.env.ACCOUNT_ID);
+    const pendingReceipt = receipt
+      ? await this.prepareReceipt(input, environment, receipt)
+      : undefined;
+    if (pendingReceipt instanceof Response) return pendingReceipt;
     const prepared = await prepareWorkerOperation(
       url,
       mutation,
@@ -292,13 +328,54 @@ export class StateCoordinator {
         ),
         headers: { "content-type": "application/json" },
       });
-    return this.dispatch(url, mutation.method, prepared, environment);
+    return this.dispatch(url, mutation.method, prepared, environment, input.stack, pendingReceipt);
+  }
+  private async prepareReceipt(
+    input: CoordinatorRequest,
+    environment: string,
+    receipt: NonNullable<Awaited<ReturnType<typeof receiptRequest>>>,
+  ): Promise<Omit<MutationReceipt, "result"> | Response> {
+    const key = this.ctx.storage.sql
+      .exec<{ value: string }>("SELECT value FROM records WHERE key = 'encryption-key'")
+      .toArray()[0]?.value;
+    if (!key) throw new Error("Encryption key unavailable.");
+    const savedState = this.stateStorage.read(environment);
+    const resourceId = receiptIntent(
+      savedState
+        ? await decryptState(key, JSON.stringify([1, input.stack, environment]), savedState)
+        : undefined,
+      receipt.allocationId,
+    );
+
+    const receiptKey = `receipt:${environment}:${receipt.operationKey}`;
+    const saved = this.get<string>(receiptKey);
+    if (saved) {
+      const stored = JSON.parse(
+        await decryptState(key, JSON.stringify([1, input.stack, environment, receiptKey]), saved),
+      ) as MutationReceipt;
+      if (stored.requestDigest !== receipt.requestDigest || stored.resourceId !== resourceId)
+        return response({ error: "Mutation receipt does not match this request." }, 409);
+      if (!this.valid(environment, input.token))
+        return response({ error: "Deployment lease expired." }, 409);
+      return response(stored.result);
+    }
+    if (input.request?.receiptOnly)
+      return response({
+        status: 200,
+        headers: { "content-type": "application/json" },
+        bodyBase64: encodeBytes(
+          new TextEncoder().encode(JSON.stringify({ success: true, result: {} })),
+        ),
+      });
+    return { ...receipt, resourceId };
   }
   private async dispatch(
     url: URL,
     method: string,
     prepared: Awaited<ReturnType<typeof prepareWorkerOperation>>,
     environment: string,
+    stack: string,
+    receipt?: Omit<MutationReceipt, "result">,
   ): Promise<Response> {
     this.put(`operation:${environment}`, prepared.operation);
     this.activeDispatches.add(prepared.operation.id);
@@ -316,12 +393,28 @@ export class StateCoordinator {
         bodyBase64: encodeBytes(new Uint8Array(await upstream.arrayBuffer())),
         headers: Object.fromEntries(upstream.headers),
       };
+      let encryptedReceipt: string | undefined;
+      const receiptKey = receipt ? `receipt:${environment}:${receipt.operationKey}` : undefined;
+      if (receipt && receiptKey && upstream.status >= 200 && upstream.status < 300) {
+        const key = this.ctx.storage.sql
+          .exec<{ value: string }>("SELECT value FROM records WHERE key = 'encryption-key'")
+          .toArray()[0]?.value;
+        if (!key) throw new Error("Encryption key unavailable.");
+        encryptedReceipt = await encryptState(
+          key,
+          JSON.stringify([1, stack, environment, receiptKey]),
+          JSON.stringify({ ...receipt, result }),
+        );
+      }
       if (
         ((upstream.status >= 200 && upstream.status < 300) ||
           (upstream.status >= 400 && upstream.status < 500 && upstream.status !== 408)) &&
         this.get<WorkerOperation>(`operation:${environment}`)?.id === prepared.operation.id
       )
-        this.remove(`operation:${environment}`);
+        this.ctx.storage.transactionSync(() => {
+          if (encryptedReceipt && receiptKey) this.put(receiptKey, encryptedReceipt);
+          this.remove(`operation:${environment}`);
+        });
       return response(result);
     } finally {
       this.activeDispatches.delete(prepared.operation.id);

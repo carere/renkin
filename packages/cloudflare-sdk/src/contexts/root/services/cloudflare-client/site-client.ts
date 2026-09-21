@@ -13,7 +13,8 @@ export const createSiteClient = (config: CloudflareConfig, gateway: MutationGate
       write(Workers.putDomain({ ...input, accountId }), token),
     deleteDomain: (domainId: string, token: string) =>
       write(Workers.deleteDomain({ accountId, domainId }), token),
-    listDestinations: () => read(Workers.listObservabilityDestinations({ accountId })),
+    listDestinations: (page = 1) =>
+      read(Workers.listObservabilityDestinations({ accountId, page, perPage: 50 })),
     createDestination: (input: DestinationInput, token: string) =>
       write(Workers.createObservabilityDestination({ ...input, accountId }), token),
     updateDestination: (
@@ -41,6 +42,8 @@ export const createSiteClient = (config: CloudflareConfig, gateway: MutationGate
       write(Workers.patchScriptScriptAndVersionSetting({ accountId, scriptName, settings }), token),
     getWorkerSettings: (scriptName: string) =>
       read(Workers.getScriptScriptAndVersionSetting({ accountId, scriptName })),
+    getWorkerSubdomain: (scriptName: string) =>
+      read(Workers.getScriptSubdomain({ accountId, scriptName })),
     setWorkerSubdomain: (scriptName: string, enabled: boolean, token: string) =>
       write(
         Workers.createScriptSubdomain({ accountId, scriptName, enabled, previewsEnabled: false }),

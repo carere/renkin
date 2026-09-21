@@ -5,6 +5,8 @@ export interface GatewayRequest {
   readonly bodyBase64?: string;
   readonly headers?: Record<string, string>;
   readonly assetUploadToken?: string;
+  readonly operationKey?: string;
+  readonly receiptOnly?: boolean;
 }
 export interface GatewayResponse {
   readonly status: number;
@@ -20,9 +22,15 @@ export interface CoordinatorRequest {
   readonly decision?: ReconciliationDecision;
 }
 export const encodeBytes = (bytes: Uint8Array): string => {
-  let value = "";
-  for (const byte of bytes) value += String.fromCharCode(byte);
-  return btoa(value);
+  const parts: string[] = [];
+  for (let offset = 0; offset < bytes.length; offset += 32_768)
+    parts.push(String.fromCharCode(...bytes.subarray(offset, offset + 32_768)));
+  return btoa(parts.join(""));
 };
-export const decodeBytes = (value: string): Uint8Array<ArrayBuffer> =>
-  Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
+export const decodeBytes = (value: string): Uint8Array<ArrayBuffer> => {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  // Avoid materializing an intermediate array for every byte of a large checkpoint.
+  for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
+  return bytes;
+};

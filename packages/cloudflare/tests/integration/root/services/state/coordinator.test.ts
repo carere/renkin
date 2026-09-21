@@ -223,7 +223,9 @@ it("treats only WorkerNotFound as absence before delete", async () => {
 it("rejects account-read credentials as the state bearer", async () => {
   const environment = "auth-protection";
   const lease = (await (await call("acquire", { environment })).json()) as { token: string };
-  await call("write", { environment, token: lease.token, state: "protected-state" });
+  expect(
+    (await call("write", { environment, token: lease.token, state: "protected-state" })).status,
+  ).toBe(200);
   for (const action of ["read", "write", "identity"]) {
     const result = await emulator.dispatchFetch(`https://state.example/v1/${action}`, {
       method: "POST",
