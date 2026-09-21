@@ -46,3 +46,38 @@ it.effect("reads JSON in another process without evaluating the infrastructure f
     }
   }),
 );
+
+it.effect("requires an explicit settlement assertion even with yes and force", () =>
+  Effect.promise(async () => {
+    const cli = new URL("../../../src/contexts/root/cli/main.ts", import.meta.url).pathname;
+    const executable = process.versions.bun ? process.execPath : "bun";
+    try {
+      await promisify(execFile)(
+        executable,
+        [
+          cli,
+          "reconcile",
+          "--stack",
+          "app",
+          "--operation",
+          crypto.randomUUID(),
+          "--outcome",
+          "completed",
+          "--operator",
+          "test",
+          "--evidence",
+          "support-case",
+          "--yes",
+          "--force",
+        ],
+        {
+          env: { ...process.env, CLOUDFLARE_API_TOKEN: "", CLOUDFLARE_ACCOUNT_ID: "" },
+        },
+      );
+      throw new Error("Reconciliation unexpectedly succeeded.");
+    } catch (error) {
+      expect(error).toMatchObject({ code: 1, stdout: "" });
+      expect((error as { stderr: string }).stderr).toContain("--provider-settled");
+    }
+  }),
+);
