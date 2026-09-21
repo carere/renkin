@@ -108,6 +108,14 @@ bounds. Diagnostics distinguish a returned HTTP status/content mismatch from
 network/TLS unavailability. The entire scenario and every request remain bounded,
 with a separate cleanup allowance. No provider write is blindly retried.
 
+The final exact-host certificate inventory found zero remaining packs for earlier
+scopes `54773f62` and `d256e2df`. The final `fadc1fd5` hostname appeared in one
+provider-managed advanced pack marked `pending_deletion`, shared with other
+hostnames. It was **not** manually deleted. Root owns follow-up of that managed
+cleanup; this does not change the confirmed removal of the application domain,
+Workers, KV namespaces and environment. The temporary zone-read token used for
+the inventory was revoked.
+
 ## Provenance and boundary
 
 The comparison baseline was Alchemy revision
