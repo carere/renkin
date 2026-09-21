@@ -11,7 +11,18 @@ export default defineWorker(
   },
   ({ Audit, Mail }) => ({
     async fetch(request) {
+      if (request.method === "GET") {
+        const id = new URL(request.url).pathname.slice(1);
+        return Response.json({
+          attempts: await Audit.native.get(`attempts:${id}`),
+          accepted: await Audit.native.get(`notified:${id}`),
+        });
+      }
       const { id } = (await request.json()) as { id: string };
+      await Audit.native.put(
+        `attempts:${id}`,
+        String(Number((await Audit.native.get(`attempts:${id}`)) ?? 0) + 1),
+      );
       const from = String(env.MAIL_FROM);
       const to = String(env.MAIL_TO);
       await Mail.native.send(

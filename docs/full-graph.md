@@ -72,7 +72,9 @@ separate acceptance boundary.
 On macOS, `sandbox-exec` denies all outbound networking except loopback and denies
 reads under the legacy `~/.wrangler` path (which may already be absent). On Linux,
 the harness requires a fresh user with no legacy profile and passwordless
-`sudo unshare --net`; it enables only the namespace's loopback interface. Unsupported
+`sudo unshare --net`; it enables only the namespace's loopback interface, then uses `setpriv` to drop
+back to the invoking user and group before starting Bun. This keeps generated state
+and cleanup under the consumer's ownership. Unsupported
 platforms or unavailable isolation fail explicitly. Neither mechanism is a runtime
 dependency of Renkin. Run outside another sandbox if it prevents Chromium or creating
 the narrower network sandbox. The test first confirms an external TCP connection to
@@ -91,3 +93,14 @@ completed Workflow does not send another message. Captured mail is session-scope
 so the new session starts with no captured messages. A second stack name using the same
 state directory has independent D1, R2 and DO data. Scoped runtimes, browser processes,
 and the temporary consumer/state are closed and removed after success or assertion failure.
+
+
+The separate cloud scenario is `tests/cloud/root/full-graph.test.ts` in the Renkin
+package. It requires current explicit resource, token-management and email scope,
+replaces local resource lifetimes and deletion settings, and uses one temporary
+stack. Its intended checks are the connected native flow, signed R2 access, one
+email send with Workflow task retries disabled, and a provider-observed cron change
+without recompiling the three frontends. A local owner-only JSONL ledger records
+allocated scopes, provider IDs after deployment and completed environment cleanup.
+It is not part of the normal integration command. See the current
+[validation record](validation/issue-13.md) for which cloud checks have actually run.

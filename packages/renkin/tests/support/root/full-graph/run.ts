@@ -72,6 +72,10 @@ try {
       stat(join(homedir(), ".wrangler")),
       (error: NodeJS.ErrnoException) => error.code === "ENOENT",
     );
+    const uid = process.getuid?.();
+    const gid = process.getgid?.();
+    assert.notEqual(uid, undefined);
+    assert.notEqual(gid, undefined);
     command = "sudo";
     args = [
       "-n",
@@ -82,6 +86,12 @@ try {
       "-c",
       'ip link set lo up && exec "$@"',
       "graph-network",
+      "/usr/bin/setpriv",
+      "--reuid",
+      String(uid),
+      "--regid",
+      String(gid),
+      "--clear-groups",
       "/usr/bin/env",
       "-i",
       ...Object.entries(env).map(([key, value]) => `${key}=${value}`),

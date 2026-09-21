@@ -11,29 +11,33 @@ export const FulfillOrder = defineWorkflow(
   },
   (event, steps, { Orders, Notifications, Tracking }) =>
     Effect.gen(function* () {
-      yield* steps.task("fulfill", () =>
-        Effect.gen(function* () {
-          yield* Orders.query("UPDATE orders SET status = 'complete' WHERE id = ?", [
-            (event.payload as { id: string }).id,
-          ]);
-          yield* Notifications.call((service) =>
-            service.fetch(
-              new Request("https://notifications/", {
-                method: "POST",
-                body: JSON.stringify(event.payload),
-              }),
-            ),
-          );
-          yield* Tracking.call((service) =>
-            service.fetch(
-              new Request("https://tracking/record", {
-                method: "POST",
-                body: JSON.stringify(event.payload),
-              }),
-            ),
-          );
-          return { id: (event.payload as { id: string }).id };
-        }),
+      yield* steps.task(
+        "fulfill",
+        () =>
+          Effect.gen(function* () {
+            yield* Orders.query("UPDATE orders SET status = 'complete' WHERE id = ?", [
+              (event.payload as { id: string }).id,
+            ]);
+            yield* Notifications.call((service) =>
+              service.fetch(
+                new Request("https://notifications/", {
+                  method: "POST",
+                  body: JSON.stringify(event.payload),
+                }),
+              ),
+            );
+            yield* Tracking.call((service) =>
+              service.fetch(
+                new Request("https://tracking/record", {
+                  method: "POST",
+                  body: JSON.stringify(event.payload),
+                }),
+              ),
+            );
+            return { id: (event.payload as { id: string }).id };
+          }),
+        // This step includes email: do not intentionally repeat its external side effect.
+        { retries: { limit: 0, delay: "1 second" } },
       );
       return { id: (event.payload as { id: string }).id };
     }),
