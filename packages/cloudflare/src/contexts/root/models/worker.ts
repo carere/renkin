@@ -8,6 +8,8 @@ export interface WorkerOptions {
   readonly port?: number;
   /** Explicit replacement trigger. Defaults to the logical ID. */
   readonly identity?: string;
+  readonly dependencies?: readonly ResourceDefinition[];
+  readonly data?: boolean;
   readonly allowDelete?: boolean;
   readonly retain?: boolean;
 }
@@ -20,7 +22,9 @@ export interface WorkerResource extends ResourceDefinition {
 export const worker = (id: string, options: WorkerOptions): WorkerResource => ({
   id,
   type: "cloudflare.worker",
-  identity: options.identity ?? id,
+  identity: options.identity ?? "worker",
+  dependencies: options.dependencies?.map((resource) => resource.id) ?? [],
+  protection: { data: options.data ?? false, allowDelete: options.allowDelete ?? false },
   properties: {
     entry: options.entry,
     compatibilityDate: options.compatibilityDate,
