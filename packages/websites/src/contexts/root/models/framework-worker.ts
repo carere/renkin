@@ -3,6 +3,7 @@ import type { ResourceDefinition } from "@renkin/core/models/stack";
 import type { BindingRequirement, Requirements } from "@renkin/runtime/models/binding";
 import type { WorkerBuildRecipe } from "@renkin/runtime/models/worker-builder";
 import { wrapBuildResult } from "../services/build/wrap-build-result.ts";
+import { frameworkStartup } from "./framework-startup.ts";
 
 export interface FrameworkWorkerOptions
   extends Omit<WorkerOptions, "build" | "builder" | "entry" | "bindings"> {
@@ -47,9 +48,14 @@ export const frameworkWorker = (
               const session = await recipe.develop?.(context);
               if (!session) throw new Error("Framework development recipe is missing.");
               try {
-                return { ...session, build: await wrapBuildResult(session.build, requirements) };
+                return {
+                  ...session,
+                  build: await frameworkStartup("wrap-framework-build", () =>
+                    wrapBuildResult(session.build, requirements),
+                  ),
+                };
               } catch (error) {
-                await session.close();
+                await frameworkStartup("close-framework-session", () => session.close());
                 throw error;
               }
             },

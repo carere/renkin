@@ -6,7 +6,7 @@ import { inspect } from "node:util";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { defineStack, development } from "renkin";
-import { worker } from "renkin/cloudflare";
+import { tanstackStart, worker } from "renkin/cloudflare";
 import { vi } from "vitest";
 
 it.live(
@@ -25,7 +25,13 @@ it.live(
         new Error("SECRET_MESSAGE", {
           cause: Object.assign(new Error("SECRET_CAUSE"), { code: "EADDRINUSE" }),
         }),
-        { name: "SECRET_NAME", code: "SECRET_CODE" },
+        {
+          name: "SECRET_NAME",
+          code: "SECRET_CODE",
+          stage: "SECRET_STAGE",
+          stack:
+            "TypeError: SECRET_MESSAGE\n at hidden (/SECRET_PATH/private.ts:1:2)\n at secretFunction (/SECRET_PATH/node_modules/vite/dist/node/chunks/node.js:123:45)",
+        },
       );
       const resource = worker("Site", {
         compatibilityDate: "2026-07-30",
@@ -45,7 +51,10 @@ it.live(
       expect(result?.message).toBe("Local application startup failed.");
       expect(result?.cause).toEqual({
         phase: "frameworks",
-        failures: [{ name: "unknown" }, { name: "Error", code: "EADDRINUSE" }],
+        failures: [
+          { name: "unknown", locations: [{ module: "vite", line: 123, column: 45 }] },
+          { name: "Error", code: "EADDRINUSE" },
+        ],
       });
       expect(inspect(result)).not.toContain("SECRET_");
       expect(diagnosticLog).toHaveBeenCalledWith(
@@ -94,4 +103,48 @@ await Effect.runPromise(Effect.scoped(development(defineStack({name:"child",reso
     expect(child.stderr).toContain("Local application startup failed.");
     expect(child.stderr).not.toContain("SECRET_");
   }).pipe(Effect.scoped),
+);
+
+it.live(
+  "identifies actual Vite configuration startup failure through the public framework recipe",
+  () =>
+    Effect.gen(function* () {
+      const directory = yield* Effect.acquireRelease(
+        Effect.promise(() => mkdtemp(join(tmpdir(), "renkin-vite-diagnostic-"))),
+        (directory) => Effect.promise(() => rm(directory, { recursive: true, force: true })),
+      );
+      yield* Effect.promise(() =>
+        writeFile(
+          join(directory, "vite.config.mjs"),
+          'export default {plugins:[{name:"failing-user-plugin",configureServer(){throw new TypeError("PRIVATE_PLUGIN_MESSAGE")}}]};',
+        ),
+      );
+      const diagnostics = yield* Effect.acquireRelease(
+        Effect.sync(() => vi.spyOn(console, "error").mockImplementation(() => {})),
+        (spy) => Effect.sync(() => spy.mockRestore()),
+      );
+      const site = tanstackStart("Site", {
+        root: directory,
+        rendering: "spa",
+        compatibilityDate: "2026-07-30",
+      });
+      const result = yield* development(
+        defineStack({ name: "vite-diagnostic", resources: [site] }),
+        { directory: join(directory, "state") },
+      ).pipe(Effect.match({ onFailure: (error) => error, onSuccess: () => undefined }));
+      expect(result?.cause).toMatchObject({
+        phase: "frameworks",
+        failures: [{ name: "Error", stage: "create-vite-server" }, { name: "TypeError" }],
+      });
+      const detail = result?.cause as { failures: { locations?: { module: string }[] }[] };
+      expect(detail.failures[1]?.locations?.some((location) => location.module === "vite")).toBe(
+        true,
+      );
+      const logged = diagnostics.mock.calls.filter(
+        ([line]) => typeof line === "string" && line.startsWith("[renkin:startup]"),
+      );
+      expect(logged).toHaveLength(1);
+      expect(JSON.stringify(logged)).not.toContain("PRIVATE_");
+      expect(JSON.stringify(logged)).not.toContain(directory);
+    }).pipe(Effect.scoped),
 );
