@@ -1,8 +1,9 @@
 import type { WorkerBuildResult } from "./build-result.ts";
+import type { WorkerBuildContext } from "./build-reuse.ts";
 
 /** Framework-owned build work. The result remains independent of the build tool. */
 export interface WorkerBuildRecipe {
-  build(): Promise<WorkerBuildResult>;
+  build(context?: WorkerBuildContext): Promise<WorkerBuildResult>;
   develop?(context: WorkerDevelopmentContext): Promise<WorkerDevelopmentSession>;
 }
 

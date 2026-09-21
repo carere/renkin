@@ -1,9 +1,11 @@
 import type { AssetRouting } from "@renkin/runtime/models/build-result";
+import type { BuildReuseOptions } from "@renkin/runtime/models/build-reuse";
 import type { AstroInlineConfig } from "astro";
 
 /** Astro owns page generation; Renkin owns bindings and deployment. */
 export interface AstroBuildOptions {
   readonly root: string;
+  readonly reuse?: BuildReuseOptions | false;
   /** Frontend development port; zero chooses an available port. */
   readonly port?: number;
   readonly output: "static" | "server";

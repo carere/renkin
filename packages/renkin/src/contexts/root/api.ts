@@ -30,3 +30,13 @@ import {
 } from "./services/recovery.ts";
 export const inspectRecovery = inspect;
 export const reconcileOperation = reconcile;
+
+import { buildCommand as command } from "@renkin/runtime/services/build-command/build-command";
+import { withBuildCommand as external } from "./services/build/with-build-command.ts";
+export const buildCommand = command;
+export const withBuildCommand = external;
+
+import type { BuildCommandOptions as CommandOptions } from "@renkin/runtime/models/build-command";
+import type { BuildReuseOptions as ReuseOptions } from "@renkin/runtime/models/build-reuse";
+export type BuildCommandOptions = CommandOptions;
+export type BuildReuseOptions = ReuseOptions;

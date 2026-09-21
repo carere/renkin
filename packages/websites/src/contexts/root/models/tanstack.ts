@@ -1,10 +1,12 @@
 import { resolve } from "node:path";
 import type { WorkerResource } from "@renkin/cloudflare/models/worker";
 import type { AssetRouting, WorkerBuildResult } from "@renkin/runtime/models/build-result";
+import type { BuildReuseOptions } from "@renkin/runtime/models/build-reuse";
 import { type FrameworkWorkerOptions, frameworkWorker } from "./framework-worker.ts";
 
 export interface TanStackOptions extends FrameworkWorkerOptions {
   readonly root: string;
+  readonly reuse?: BuildReuseOptions | false;
   readonly rendering: "spa" | "ssr";
   readonly configFile?: string;
   readonly serverEntry?: string;
@@ -24,12 +26,12 @@ export const tanstackStart = (id: string, options: TanStackOptions): TanStackRes
   const website = { ...options, root: resolve(options.root) };
   return {
     ...frameworkWorker(id, website, {
-      build: async () => {
+      build: async (context) => {
         const moduleUrl = new URL("../services/tanstack/build-tanstack.ts", import.meta.url);
         const { buildTanStack } = (await import(
           moduleUrl.href
         )) as typeof import("../services/tanstack/build-tanstack.ts");
-        return buildTanStack(website);
+        return buildTanStack(website, context);
       },
       develop: async (context) => {
         const moduleUrl = new URL("../services/tanstack/develop-tanstack.ts", import.meta.url);

@@ -2,6 +2,8 @@
 export interface WorkerBuildResult {
   /** Already-built ES module. Renkin validates and uploads it without rebundling. */
   readonly entry: string;
+  /** Files such as source maps, relative to the entry directory; captured but never uploaded. */
+  readonly auxiliaryFiles?: readonly string[];
   /** Additional modules, relative to the entry directory (including WASM and text). */
   readonly modules?: readonly { readonly path: string; readonly type: string }[];
   readonly assets?: {

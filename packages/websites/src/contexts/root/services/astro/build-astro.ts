@@ -4,9 +4,12 @@ import { dirname, extname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import cloudflare from "@astrojs/cloudflare";
 import type { WorkerBuildResult } from "@renkin/runtime/models/build-result";
+import type { WorkerBuildContext } from "@renkin/runtime/models/build-reuse";
+import { createBuildContext } from "@renkin/runtime/services/build-reuse/build-context";
 import { type AstroConfig, type AstroInlineConfig, build } from "astro";
 import { sessionDrivers } from "astro/config";
 import type { AstroBuildOptions } from "../../models/astro-options.ts";
+import { buildIdentity } from "../build/reuse-options.ts";
 import { adapterResolution } from "./adapter-resolution.ts";
 
 const moduleTypes: Readonly<Record<string, string>> = {
@@ -93,6 +96,9 @@ const buildResult = async (
   return {
     entry,
     modules: await modulesIn(dirname(entry), entry),
+    auxiliaryFiles: (await readdir(dirname(entry), { recursive: true })).filter((path) =>
+      path.endsWith(".map"),
+    ),
     ...compatibility,
     assets: {
       directory: clientDirectory ?? fileURLToPath(config.build.client),
@@ -170,8 +176,39 @@ let previousBuild: Promise<unknown> = Promise.resolve();
 export const buildAstro = (
   options: AstroBuildOptions,
   context: { readonly directory?: string } = {},
-): Promise<WorkerBuildResult> => {
-  const result = previousBuild.then(() => runBuild(options, context));
-  previousBuild = result.catch(() => undefined);
-  return result;
-};
+  builds: WorkerBuildContext = createBuildContext(),
+): Promise<WorkerBuildResult> =>
+  builds.resolve({
+    root: options.root,
+    adapter: "renkin-astro-v1",
+    ...buildIdentity(
+      {
+        output: options.output,
+        compatibilityDate: options.compatibilityDate,
+        compatibilityFlags: options.compatibilityFlags,
+        assetRouting: options.assetRouting,
+        configFile: options.configFile,
+        config: options.config,
+        session: options.session,
+        sessionKVBindingName: options.sessionKVBindingName,
+        prerenderEnvironment: options.prerenderEnvironment,
+      },
+      options.reuse,
+    ),
+    reuse:
+      options.reuse === false
+        ? false
+        : {
+            ...(options.config?.outDir
+              ? {
+                  outputRoot: dirname(resolve(options.root, options.config.outDir)),
+                }
+              : {}),
+            ...options.reuse,
+          },
+    build: () => {
+      const result = previousBuild.then(() => runBuild(options, context));
+      previousBuild = result.catch(() => undefined);
+      return result;
+    },
+  });
