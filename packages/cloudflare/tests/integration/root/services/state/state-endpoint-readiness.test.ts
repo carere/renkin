@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
+import { vi } from "vitest";
 import { waitForStateEndpoint } from "../../../../../src/contexts/root/services/state/state-endpoint-readiness.ts";
 
 const server = (statuses: readonly number[], accountId = "account") =>
@@ -74,5 +75,32 @@ it.live("rejects a different account and bounds persistent missing-route respons
     const missing = yield* server([404]);
     yield* Effect.promise(() => expect(waitForStateEndpoint(missing.input, 50)).rejects.toThrow());
     expect(missing.requests.length).toBeLessThanOrEqual(1);
+  }).pipe(Effect.scoped),
+);
+
+it.live("does not schedule another probe when the final deadline sleep wakes early", () =>
+  Effect.gen(function* () {
+    const missing = yield* server([404]);
+    const originalTimeout = globalThis.setTimeout;
+    const timer = vi
+      .spyOn(globalThis, "setTimeout")
+      .mockImplementation((callback, delay, ...args) =>
+        originalTimeout(
+          callback,
+          delay !== undefined && delay > 0 && delay < 500 ? 0 : delay,
+          ...args,
+        ),
+      );
+    try {
+      yield* Effect.promise(() =>
+        expect(waitForStateEndpoint(missing.input, 400)).rejects.toThrow("deadline"),
+      );
+      expect(missing.requests).toHaveLength(1);
+      expect(
+        timer.mock.calls.some(([, delay]) => delay !== undefined && delay > 0 && delay < 500),
+      ).toBe(true);
+    } finally {
+      timer.mockRestore();
+    }
   }).pipe(Effect.scoped),
 );
