@@ -24,6 +24,32 @@ export class StateCoordinator extends Coordinator {
       return Response.json(
         this.context.storage.sql.exec("SELECT key,value FROM records").toArray(),
       );
+    if (action === "test-damage-chunk" || action === "test-legacy-state") {
+      const { environment } = (await request.json()) as { environment: string };
+      if (action === "test-damage-chunk")
+        this.context.storage.sql.exec(
+          "DELETE FROM state_chunks WHERE environment = ? AND part = 0",
+          environment,
+        );
+      else {
+        const chunks = this.context.storage.sql
+          .exec<{ value: string }>(
+            "SELECT value FROM state_chunks WHERE environment = ? ORDER BY part",
+            environment,
+          )
+          .toArray();
+        this.context.storage.sql.exec(
+          "UPDATE records SET value = ? WHERE key = ?",
+          JSON.stringify(chunks.map((chunk) => chunk.value).join("")),
+          `state:${environment}`,
+        );
+        this.context.storage.sql.exec(
+          "DELETE FROM state_chunks WHERE environment = ?",
+          environment,
+        );
+      }
+      return Response.json(null);
+    }
     return super.fetch(request);
   }
 }

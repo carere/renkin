@@ -22,9 +22,10 @@ export interface CoordinatorRequest {
   readonly decision?: ReconciliationDecision;
 }
 export const encodeBytes = (bytes: Uint8Array): string => {
-  let value = "";
-  for (const byte of bytes) value += String.fromCharCode(byte);
-  return btoa(value);
+  const parts: string[] = [];
+  for (let offset = 0; offset < bytes.length; offset += 32_768)
+    parts.push(String.fromCharCode(...bytes.subarray(offset, offset + 32_768)));
+  return btoa(parts.join(""));
 };
 export const decodeBytes = (value: string): Uint8Array<ArrayBuffer> =>
   Uint8Array.from(atob(value), (character) => character.charCodeAt(0));

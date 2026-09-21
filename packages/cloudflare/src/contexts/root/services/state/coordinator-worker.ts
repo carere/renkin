@@ -1,3 +1,4 @@
+import { ChunkedStateStorage } from "./chunked-state-storage.ts";
 import {
   acknowledgesReceipt,
   type MutationReceipt,
@@ -43,6 +44,7 @@ const response = (value: unknown, status = 200) => Response.json(value, { status
 /** One coordinator per stack; each environment has an independent lease and journal. */
 export class StateCoordinator {
   private readonly activeDispatches = new Set<string>();
+  private readonly stateStorage: ChunkedStateStorage;
   constructor(
     private readonly ctx: Context,
     private readonly env: CoordinatorEnvironment,
@@ -50,6 +52,7 @@ export class StateCoordinator {
     ctx.storage.sql.exec(
       "CREATE TABLE IF NOT EXISTS records (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
     );
+    this.stateStorage = new ChunkedStateStorage(ctx.storage.sql);
     // Synchronous insert-if-absent makes concurrent bootstrap select exactly one random key.
     ctx.storage.sql.exec(
       "INSERT OR IGNORE INTO records VALUES ('encryption-key', ?)",
@@ -104,7 +107,7 @@ export class StateCoordinator {
       .toArray()[0]?.value;
     if (!key) return response({ error: "Encryption key is unavailable." }, 502);
     if (action === "read") {
-      const encrypted = this.get<string>(`state:${environment}`);
+      const encrypted = this.stateStorage.read(environment);
       return response(encrypted === undefined ? null : await decryptState(key, context, encrypted));
     }
     if (action === "inspect") return this.inspect(input.stack, environment, key);
@@ -151,7 +154,7 @@ export class StateCoordinator {
     if (!this.valid(environment, input.token))
       return response({ error: "Deployment lease expired." }, 409);
     this.ctx.storage.transactionSync(() => {
-      this.put(`state:${environment}`, encrypted);
+      this.stateStorage.write(environment, encrypted);
       for (const receiptKey of acknowledged) this.remove(receiptKey);
     });
     return response(null);
@@ -336,7 +339,7 @@ export class StateCoordinator {
       .exec<{ value: string }>("SELECT value FROM records WHERE key = 'encryption-key'")
       .toArray()[0]?.value;
     if (!key) throw new Error("Encryption key unavailable.");
-    const savedState = this.get<string>(`state:${environment}`);
+    const savedState = this.stateStorage.read(environment);
     const resourceId = receiptIntent(
       savedState
         ? await decryptState(key, JSON.stringify([1, input.stack, environment]), savedState)
