@@ -22,6 +22,7 @@ export interface PendingOperation {
   readonly physicalId: string;
   readonly phase: "apply" | "bindings" | "remove-previous" | "remove";
   readonly applied?: ResourceState;
+  readonly force?: boolean;
 }
 
 export interface EnvironmentState {
@@ -88,6 +89,7 @@ const pending = (value: unknown): boolean => {
     value.physicalId.length === 0
   )
     return false;
+  if (value.force !== undefined && typeof value.force !== "boolean") return false;
   const change = value.change;
   if (
     typeof change.id !== "string" ||

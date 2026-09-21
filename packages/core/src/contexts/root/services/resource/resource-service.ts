@@ -21,6 +21,7 @@ export interface ResourceService {
     resources: Readonly<Record<string, ResourceState>>,
     /** Current configuration, only when logical ID, type and physical identity still agree. */
     currentDesired?: ResourceDefinition,
+    options?: { readonly force?: boolean },
   ): Promise<void>;
   remove(resource: ResourceState): Promise<void>;
 }
