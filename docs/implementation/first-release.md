@@ -6,7 +6,7 @@ The specification and issue acceptance criteria remain authoritative.
 
 | Ticket | Depends on | Status |
 | --- | --- | --- |
-| [#4: Run and deploy a Worker safely](https://github.com/carere/renkin/issues/4) | None | Pending |
+| [#4: Run and deploy a Worker safely](https://github.com/carere/renkin/issues/4) | None | In progress in isolated worktree |
 | [#5: Build a connected application with protected storage](https://github.com/carere/renkin/issues/5) | #4 | Pending |
 | [#6: Run database-backed applications with SQL and Drizzle migrations](https://github.com/carere/renkin/issues/6) | #5 | Pending |
 | [#7: Upload files and manage isolated preview storage](https://github.com/carere/renkin/issues/7) | #5 | Pending |
@@ -20,6 +20,14 @@ The specification and issue acceptance criteria remain authoritative.
 
 ## Validation
 
-No behavioral implementation or validation has been completed yet. Cloud checks
-require an authorized test account and temporary-resource scope; unrun checks
-will be recorded explicitly. Registry publication is outside this change.
+No ticket acceptance suite has completed yet. The scaffold CI passed for the
+initial tracking commit; it is not behavioral evidence.
+
+An isolated local HTTP probe against published `@distilled.cloud/cloudflare`
+1.0.0-rc.12 with Effect 4.0.0-rc.115 verified bearer authentication, distinct
+missing-resource/account/authentication/throttling errors, disabled retries and
+bounded retries. This is dependency research, not Renkin adapter acceptance.
+
+Real-cloud checks use explicitly authorized temporary-resource scope and limits
+from the ignored local environment. Unrun checks will be recorded explicitly.
+Registry publication is outside this change.
