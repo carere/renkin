@@ -13,17 +13,21 @@ import { worker } from "renkin/cloudflare";
 import { site } from "#test-fixtures/astro-ssr/renkin.ts";
 
 const buildSite = async (directory: string): Promise<WorkerBuildResult> => {
-  await promisify(execFile)(process.execPath, ["--no-env-file", "--bun", "astro", "build"], {
-    cwd: site.astro.root,
-    env: {
-      ...process.env,
-      WRANGLER_REGISTRY_PATH: resolve(directory, "registry"),
-      MINIFLARE_REGISTRY_PATH: resolve(directory, "miniflare"),
-      WRANGLER_LOG_PATH: resolve(directory, "wrangler.log"),
+  await promisify(execFile)(
+    process.versions.bun ? process.execPath : "bun",
+    ["--no-env-file", "--bun", "astro", "build"],
+    {
+      cwd: site.astro.root,
+      env: {
+        ...process.env,
+        WRANGLER_REGISTRY_PATH: resolve(directory, "registry"),
+        MINIFLARE_REGISTRY_PATH: resolve(directory, "miniflare"),
+        WRANGLER_LOG_PATH: resolve(directory, "wrangler.log"),
+      },
+      timeout: 60_000,
+      maxBuffer: 300_000,
     },
-    timeout: 60_000,
-    maxBuffer: 300_000,
-  });
+  );
   return JSON.parse(await readFile(resolve(site.astro.root, ".renkin/build-result.json"), "utf8"));
 };
 
