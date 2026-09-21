@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { lstat, readdir, readFile, realpath } from "node:fs/promises";
 import { basename, dirname, extname, isAbsolute, relative, resolve, sep } from "node:path";
+import ignore from "ignore";
 import type { WorkerBuildResult } from "../../models/build-result.ts";
 
 export interface PreparedAsset {
@@ -32,63 +33,64 @@ const readModules = async (build: WorkerBuildResult, entry: string) => {
   return modules;
 };
 
+const readAssets = async (directory: string) => {
+  const root = await realpath(directory);
+  const excludes = ignore().add("/.assetsignore");
+  try {
+    excludes.add(await readFile(resolve(root, ".assetsignore"), "utf8"));
+  } catch (error) {
+    if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") throw error;
+  }
+  const files: Record<string, PreparedAsset> = {};
+  const config: { headers?: string; redirects?: string } = {};
+  const walk = async (directory: string): Promise<void> => {
+    for (const name of (await readdir(directory)).sort()) {
+      const path = resolve(directory, name);
+      const stat = await lstat(path);
+      const assetPath = relative(root, path).split(sep).join("/");
+      if (excludes.ignores(`${assetPath}${stat.isDirectory() ? "/" : ""}`)) continue;
+      if (stat.isSymbolicLink()) throw new Error("Asset symlinks are not supported.");
+      if (stat.isDirectory()) {
+        await walk(path);
+        continue;
+      }
+      if (!stat.isFile()) throw new Error("Assets must be regular files.");
+      const bytes = await readFile(path);
+      if (assetPath === "_headers" || assetPath === "_redirects") {
+        config[assetPath === "_headers" ? "headers" : "redirects"] = bytes.toString("utf8");
+        continue;
+      }
+      if (bytes.byteLength > 25 * 1024 * 1024)
+        throw new Error("An asset exceeds Cloudflare's 25 MiB limit.");
+      // Cloudflare addresses assets using a 32-character content hash including the extension.
+      const hash = createHash("sha256")
+        .update(bytes)
+        .update(extname(path))
+        .digest("hex")
+        .slice(0, 32);
+      files[`/${assetPath}`] = { hash, size: bytes.byteLength, content: bytes.toString("base64") };
+    }
+  };
+  await walk(root);
+  return { files, config };
+};
+
 /** Capture bytes before planning, so an external rebuild cannot alter an in-flight upload. */
 export const readBuildResult = async (build: WorkerBuildResult) => {
   const entry = await realpath(build.entry);
   const source = await readFile(entry, "utf8");
   const modules = await readModules(build, entry);
-  const assets: Record<string, PreparedAsset> = {};
-  let headers: string | undefined;
-  let redirects: string | undefined;
-  if (build.assets) {
-    const root = await realpath(build.assets.directory);
-    const walk = async (directory: string): Promise<void> => {
-      for (const name of (await readdir(directory)).sort()) {
-        const path = resolve(directory, name);
-        const stat = await lstat(path);
-        if (stat.isSymbolicLink()) throw new Error("Asset symlinks are not supported.");
-        if (stat.isDirectory()) {
-          await walk(path);
-          continue;
-        }
-        if (!stat.isFile()) throw new Error("Assets must be regular files.");
-        const key = `/${relative(root, path).split(sep).join("/")}`;
-        const bytes = await readFile(path);
-        if (key === "/_headers") {
-          headers = bytes.toString("utf8");
-          continue;
-        }
-        if (key === "/_redirects") {
-          redirects = bytes.toString("utf8");
-          continue;
-        }
-        if (bytes.byteLength > 25 * 1024 * 1024)
-          throw new Error("An asset exceeds Cloudflare's 25 MiB limit.");
-        // Cloudflare addresses assets using a 32-character content hash including the extension.
-        const hash = createHash("sha256")
-          .update(bytes)
-          .update(extname(path))
-          .digest("hex")
-          .slice(0, 32);
-        assets[key] = { hash, size: bytes.byteLength, content: bytes.toString("base64") };
-      }
-    };
-    await walk(root);
-  }
+  const assets = build.assets ? await readAssets(build.assets.directory) : undefined;
   return {
     source,
     mainModule: basename(entry),
     modules,
-    ...(build.assets
+    ...(assets && build.assets
       ? {
           assets: {
-            files: assets,
+            files: assets.files,
             binding: build.assets.binding ?? "ASSETS",
-            config: {
-              ...build.assets.config,
-              ...(headers === undefined ? {} : { headers }),
-              ...(redirects === undefined ? {} : { redirects }),
-            },
+            config: { ...build.assets.config, ...assets.config },
           },
         }
       : {}),

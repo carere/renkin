@@ -1,4 +1,6 @@
+import { cloudflareAccessServices } from "@renkin/cloudflare/services/access/cloudflare-access-service";
 import { cloudflareKVService } from "@renkin/cloudflare/services/kv/cloudflare-kv-service";
+import { cloudflareSiteServices } from "@renkin/cloudflare/services/site/cloudflare-site-service";
 import {
   type CloudStateOptions,
   ensureCloudflareState,
@@ -6,6 +8,7 @@ import {
 } from "@renkin/cloudflare/services/state/bootstrap-cloudflare-state";
 import { CloudflareStateRepository } from "@renkin/cloudflare/services/state/cloudflare-state-repository";
 import { cloudflareWorkerService } from "@renkin/cloudflare/services/worker/cloudflare-worker-service";
+import { createAccessClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/access-client";
 import {
   createBootstrapClient,
   createCloudflareClient,
@@ -61,7 +64,12 @@ export const cloudEnvironment = async (
   const siteClient = createSiteClient(config, {
     request: (request, token) => state.gateway(stack, environment, token, request),
   });
+  const accessClient = createAccessClient(config, {
+    request: (request, token) => state.gateway(stack, environment, token, request),
+  });
   const services: ResourceServices = (lease) => ({
+    ...cloudflareAccessServices({ client: accessClient, token: lease.token }),
+    ...cloudflareSiteServices({ client: siteClient, token: lease.token }),
     "cloudflare.kv": cloudflareKVService(kvClient, lease.token),
     "cloudflare.worker": cloudflareWorkerService({
       client,

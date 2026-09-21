@@ -28,6 +28,7 @@ export const accessServiceToken = (
   return {
     id,
     type: "cloudflare.access-service-token",
+    secretOutputs: true,
     identity: identity ?? `${id}:${settings.name ?? ""}`,
     properties: json(settings),
     ...(retain === undefined ? {} : { retain }),
