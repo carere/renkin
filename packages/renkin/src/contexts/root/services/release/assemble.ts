@@ -2,6 +2,7 @@ import { chmod, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:f
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { transform } from "esbuild";
+import { buildInfo } from "./build-info.ts";
 import { emitDeclarations } from "./declarations.ts";
 import {
   emittedName,
@@ -55,16 +56,20 @@ export const assembleRelease = async (root: string, stage: string) => {
       const destination = join(stage, "dist", relative(types, source));
       await write(destination, rewrite(await readFile(source, "utf8"), destination));
     }
+    await write(
+      join(stage, "BUILD_INFO.json"),
+      `${JSON.stringify(await buildInfo(root), null, 2)}\n`,
+    );
     const manifest = releaseManifest(root, stage, packages);
     await write(join(stage, "package.json"), `${JSON.stringify(manifest, null, 2)}\n`);
-    for (const name of [
-      "LICENSE",
-      "NOTICE",
-      "SOURCE_PROVENANCE.md",
-      "THIRD_PARTY_NOTICES.md",
-      "README.md",
-    ])
+    for (const name of ["LICENSE", "NOTICE", "SOURCE_PROVENANCE.md", "THIRD_PARTY_NOTICES.md"])
       await copyFile(join(root, name), join(stage, name));
+    await copyFile(join(root, "packages/renkin/README.md"), join(stage, "README.md"));
+    await mkdir(join(stage, "docs"), { recursive: true });
+    for (const source of await walkFiles(join(root, "docs"))) {
+      if (!source.endsWith(".md") || relative(join(root, "docs"), source).includes("/")) continue;
+      await copyFile(source, join(stage, "docs", relative(join(root, "docs"), source)));
+    }
     for (const target of Object.values(manifest.bin)) await chmod(resolve(stage, target), 0o755);
     return manifest;
   } finally {

@@ -155,3 +155,15 @@ trace's consumed-Request bug and was recovered through public removal. The durab
 boundary now projects only `ResourceDefinition` fields, with a local regression
 covering build hooks, deploy, unchanged repeat and removal. Neither initial attempt
 is counted as a passing cloud test.
+
+Development optimizer files belong to each Worker/environment's local development
+folder. Renkin canonicalizes that path and the application root; it owns Vite's
+`cacheDir` during `development()` so multiple frontends cannot overwrite one another's
+optimizer metadata. Production Vite configuration remains separate.
+
+The Renkin Vite plugin prediscovers its known Router browser dependencies. Applications
+with other source-distributed libraries can use normal Vite `optimizeDeps.include`
+settings, including nested dependencies (for example
+`"@tanstack/solid-query > @tanstack/query-core"`). The full-graph example declares this
+optional Query dependency explicitly. This avoids cold-load stale optimizer URLs
+without disabling Vite's stale-module checks or relying on browser reload retries.

@@ -40,9 +40,11 @@ export const releaseManifest = (
     ),
     files: [
       "dist",
+      "docs",
       "LICENSE",
       "NOTICE",
       "SOURCE_PROVENANCE.md",
+      "BUILD_INFO.json",
       "THIRD_PARTY_NOTICES.md",
       "README.md",
     ],

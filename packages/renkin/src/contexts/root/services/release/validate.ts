@@ -65,6 +65,7 @@ export const validateRelease = async (stage: string, checkout?: string) => {
     "LICENSE",
     "NOTICE",
     "SOURCE_PROVENANCE.md",
+    "BUILD_INFO.json",
     "THIRD_PARTY_NOTICES.md",
     "README.md",
   ])

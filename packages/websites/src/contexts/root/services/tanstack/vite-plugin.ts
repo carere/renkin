@@ -35,6 +35,19 @@ export const renkin = async (site: TanStackResource): Promise<PluginOption[]> =>
           ? {}
           : { port: configuration.server?.port ?? options.port, strictPort: true }),
       },
+      // Router source is intentionally not prebundled by the official plugin.
+      // Discover its browser dependencies before cold requests can receive a stale hash.
+      optimizeDeps: {
+        include: [
+          "@tanstack/solid-router > @solid-primitives/refs",
+          "@tanstack/solid-router > @tanstack/history",
+          "@tanstack/solid-router > @tanstack/router-core",
+          "@tanstack/solid-router > @tanstack/router-core/isServer",
+          "@tanstack/solid-router > @tanstack/router-core/scroll-restoration-script",
+          "@tanstack/solid-router > @tanstack/router-core/ssr/client",
+          "@tanstack/solid-router > @tanstack/router-core > seroval",
+        ],
+      },
       ssr: { noExternal: ["@tanstack/solid-router"] },
       build: { ...(options.sourceMap === undefined ? {} : { sourcemap: options.sourceMap }) },
     }),
