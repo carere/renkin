@@ -99,6 +99,11 @@ export const createCloudflareClient = (config: CloudflareConfig, gateway: Mutati
       ),
     putWorker: (input: WorkerUpload, token: string) =>
       write(Workers.putScript({ ...input, accountId: config.accountId }), token),
+    enableWorkerSubdomain: (scriptName: string, token: string) =>
+      write(
+        Workers.createScriptSubdomain({ accountId: config.accountId, scriptName, enabled: true }),
+        token,
+      ),
     deleteWorker: (scriptName: string, token: string) =>
       write(Workers.deleteScript({ accountId: config.accountId, scriptName }), token),
   };
@@ -110,6 +115,8 @@ export const createBootstrapClient = (config: CloudflareConfig) => {
   const run = <A, E, R>(operation: Effect.Effect<A, E, R>) =>
     operation.pipe(Retry.none, Effect.provide(credentials), Effect.provide(FetchHttpClient.layer));
   return {
+    getWorker: (scriptName: string) =>
+      run(Workers.getScriptScriptAndVersionSetting({ accountId: config.accountId, scriptName })),
     putWorker: (input: WorkerUpload) =>
       run(Workers.putScript({ ...input, accountId: config.accountId })),
     enableWorkerSubdomain: (scriptName: string) =>

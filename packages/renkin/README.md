@@ -1,6 +1,6 @@
 # renkin
 
-The sole future published package: public API and CLI.
+The public TypeScript API, Worker/runtime and testing entrypoints, and Bun CLI compose the internal modules. Consumer fixtures and tests exercise the public surfaces. This is a development workspace API: publication remains guarded until the release build and isolated artifact checks in ticket #14.
 
-Scaffold only; no implementation or runnable application yet. See the
-[architecture](../../docs/architecture.md) for ownership and constraints.
+See [Worker usage and validation](../../docs/worker-first-slice.md) and
+[architecture](../../docs/architecture.md) for interfaces, ownership and limitations.

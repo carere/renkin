@@ -53,6 +53,12 @@ jobs:
       - name: Check package manifest sorting
         run: bun sort-package-json --check package.json apps/*/package.json packages/*/package.json
 
+      - name: Run behavioral tests without provider credentials
+        run: |
+          bun moon run core:test-unit core:test-integration
+          bun moon run cloudflare-sdk:test-integration cloudflare:test-integration
+          bun moon run runtime:test-integration renkin:test-unit renkin:test-integration
+
       - name: Ensure checks leave tracked files unchanged
         run: git diff --exit-code
 

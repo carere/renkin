@@ -2,8 +2,9 @@
 
 Renkin is an Effect-based infrastructure toolkit for Cloudflare. This document
 records the agreed ownership and future feature scope. The repository currently
-contains tooling and workspace placeholders only; none of these capabilities is
-implemented yet.
+contains an initial Worker, lifecycle, state, SDK and runtime implementation.
+See [the Worker slice](worker-first-slice.md) for current capabilities and limits;
+remaining resources, frameworks and release packaging are subsequent work.
 
 ## Workspace ownership
 

@@ -10,3 +10,7 @@ tasks:
     command: vitest run --project integration
     options:
       cache: false
+  test-cloud:
+    command: vitest run --config vitest.cloud.config.ts
+    options:
+      cache: false

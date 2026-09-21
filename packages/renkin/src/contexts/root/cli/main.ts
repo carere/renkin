@@ -1,0 +1,150 @@
+#!/usr/bin/env bun
+import { resolve } from "node:path";
+import { createInterface } from "node:readline/promises";
+import { pathToFileURL } from "node:url";
+import type { Stack } from "@renkin/core/models/stack";
+import { Effect } from "effect";
+import {
+  deploy,
+  development,
+  listEnvironments,
+  planDeployment,
+  readOutputs,
+  removeEnvironment,
+} from "../api.ts";
+
+const args = process.argv.slice(2);
+const command = args.shift();
+const flag = (name: string) => args.includes(`--${name}`);
+const option = (name: string, fallback?: string): string | undefined => {
+  const index = args.indexOf(`--${name}`);
+  if (index < 0) return fallback;
+  const value = args[index + 1];
+  if (!value || value.startsWith("--")) throw new Error(`--${name} requires a value.`);
+  return value;
+};
+const required = (name: string): string => {
+  const value = option(name);
+  if (!value) throw new Error(`--${name} is required.`);
+  return value;
+};
+const confirm = async (): Promise<boolean> => {
+  if (!process.stdin.isTTY) return false;
+  const terminal = createInterface({ input: process.stdin, output: process.stderr });
+  try {
+    return /^(y|yes)$/i.test(await terminal.question("Apply these changes? [y/N] "));
+  } finally {
+    terminal.close();
+  }
+};
+const loadStack = async (): Promise<Stack> => {
+  const module = await import(
+    pathToFileURL(resolve(option("file", "renkin.ts") ?? "renkin.ts")).href
+  );
+  if (!module.default || typeof module.default !== "object")
+    throw new Error("Infrastructure file must default-export a stack.");
+  return module.default as Stack;
+};
+const runDevelopment = async (): Promise<void> => {
+  const stack = await loadStack();
+  const controller = new AbortController();
+  process.once("SIGINT", () => controller.abort());
+  process.once("SIGTERM", () => controller.abort());
+  await Effect.runPromise(
+    Effect.scoped(
+      Effect.gen(function* () {
+        yield* development(stack, {
+          environment: option("env", "local") ?? "local",
+          directory: option("state-dir", ".renkin") ?? ".renkin",
+          progress: (message) => {
+            process.stderr.write(`${message}\n`);
+          },
+        });
+        yield* Effect.never;
+      }),
+    ),
+    { signal: controller.signal },
+  ).catch((error: unknown) => {
+    if (!controller.signal.aborted) throw error;
+  });
+};
+const run = async (): Promise<void> => {
+  if (flag("local") && !["list", "outputs"].includes(command ?? ""))
+    throw new Error("--local is supported only by list and outputs; use dev for local execution.");
+  const environment = option("env", "dev") ?? "dev";
+  const cloudflare = {
+    ...(option("state-worker") ? { stateScriptName: option("state-worker") as string } : {}),
+  };
+  const readOptions = {
+    cloudflare,
+    ...(flag("local")
+      ? { localDirectory: resolve(option("state-dir", ".renkin") ?? ".renkin") }
+      : {}),
+  };
+  const options = {
+    environment,
+    cloudflare,
+    yes: flag("yes"),
+    force: flag("force"),
+    confirm,
+    progress: (change: { id: string; kind: string }) => {
+      process.stderr.write(`${change.kind} ${change.id}\n`);
+    },
+  };
+  switch (command) {
+    case "list":
+      console.log(
+        JSON.stringify(await Effect.runPromise(listEnvironments(required("stack"), readOptions))),
+      );
+      return;
+    case "outputs":
+      console.log(
+        JSON.stringify(
+          (await Effect.runPromise(
+            readOutputs(required("stack"), environment, {
+              ...readOptions,
+              revealSecrets: flag("reveal-secrets"),
+            }),
+          )) ?? null,
+        ),
+      );
+      return;
+    case "plan":
+      console.log(
+        JSON.stringify(await Effect.runPromise(planDeployment(await loadStack(), options))),
+      );
+      return;
+    case "deploy": {
+      const result = await Effect.runPromise(deploy(await loadStack(), options));
+      console.log(
+        JSON.stringify({
+          stack: result.stack,
+          environment: result.environment,
+          resources: Object.keys(result.resources),
+        }),
+      );
+      return;
+    }
+    case "remove":
+      await Effect.runPromise(removeEnvironment(required("stack"), options));
+      console.log(JSON.stringify({ removed: environment }));
+      return;
+    case "dev":
+      await runDevelopment();
+      return;
+    default:
+      throw new Error(
+        "Usage: renkin dev|plan|deploy [--file renkin.ts] [--env name] [--yes] [--force]; renkin list|outputs|remove --stack name [--env name] [--local]",
+      );
+  }
+};
+
+run().catch((error: unknown) => {
+  // Never print causes, input values, credentials or arbitrary provider response bodies.
+  const message =
+    error instanceof Error && ["DeploymentError", "StateError"].includes(error.name)
+      ? error.message
+      : "Command failed. Check command options, infrastructure file and account configuration.";
+  process.stderr.write(`${message}\n`);
+  process.exitCode = 1;
+});
