@@ -68,6 +68,7 @@ it.effect("deploys, updates, reads shared outputs and removes a temporary Worker
     const entry = join(directory, "worker.ts");
     const stackName = `${prefix}-${randomUUID().slice(0, 8)}`;
     const options = { environment: "smoke", yes: true, cloudflare: { stateScriptName } };
+    console.info(`Cloud test ownership: ${stackName}/smoke; retained backend: ${stateScriptName}`);
     const stack = defineStack({
       name: stackName,
       resources: [worker("api", { entry, compatibilityDate: "2026-09-21" })],

@@ -13,6 +13,11 @@ import {
   removeEnvironment,
 } from "../api.ts";
 
+const usage =
+  "Usage: renkin dev|plan|deploy [--file renkin.ts] [--env name] [--yes] [--force]; renkin list|outputs|remove --stack name [--env name]. Use --local only with list or outputs.";
+class CommandError extends Error {
+  readonly name = "CommandError";
+}
 const args = process.argv.slice(2);
 const command = args.shift();
 const flag = (name: string) => args.includes(`--${name}`);
@@ -20,12 +25,12 @@ const option = (name: string, fallback?: string): string | undefined => {
   const index = args.indexOf(`--${name}`);
   if (index < 0) return fallback;
   const value = args[index + 1];
-  if (!value || value.startsWith("--")) throw new Error(`--${name} requires a value.`);
+  if (!value || value.startsWith("--")) throw new CommandError(`--${name} requires a value.`);
   return value;
 };
 const required = (name: string): string => {
   const value = option(name);
-  if (!value) throw new Error(`--${name} is required.`);
+  if (!value) throw new CommandError(`--${name} is required.`);
   return value;
 };
 const confirm = async (): Promise<boolean> => {
@@ -133,18 +138,19 @@ const run = async (): Promise<void> => {
       await runDevelopment();
       return;
     default:
-      throw new Error(
-        "Usage: renkin dev|plan|deploy [--file renkin.ts] [--env name] [--yes] [--force]; renkin list|outputs|remove --stack name [--env name] [--local]",
-      );
+      throw new CommandError(usage);
   }
 };
 
-run().catch((error: unknown) => {
-  // Never print causes, input values, credentials or arbitrary provider response bodies.
-  const message =
-    error instanceof Error && ["DeploymentError", "StateError"].includes(error.name)
-      ? error.message
-      : "Command failed. Check command options, infrastructure file and account configuration.";
-  process.stderr.write(`${message}\n`);
-  process.exitCode = 1;
-});
+if (command === "help" || command === "--help") console.log(usage);
+else
+  run().catch((error: unknown) => {
+    // Never print causes, input values, credentials or arbitrary provider response bodies.
+    const message =
+      error instanceof Error &&
+      ["DeploymentError", "StateError", "CommandError"].includes(error.name)
+        ? error.message
+        : "Command failed. Check command options, infrastructure file and account configuration.";
+    process.stderr.write(`${message}\n`);
+    process.exitCode = 1;
+  });
