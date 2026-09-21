@@ -54,6 +54,7 @@ const tooling = [
   ["vite", /node_modules\/vite\/dist\/[^\s():]+:(\d+):(\d+)/],
   ["tanstack", /node_modules\/@tanstack\/[^/]+\/dist\/[^\s():]+:(\d+):(\d+)/],
   ["miniflare", /node_modules\/miniflare\/dist\/[^\s():]+:(\d+):(\d+)/],
+  ["wrangler", /node_modules\/wrangler\/wrangler-dist\/[^\s():]+:(\d+):(\d+)/],
   ["srvx", /node_modules\/srvx\/dist\/[^\s():]+:(\d+):(\d+)/],
 ] as const;
 
@@ -74,6 +75,20 @@ const stackLocations = (stack: unknown) => {
 
 const own = (error: object, key: string): unknown =>
   Object.getOwnPropertyDescriptor(error, key)?.value;
+
+// V8 exposes Error.stack through a shared native accessor; Bun uses a data property.
+// Read only that known accessor, never an arbitrary user-supplied stack getter.
+const nativeStackGetter = Object.getOwnPropertyDescriptor(new Error(), "stack")?.get;
+const errorStack = (error: object): unknown => {
+  const descriptor = Object.getOwnPropertyDescriptor(error, "stack");
+  if (descriptor && "value" in descriptor) return descriptor.value;
+  if (!nativeStackGetter || descriptor?.get !== nativeStackGetter) return undefined;
+  try {
+    return nativeStackGetter.call(error);
+  } catch {
+    return undefined;
+  }
+};
 
 /** Never retain user messages, paths, stacks, arbitrary codes, or the original exception. */
 export const startupFailure = (phase: StartupPhase, error: unknown): Error => {
@@ -99,7 +114,7 @@ export const startupFailure = (phase: StartupPhase, error: unknown): Error => {
                 : "unknown");
     const code = own(error, "code");
     const stage = own(error, "stage");
-    const locations = stackLocations(own(error, "stack"));
+    const locations = stackLocations(errorStack(error));
     failures.push({
       name: typeof name === "string" && names.has(name) ? name : "unknown",
       ...(typeof code === "string" && codes.has(code) ? { code } : {}),

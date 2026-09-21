@@ -60,9 +60,11 @@ jobs:
         run: |
           bun moon run core:test-unit core:test-integration
           bun moon run cloudflare-sdk:test-integration cloudflare:test-unit cloudflare:test-integration
-          bun moon run runtime:test-integration renkin:test-unit renkin:test-integration
-          bun moon run websites:test-unit websites:test-integration example-spa:test-integration example-ssr:test-integration
-          bun moon run example-static:test-integration website:test-integration
+          # Each integration task can start several workerd/browser/compiler processes.
+          # Keep those suites sequential on this runner; in-suite concurrency tests remain enabled.
+          bun moon run --concurrency 1 runtime:test-integration renkin:test-unit renkin:test-integration
+          bun moon run --concurrency 1 websites:test-unit websites:test-integration example-spa:test-integration example-ssr:test-integration
+          bun moon run --concurrency 1 example-static:test-integration website:test-integration
 
       - name: Ensure checks leave tracked files unchanged
         run: git diff --exit-code

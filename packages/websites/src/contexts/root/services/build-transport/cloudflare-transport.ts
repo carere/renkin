@@ -64,6 +64,9 @@ export const initializeCloudflareTransport = () => {
         }));
       },
     });
+    // Finish Bun's object-loader evaluation before the Vite plugin's ESM import
+    // races Wrangler's CommonJS require. Otherwise require can receive partial exports.
+    require(path);
     registered.add(path);
   }
 };
