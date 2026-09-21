@@ -101,3 +101,22 @@ explicit current cloud test authorization. It uses unique temporary names and an
 exact hostname, tests both outputs and all session modes, then removes owned
 resources and the empty environment. Cloud credentials are never needed by the
 normal suite. See the ticket validation record for actual run evidence.
+
+### Bun build transport compatibility
+
+[Bun 1.4.2's built-in `undici` replacement](https://bun.com/docs/runtime/module-resolution#built-in-replacements-for-npm-packages) ignores HTTP dispatchers. Cloudflare's
+official build runtime requires them to preserve Worker dispatch semantics. Renkin
+registers a loader for only that resolved Miniflare 5 CommonJS file before loading
+the official framework plugins. It evaluates the installed source with its original
+filename and relative dependency paths, mapping that module's `undici` import to
+npm's actual `undici/index.js`. It changes neither global fetch, installed files,
+nor the application's Miniflare 4 runtime. Inline configuration hooks and workerd
+page generation remain in the caller's process.
+
+This compatibility bridge recognizes the verified Miniflare 5 builds
+`5.20260918.0-alpha` and `5.20260921.0-alpha` and checks their module shape. An
+unrecognized build fails explicitly instead of silently changing transport. Remove
+the bridge once Bun's documented replacement honors the dispatcher contract, after
+the real-workerd positive/negative transport regression and installed macOS/Linux
+framework checks pass. Prerender HTTP server errors always fail the build; their
+HTML cannot become a successful static asset.

@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 import { mkdir, readdir, realpath, writeFile } from "node:fs/promises";
 import { dirname, extname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import cloudflare from "@astrojs/cloudflare";
 import type { WorkerBuildResult } from "@renkin/runtime/models/build-result";
 import type { WorkerBuildContext } from "@renkin/runtime/models/build-reuse";
 import { createBuildContext } from "@renkin/runtime/services/build-reuse/build-context";
@@ -10,6 +9,7 @@ import { type AstroConfig, type AstroInlineConfig, build } from "astro";
 import { sessionDrivers } from "astro/config";
 import type { AstroBuildOptions } from "../../models/astro-options.ts";
 import { buildIdentity } from "../build/reuse-options.ts";
+import { initializeCloudflareTransport } from "../build-transport/cloudflare-transport.ts";
 import { adapterResolution } from "./adapter-resolution.ts";
 import { checkedPrerender } from "./checked-prerender.ts";
 
@@ -113,6 +113,8 @@ const runBuild = async (
   options: AstroBuildOptions,
   context: { readonly directory?: string } = {},
 ): Promise<WorkerBuildResult> => {
+  initializeCloudflareTransport();
+  const { default: cloudflare } = await import("@astrojs/cloudflare");
   const { root, configPath } = await prepareConfiguration(options, context);
   let resolvedConfig: AstroConfig | undefined;
   let clientDirectory: string | undefined;
