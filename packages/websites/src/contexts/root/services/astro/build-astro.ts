@@ -11,6 +11,7 @@ import { sessionDrivers } from "astro/config";
 import type { AstroBuildOptions } from "../../models/astro-options.ts";
 import { buildIdentity } from "../build/reuse-options.ts";
 import { adapterResolution } from "./adapter-resolution.ts";
+import { checkedPrerender } from "./checked-prerender.ts";
 
 const moduleTypes: Readonly<Record<string, string>> = {
   ".js": "application/javascript+module",
@@ -142,15 +143,17 @@ const runBuild = async (
             binding: options.sessionKVBindingName ?? "SESSION",
           }),
         }) as NonNullable<AstroInlineConfig["session"]>,
-    adapter: cloudflare({
-      configPath,
-      remoteBindings: false,
-      inspectorPort: false,
-      persistState: false,
-      imageService: "passthrough",
-      sessionKVBindingName: options.sessionKVBindingName || "SESSION",
-      prerenderEnvironment: options.prerenderEnvironment ?? "workerd",
-    }),
+    adapter: checkedPrerender(
+      cloudflare({
+        configPath,
+        remoteBindings: false,
+        inspectorPort: false,
+        persistState: false,
+        imageService: "passthrough",
+        sessionKVBindingName: options.sessionKVBindingName || "SESSION",
+        prerenderEnvironment: options.prerenderEnvironment ?? "workerd",
+      }),
+    ),
     integrations: [
       ...(options.config?.integrations ?? []),
       {
