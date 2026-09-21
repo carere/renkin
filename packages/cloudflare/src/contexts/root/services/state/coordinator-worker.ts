@@ -1,3 +1,4 @@
+import { type ReconciliationReceipt, summarizeOperation, validDecision } from "./reconciliation.ts";
 import { decryptState, encryptState, newStateKey } from "./state-cipher.ts";
 import { type CoordinatorRequest, encodeBytes, type GatewayResponse } from "./state-protocol.ts";
 import {
@@ -10,7 +11,11 @@ interface Sql {
   exec<T>(query: string, ...bindings: (string | number)[]): { toArray(): T[] };
 }
 interface Context {
-  readonly storage: { readonly sql: Sql; sync(): Promise<void> };
+  readonly storage: {
+    readonly sql: Sql;
+    sync(): Promise<void>;
+    transactionSync<T>(callback: () => T): T;
+  };
 }
 interface CoordinatorEnvironment {
   readonly ACCOUNT_ID: string;
@@ -30,6 +35,7 @@ const response = (value: unknown, status = 200) => Response.json(value, { status
 
 /** One coordinator per stack; each environment has an independent lease and journal. */
 export class StateCoordinator {
+  private readonly activeDispatches = new Set<string>();
   constructor(
     private readonly ctx: Context,
     private readonly env: CoordinatorEnvironment,
@@ -94,6 +100,8 @@ export class StateCoordinator {
       const encrypted = this.get<string>(`state:${environment}`);
       return response(encrypted === undefined ? null : await decryptState(key, context, encrypted));
     }
+    if (action === "inspect") return this.inspect(input.stack, environment, key);
+    if (action === "reconcile") return this.acceptDecision(input, environment, key);
     if (action === "acquire") return this.acquire(request, environment);
     if (!this.valid(environment, input.token))
       return response({ error: "Deployment lease expired or belongs to another process." }, 409);
@@ -120,12 +128,99 @@ export class StateCoordinator {
     if (action === "mutate") return this.mutate(request, input, environment);
     return response({ error: "Unknown operation." }, 404);
   }
+  private async inspect(stack: string, environment: string, key: string): Promise<Response> {
+    const rows = this.ctx.storage.sql
+      .exec<{ key: string; value: string }>(
+        "SELECT key, value FROM records WHERE substr(key, 1, ?) = ? ORDER BY key",
+        `audit:${environment}:`.length,
+        `audit:${environment}:`,
+      )
+      .toArray();
+    const audit = await Promise.all(
+      rows.map(
+        async (row) =>
+          JSON.parse(
+            await decryptState(
+              key,
+              JSON.stringify([1, stack, environment, row.key]),
+              JSON.parse(row.value) as string,
+            ),
+          ) as ReconciliationReceipt,
+      ),
+    );
+    const operation = this.get<WorkerOperation>(`operation:${environment}`);
+    const lease = this.get<Lease>(`lease:${environment}`);
+    return response({
+      operation: operation ? summarizeOperation(operation) : null,
+      coordinatorActive: !!operation && this.activeDispatches.has(operation.id),
+      leaseActive: !!lease && lease.expires > Date.now(),
+      leaseExpiresAt: lease ? new Date(lease.expires).toISOString() : null,
+      audit,
+    });
+  }
+  private canReconcile(environment: string, operationId: string): boolean {
+    return (
+      this.get<WorkerOperation>(`operation:${environment}`)?.id === operationId &&
+      !this.activeDispatches.has(operationId) &&
+      (this.get<Lease>(`lease:${environment}`)?.expires ?? 0) <= Date.now()
+    );
+  }
+  private async acceptDecision(
+    input: CoordinatorRequest,
+    environment: string,
+    key: string,
+  ): Promise<Response> {
+    const decision = input.decision;
+    if (!validDecision(decision))
+      return response(
+        {
+          error:
+            "Exact operation, outcome, operator, evidence and provider settlement assertion are required.",
+        },
+        400,
+      );
+    if (!this.canReconcile(environment, decision.operationId))
+      return response(
+        { error: "Operation changed, lease is live or coordinator dispatch is still active." },
+        409,
+      );
+    const operation = this.get<WorkerOperation>(`operation:${environment}`);
+    if (!operation) return response({ error: "Operation is no longer pending." }, 409);
+    const epoch = (this.get<number>(`epoch:${environment}`) ?? 0) + 1;
+    const receipt: ReconciliationReceipt = {
+      ...summarizeOperation(operation),
+      outcome: decision.outcome,
+      operator: decision.operator.trim(),
+      evidence: decision.evidence.trim(),
+      reconciledAt: new Date().toISOString(),
+      epoch,
+    };
+    const auditKey = `audit:${environment}:${operation.id}`;
+    const encrypted = await encryptState(
+      key,
+      JSON.stringify([1, input.stack, environment, auditKey]),
+      JSON.stringify(receipt),
+    );
+    const applied = this.ctx.storage.transactionSync(() => {
+      if (!this.canReconcile(environment, operation.id)) return false;
+      this.put(auditKey, encrypted);
+      this.put(`epoch:${environment}`, epoch);
+      this.remove(`lease:${environment}`);
+      this.remove(`operation:${environment}`);
+      return true;
+    });
+    if (!applied)
+      return response({ error: "Operation changed while recording reconciliation." }, 409);
+    return response(receipt);
+  }
   private async reconcile(environment: string, authorization: string): Promise<void> {
     const pending = this.get<WorkerOperation>(`operation:${environment}`);
     if (
       pending &&
+      !this.activeDispatches.has(pending.id) &&
       (await workerOperationCompleted(pending, authorization)) &&
-      this.get<WorkerOperation>(`operation:${environment}`)?.id === pending.id
+      this.get<WorkerOperation>(`operation:${environment}`)?.id === pending.id &&
+      !this.activeDispatches.has(pending.id)
     )
       this.remove(`operation:${environment}`);
   }
@@ -186,27 +281,40 @@ export class StateCoordinator {
         ),
         headers: { "content-type": "application/json" },
       });
+    return this.dispatch(url, mutation.method, prepared, environment);
+  }
+  private async dispatch(
+    url: URL,
+    method: string,
+    prepared: Awaited<ReturnType<typeof prepareWorkerOperation>>,
+    environment: string,
+  ): Promise<Response> {
     this.put(`operation:${environment}`, prepared.operation);
-    await this.ctx.storage.sync();
-    // The persisted marker prevents takeover until dispatch completion is established.
-    const upstream = await fetch(url, {
-      method: mutation.method,
-      headers: prepared.headers,
-      redirect: "manual",
-      ...(prepared.body === undefined ? {} : { body: prepared.body }),
-    });
-    const result: GatewayResponse = {
-      status: upstream.status,
-      bodyBase64: encodeBytes(new Uint8Array(await upstream.arrayBuffer())),
-      headers: Object.fromEntries(upstream.headers),
-    };
-    if (
-      ((upstream.status >= 200 && upstream.status < 300) ||
-        (upstream.status >= 400 && upstream.status < 500 && upstream.status !== 408)) &&
-      this.get<WorkerOperation>(`operation:${environment}`)?.id === prepared.operation.id
-    )
-      this.remove(`operation:${environment}`);
-    return response(result);
+    this.activeDispatches.add(prepared.operation.id);
+    try {
+      await this.ctx.storage.sync();
+      // The persisted marker prevents takeover until dispatch completion is established.
+      const upstream = await fetch(url, {
+        method,
+        headers: prepared.headers,
+        redirect: "manual",
+        ...(prepared.body === undefined ? {} : { body: prepared.body }),
+      });
+      const result: GatewayResponse = {
+        status: upstream.status,
+        bodyBase64: encodeBytes(new Uint8Array(await upstream.arrayBuffer())),
+        headers: Object.fromEntries(upstream.headers),
+      };
+      if (
+        ((upstream.status >= 200 && upstream.status < 300) ||
+          (upstream.status >= 400 && upstream.status < 500 && upstream.status !== 408)) &&
+        this.get<WorkerOperation>(`operation:${environment}`)?.id === prepared.operation.id
+      )
+        this.remove(`operation:${environment}`);
+      return response(result);
+    } finally {
+      this.activeDispatches.delete(prepared.operation.id);
+    }
   }
 }
 

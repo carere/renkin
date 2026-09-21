@@ -1,3 +1,4 @@
+import type { ReconciliationDecision } from "./reconciliation.ts";
 export interface GatewayRequest {
   readonly method: string;
   readonly path: string;
@@ -15,6 +16,7 @@ export interface CoordinatorRequest {
   readonly token?: string;
   readonly state?: string;
   readonly request?: GatewayRequest;
+  readonly decision?: ReconciliationDecision;
 }
 export const encodeBytes = (bytes: Uint8Array): string => {
   let value = "";
