@@ -4,7 +4,15 @@
   "private": true,
   "description": "Shared local Cloudflare, resource and application test helpers.",
   "type": "module",
+  "exports": {
+    "./*": "./src/contexts/root/*.ts"
+  },
+  "dependencies": {
+    "@renkin/runtime": "workspace:*",
+    "effect": "^4.0.0-rc.115"
+  },
   "devDependencies": {
+    "@effect/vitest": "^4.0.0-rc.115",
     "vitest": "^5.0.0"
   }
 }

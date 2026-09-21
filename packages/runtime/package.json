@@ -4,7 +4,16 @@
   "private": true,
   "description": "Worker execution, native bindings, bundling and local emulation.",
   "type": "module",
+  "exports": {
+    "./*": "./src/contexts/root/*.ts"
+  },
+  "dependencies": {
+    "effect": "^4.0.0-rc.115",
+    "esbuild": "^0.28.2",
+    "miniflare": "^4.20260730.0"
+  },
   "devDependencies": {
+    "@effect/vitest": "^4.0.0-rc.115",
     "vitest": "^5.0.0"
   }
 }

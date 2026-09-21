@@ -4,13 +4,30 @@
   "private": false,
   "description": "The sole future published package: public API and CLI.",
   "type": "module",
+  "exports": {
+    ".": "./src/contexts/root/api.ts",
+    "./cloudflare": "./src/contexts/root/cloudflare.ts",
+    "./testing": "./src/contexts/root/testing.ts",
+    "./worker": "./src/contexts/root/worker.ts"
+  },
+  "bin": {
+    "renkin": "./src/contexts/root/cli/main.ts"
+  },
   "files": [
     "dist"
   ],
   "scripts": {
     "prepublishOnly": "bun -e 'throw new Error(\"Scaffold only: implement and validate the release build before publishing\")'"
   },
+  "dependencies": {
+    "@renkin/cloudflare": "workspace:*",
+    "@renkin/cloudflare-sdk": "workspace:*",
+    "@renkin/core": "workspace:*",
+    "@renkin/runtime": "workspace:*",
+    "@renkin/testing": "workspace:*"
+  },
   "devDependencies": {
+    "@effect/vitest": "^4.0.0-rc.115",
     "vitest": "^5.0.0"
   },
   "peerDependencies": {

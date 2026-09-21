@@ -1,6 +1,6 @@
 # testing
 
-Shared local Cloudflare, resource and application test helpers.
+Public reusable Worker fixtures use real workerd and close with an Effect scope. Tests stay with their owning packages; packages/renkin validates this helper through renkin/testing. This package has no separate behavioral suite yet.
 
-Scaffold only; no implementation or runnable application yet. See the
-[architecture](../../docs/architecture.md) for ownership and constraints.
+See [Worker usage and validation](../../docs/worker-first-slice.md) and
+[architecture](../../docs/architecture.md) for interfaces, ownership and limitations.

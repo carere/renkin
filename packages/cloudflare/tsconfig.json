@@ -4,5 +4,16 @@
     "outDir": "../../.moon/cache/types/packages/cloudflare"
   },
   "files": [],
-  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "*.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "*.ts"],
+  "references": [
+    {
+      "path": "../cloudflare-sdk"
+    },
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../runtime"
+    }
+  ]
 }

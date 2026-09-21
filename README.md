@@ -1,8 +1,11 @@
 # Renkin
 
 An Effect-based infrastructure toolkit for Cloudflare. This repository currently
-provides a Bun/Moon monorepo foundation; the engine, resources, runtime, SDK and
-framework integrations have not been implemented. See the
+provides a Bun/Moon monorepo and an initial Worker deployment slice: ordinary and
+Effect HTTP Workers, local hot reload, encrypted shared state, lifecycle recovery,
+and JSON inspection APIs. See [Worker usage and validation](docs/worker-first-slice.md).
+Additional resources, framework integrations and the release artifact remain in
+progress. See the
 [architecture](docs/architecture.md) for the agreed workspace boundaries and open
 decisions.
 
@@ -48,11 +51,10 @@ cog check --ignore-merge-commits       # Commit history, once commits exist
 ```
 
 Foundation validation runs Biome, TypeScript, Knip and manifest sorting directly.
-TypeScript checks the workspace-owned tool configurations. No behavior is
-implemented, and there are currently **zero tests**. Test tasks are strict: they
-fail for empty suites and are not yet included in CI. Add the
-relevant test tasks to CI as behavioral suites land. No application build,
-resource tests, deployment or release validation exists yet.
+TypeScript checks the workspace-owned tool configurations. The Worker slice has behavioral unit, integration and separately invoked
+credentialed Cloudflare tests. CI runs the populated local suites. Test tasks
+remain strict and fail for empty suites; untouched apps and framework workspaces
+still have no behavioral tests. Release artifact validation remains outstanding.
 
 Each workspace owns its `vitest.config.ts` and its Moon test tasks. Its initial
 unit and integration projects discover local `tests/unit/**/*.test.ts` and
