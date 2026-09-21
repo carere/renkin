@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
+import { chromium } from "playwright";
 import { defineStack, development } from "renkin";
 import { buildAstro } from "renkin/astro";
 import { worker } from "renkin/cloudflare";
@@ -13,6 +14,7 @@ it.effect(
   () =>
     Effect.promise(async () => {
       const directory = await mkdtemp(resolve(tmpdir(), "renkin-static-example-"));
+      const browser = await chromium.launch({ headless: true });
       try {
         const build = await buildAstro(site);
         const { builder: _builder, ...options } = site.options;
@@ -30,6 +32,18 @@ it.effect(
               );
               const running = local.workers.static;
               if (!running) throw new Error("Static example is missing.");
+              yield* Effect.promise(async () => {
+                const page = await browser.newPage();
+                const errors: string[] = [];
+                page.on("pageerror", (error) => errors.push(error.message));
+                await page.goto(running.url);
+                await page.getByRole("link", { name: "See the second route →" }).click();
+                await page
+                  .getByRole("heading", { name: "Static, with no session namespace." })
+                  .waitFor();
+                expect(errors).toEqual([]);
+                await page.close();
+              });
               const home = yield* Effect.promise(() => running.fetch("/"));
               expect(home.status).toBe(200);
               expect(home.headers.get("x-renkin-example")).toBe("astro-static");
@@ -44,6 +58,7 @@ it.effect(
           ),
         );
       } finally {
+        await browser.close();
         await rm(directory, { recursive: true, force: true });
       }
     }),

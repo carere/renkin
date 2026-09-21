@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import type { KVNamespace } from "@cloudflare/workers-types";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
+import { chromium } from "playwright";
 import { defineStack, development } from "renkin";
 import { buildAstro } from "renkin/astro";
 import { worker } from "renkin/cloudflare";
@@ -14,6 +15,7 @@ it.effect(
   () =>
     Effect.promise(async () => {
       const directory = await mkdtemp(resolve(tmpdir(), "renkin-website-example-"));
+      const browser = await chromium.launch({ headless: true });
       try {
         const build = await buildAstro(site);
         const { builder: _builder, ...options } = site.options;
@@ -41,6 +43,19 @@ it.effect(
               expect(yield* Effect.promise(() => content.json())).toEqual({
                 message: "Native data from the shared resource graph.",
               });
+              yield* Effect.promise(async () => {
+                const page = await browser.newPage();
+                const errors: string[] = [];
+                page.on("pageerror", (error) => errors.push(error.message));
+                await page.goto(new URL("/?name=Browser", running.url).href);
+                await page.getByRole("heading", { name: "Hello, Browser." }).waitFor();
+                await page.getByRole("link", { name: "Session counter" }).click();
+                await page.locator('[data-count="1"]').waitFor();
+                await page.getByRole("link", { name: "Visit again" }).click();
+                await page.locator('[data-count="2"]').waitFor();
+                expect(errors).toEqual([]);
+                await page.close();
+              });
               const home = yield* Effect.promise(() => running.fetch("/?name=Astro"));
               expect(yield* Effect.promise(() => home.text())).toContain("Hello, Astro.");
               let cookie = "";
@@ -63,6 +78,7 @@ it.effect(
           ),
         );
       } finally {
+        await browser.close();
         await rm(directory, { recursive: true, force: true });
       }
     }),

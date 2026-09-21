@@ -6,7 +6,7 @@
     "apps/example-ssr": { "entry": ["renkin.ts"], "ignoreDependencies": ["cloudflare"] },
     "packages/runtime": { "ignoreDependencies": ["cloudflare"] },
     "packages/websites": {
-      "entry": ["tests/support/**/*.astro"],
+      "entry": ["tests/support/**/*.astro", "tests/support/**/src/pages/**/*.ts"],
       "ignoreDependencies": ["cloudflare"]
     },
     "apps/example-static": { "entry": ["build.ts", "renkin.ts"] },

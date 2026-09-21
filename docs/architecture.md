@@ -187,7 +187,8 @@ validation needs are:
 This list is future implementation scope, not a claim that the setup implements
 or deploys any resources. The example apps should eventually exercise the SPA,
 SSR and SSG paths, including Astro server rendering; package tests should verify
-their owning behavior locally. The location of the Astro SSR example remains open.
+their owning behavior locally. `apps/example-static` exercises Astro static output,
+and `apps/website` is the runnable Astro SSR fixture with native bindings and sessions.
 
 ## Open decisions
 

@@ -12,6 +12,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260921.1",
     "@effect/vitest": "^4.0.0-rc.115",
+    "playwright": "^1.63.0",
     "vitest": "^5.0.0"
   }
 }

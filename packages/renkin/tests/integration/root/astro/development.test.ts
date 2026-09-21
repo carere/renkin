@@ -54,6 +54,23 @@ it.effect(
               }),
             ),
           );
+        const disabled = astro("site", {
+          root,
+          output: "server",
+          compatibilityDate,
+          configFile: false,
+          sessionKVBindingName: false,
+        });
+        await expect(
+          Effect.runPromise(
+            Effect.scoped(
+              development(defineStack({ name: "session", resources: [disabled] }), {
+                directory,
+                watch: false,
+              }),
+            ),
+          ),
+        ).rejects.toThrow("Deletion protection");
       } finally {
         await rm(directory, { recursive: true, force: true });
       }
