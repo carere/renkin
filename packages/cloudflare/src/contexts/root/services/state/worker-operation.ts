@@ -7,17 +7,23 @@ export interface WorkerOperation {
   readonly tag?: string;
   readonly existed?: boolean;
 }
+interface PreparedWorkerOperation {
+  readonly operation: WorkerOperation;
+  readonly headers: NonNullable<RequestInit["headers"]>;
+  readonly body: NonNullable<RequestInit["body"]> | undefined;
+  readonly alreadyAbsent: boolean;
+}
 /** Attach proof to the exact upload, so observing it proves this dispatch was applied. */
 export const prepareWorkerOperation = async (
   url: URL,
   mutation: GatewayRequest,
   authorization: string,
-) => {
+): Promise<PreparedWorkerOperation> => {
   const headers = new Headers({ authorization });
   if (mutation.headers?.["content-type"])
     headers.set("content-type", mutation.headers["content-type"]);
   const id = crypto.randomUUID();
-  let body: BodyInit | undefined =
+  let body: NonNullable<RequestInit["body"]> | undefined =
     mutation.bodyBase64 === undefined ? undefined : decodeBytes(mutation.bodyBase64);
   let operation: WorkerOperation = { id, method: mutation.method, path: url.toString() };
   const isWorker = /\/workers\/scripts\/[^/]+$/.test(url.pathname);

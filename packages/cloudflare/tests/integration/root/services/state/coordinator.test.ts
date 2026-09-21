@@ -112,3 +112,35 @@ it("reconciles an accepted Worker upload when the dispatch response was lost", a
   expect((await call("release", { environment, token: lease.token })).status).toBe(200);
   expect((await call("acquire", { environment })).status).toBe(200);
 });
+
+it("recovers a crashed lease holder after its accepted upload and fences the old holder", async () => {
+  const environment = "crashed";
+  const lease = (await (await call("acquire", { environment })).json()) as { token: string };
+  const form = new FormData();
+  form.set("metadata", JSON.stringify({ main_module: "index.js" }));
+  form.set("index.js", new Blob(["export default {}"]), "index.js");
+  const upload = new Request("https://example.test", { method: "PUT", body: form });
+  await call("mutate", {
+    environment,
+    token: lease.token,
+    request: {
+      method: "PUT",
+      path: "/accounts/test-account/workers/scripts/crashed",
+      headers: { "content-type": upload.headers.get("content-type") },
+      bodyBase64: Buffer.from(await upload.arrayBuffer()).toString("base64"),
+    },
+  });
+  // A stopped client cannot release or renew. Exercise the real server lease deadline.
+  await new Promise((resolve) => setTimeout(resolve, 60_100));
+  expect((await call("acquire", { environment })).status).toBe(200);
+  expect((await call("renew", { environment, token: lease.token })).status).toBe(409);
+  expect(
+    (
+      await call("mutate", {
+        environment,
+        token: lease.token,
+        request: { method: "DELETE", path: "/accounts/test-account/workers/scripts/crashed" },
+      })
+    ).status,
+  ).toBe(409);
+}, 75_000);
