@@ -15,6 +15,8 @@ R2 buckets, opt-in local presigned uploads and scoped preview credentials are de
 [R2 and preview usage](docs/r2-and-previews.md).
 Native cron handlers, queues, durable Workflows and captured email support background
 jobs; see [background jobs and validation](docs/background-jobs.md).
+Astro static and server-rendered sites include native bindings and protected sessions;
+see [Astro usage](docs/astro-sites.md).
 TanStack Start Solid SPA/SSR builds, native development bindings and runnable
 examples are described in [TanStack sites](docs/tanstack-sites.md).
 Additional integrations and the release artifact remain in progress. See the

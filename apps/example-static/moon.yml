@@ -10,3 +10,19 @@ tasks:
     command: vitest run --project integration
     options:
       cache: false
+  dev:
+    command: renkin dev
+    options:
+      cache: false
+      persistent: true
+  build:
+    command: bun build.ts
+    inputs:
+      - src/**/*
+      - public/**/*
+      - astro.config.ts
+      - renkin.ts
+      - build.ts
+    outputs:
+      - dist
+      - .renkin/build-result.json

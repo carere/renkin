@@ -5,6 +5,12 @@
     "apps/example-spa": { "entry": ["renkin.ts"], "ignoreDependencies": ["cloudflare"] },
     "apps/example-ssr": { "entry": ["renkin.ts"], "ignoreDependencies": ["cloudflare"] },
     "packages/runtime": { "ignoreDependencies": ["cloudflare"] },
+    "packages/websites": {
+      "entry": ["tests/support/**/*.astro", "tests/support/**/src/pages/**/*.ts"],
+      "ignoreDependencies": ["cloudflare"]
+    },
+    "apps/example-static": { "entry": ["build.ts", "renkin.ts"] },
+    "apps/website": { "entry": ["build.ts", "renkin.ts"], "ignoreDependencies": ["cloudflare"] },
     "packages/cloudflare": { "entry": ["vitest.cloud.config.ts"] },
     "packages/renkin": {
       "entry": ["tests/fixtures/**/*.ts", "vitest.cloud.config.ts"]

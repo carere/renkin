@@ -1,0 +1,5 @@
+---
+// biome-ignore lint/correctness/noUnusedImports: Used by the Astro template outside frontmatter.
+import Shell from "../contexts/root/components/shell.astro";
+---
+<Shell title="About · Renkin Astro static"><h1>Static, with no session namespace.</h1><p>Routing, assets and response headers come from this Astro project. A static resource does not automatically create session KV.</p><a href={import.meta.env.BASE_URL}>Home</a></Shell>

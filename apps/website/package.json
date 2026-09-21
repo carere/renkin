@@ -4,7 +4,15 @@
   "private": true,
   "description": "Astro marketing and documentation site.",
   "type": "module",
+  "dependencies": {
+    "astro": "^7.3.3",
+    "effect": "^4.0.0-rc.115",
+    "renkin": "workspace:*"
+  },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260921.1",
+    "@effect/vitest": "^4.0.0-rc.115",
+    "playwright": "^1.63.0",
     "vitest": "^5.0.0"
   }
 }
