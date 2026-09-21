@@ -2,7 +2,13 @@ import { createHash } from "node:crypto";
 import { lstat, mkdir, readdir, readFile, realpath, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative } from "node:path";
 import { adaptCloudSource } from "./adapt.ts";
-import { cloudSuites, consumerConfig, installedPaths, supportFiles } from "./catalog.ts";
+import {
+  cloudSuites,
+  consumerConfig,
+  installedPaths,
+  maintainedCloudSuites,
+  supportFiles,
+} from "./catalog.ts";
 
 const inside = (root: string, path: string) => {
   const child = relative(root, path);
@@ -42,6 +48,20 @@ const installedConsumer = async (root: string, directory: string) => {
   return consumer;
 };
 
+const copyAuthorizationSuite = async (source: string, target: string) => {
+  const authSource = await readFile(
+    join(source, "tests/support/root/release/cloud/state-authorization.test.ts"),
+    "utf8",
+  );
+  const authPath = "tests/cloud/root/state-authorization.test.ts";
+  await writeFile(join(target, authPath), authSource, { mode: 0o600 });
+  return {
+    path: authPath,
+    sourceHash: digest(authSource),
+    installedHash: digest(authSource),
+  };
+};
+
 /** Copies only maintained test/fixture source; never environment files, secrets or built artifacts. */
 export const prepareInstalledCloud = async (
   root: string,
@@ -54,11 +74,12 @@ export const prepareInstalledCloud = async (
     .filter((file) => file.endsWith(".test.ts"))
     .sort();
   if (
-    JSON.stringify(observed) !== JSON.stringify(cloudSuites.map((name) => `${name}.test.ts`).sort())
+    JSON.stringify(observed) !==
+    JSON.stringify(maintainedCloudSuites.map((name) => `${name}.test.ts`).sort())
   )
     throw new Error("Maintained cloud suite inventory changed; update installed mapping.");
   const files = [
-    ...cloudSuites.map((name) => `tests/cloud/root/${name}.test.ts`),
+    ...maintainedCloudSuites.map((name) => `tests/cloud/root/${name}.test.ts`),
     ...supportFiles.map((name) => `tests/support/root/${name}`),
   ];
   const inventory = [];
@@ -71,6 +92,7 @@ export const prepareInstalledCloud = async (
     await writeFile(join(target, path), output, { mode: 0o600 });
     inventory.push({ path, sourceHash: digest(input), installedHash: digest(output) });
   }
+  inventory.push(await copyAuthorizationSuite(source, target));
   await copyTree(
     join(source, "tests/fixtures/full-graph"),
     join(target, "tests/fixtures/full-graph"),
@@ -94,10 +116,10 @@ export const prepareInstalledCloud = async (
         inventory,
         bootstrap:
           "protected-site creates and removes an isolated coordinator through installed public deploy",
-        excludedAdapterSuites: [
+        publicEquivalentForAdapterSuites: [
           "packages/cloudflare/tests/cloud/root/services/state/state-authorization.test.ts",
         ],
-        note: "Public suite preparation is not provider execution or proof of private adapter authorization invariants.",
+        note: "Public suite preparation is not provider execution. The restricted-token equivalent uses installed public state discovery and direct authorization controls.",
       },
       null,
       2,

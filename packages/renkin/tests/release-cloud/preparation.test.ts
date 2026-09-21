@@ -37,6 +37,16 @@ it("prepares every maintained cloud suite without provider calls or private pack
       expect(item.sourceHash).toMatch(/^[a-f0-9]{64}$/);
       expect(item.installedHash).toMatch(/^[a-f0-9]{64}$/);
     }
+    const authorization = await readFile(
+      join(base, "cloud/root/state-authorization.test.ts"),
+      "utf8",
+    );
+    expect(authorization).toContain('from "renkin"');
+    expect(authorization).toContain("expect(permissionDenials).toBeGreaterThan(0)");
+    expect(authorization).toContain("expect(denied.status).toBe(401)");
+    expect(record.publicEquivalentForAdapterSuites).toEqual([
+      "packages/cloudflare/tests/cloud/root/services/state/state-authorization.test.ts",
+    ]);
     const assertions = await readFile(
       join(base, "support/root/cloud-full-graph/assertions.ts"),
       "utf8",

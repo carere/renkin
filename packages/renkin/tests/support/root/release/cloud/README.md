@@ -24,6 +24,7 @@ exclude environment files, dependency directories, generated output and mutable 
 | protected-site | Unchanged; Access, domains, alternate origin and isolated coordinator bootstrap |
 | astro | Unchanged; copied example roots resolve inside consumer |
 | tanstack | Unchanged; copied example roots resolve inside consumer |
+| state-authorization | Additional public equivalent of the adapter restricted-token suite; authorized read controls, direct state 401, public discovery denial with observed provider 401/403, finally token revocation |
 | full-graph | Infer state/resource types from public functions; observe exact cron through an independent read-only provider request instead of importing a private SDK client |
 
 The full graph retains its native service flow, email, signed S3, compiler-count, cron-only
@@ -43,7 +44,7 @@ bun --no-env-file node_modules/vitest/vitest.mjs run \
 The preparation test uses a synthetic installed manifest solely to test copying and boundary
 validation. It is not evidence of an actual artifact install. Separately, this harness was
 prepared against the release owner's actual tarball consumer. With OS outbound networking
-denied, Vitest imported all 12 suites using `--testNamePattern '^$'`: 12 files and 13 tests
+denied, Vitest imported all 13 suites using `--testNamePattern '^$'`: 13 files and 14 tests
 were skipped, exit zero. That proves runtime imports resolve from the installation; it is
 **not cloud acceptance**. The installed CLI helper also resolved its bin inside the package.
 
@@ -63,7 +64,7 @@ before retrying; neither this runner nor its manifest establishes successful cle
 The optional Vitest wrapper requires `RENKIN_INSTALLED_CLOUD_CONSUMER` and the explicit scope
 fields exported in `scopeKeys`. `RENKIN_INSTALLED_CLOUD_SUITES` may select comma-separated
 catalog names. Invoke `--project installed-cloud` explicitly only after approval. The default
-selection runs all 12 suites, which can send emails in background and full-graph acceptance.
+selection runs all 13 suites, which can send emails in background and full-graph acceptance.
 Do not run the whole release-cloud configuration as a preparation check.
 
 ## Bootstrap and authorization boundary
@@ -73,10 +74,17 @@ The protected-site public suite creates a uniquely named isolated backend throug
 that exercises the installed dynamic coordinator/authentication-probe assets. The ordinary
 Worker suite also invokes the installed CLI for public authentication behavior.
 
-The private adapter suite
-`packages/cloudflare/tests/cloud/root/services/state/state-authorization.test.ts` is explicitly
-excluded. Its direct internal protocol/authorization assertions are not replaced by the 12
-public suites, and no installed execution of those private invariants is claimed. The release
-owner must map any additional public bootstrap/authentication acceptance separately.
+The adapter suite
+`packages/cloudflare/tests/cloud/root/services/state/state-authorization.test.ts` is mapped to
+an additional maintained `state-authorization` public equivalent. It creates the same two
+short-lived account-scoped tokens (Account Settings Read and Workers Scripts Read), proves
+each token works for its authorized REST read, then requires direct state `/v1/list` to return
+401. Installed public `listEnvironments` must fail with its documented generic state-discovery
+error, while an in-memory fetch observer confirms a provider 401/403 for that exact restricted
+bearer during the call. A generic failure without provider denial cannot pass. The ordinary
+authorized public read is a positive control. Both temporary tokens are revoked in `finally`;
+values are never written or printed. This uses no private imports or direct private preview API.
 
+Preparation includes 13 files / 14 test cases; all loaded successfully with bodies skipped and
+OS outbound networking denied after adding the public authorization equivalent.
 No provider tests or cloud mutations were executed while preparing this harness.

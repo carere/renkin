@@ -1,4 +1,4 @@
-export const cloudSuites = [
+export const maintainedCloudSuites = [
   "worker",
   "connected-worker",
   "d1",
@@ -12,6 +12,7 @@ export const cloudSuites = [
   "tanstack",
   "full-graph",
 ] as const;
+export const cloudSuites = [...maintainedCloudSuites, "state-authorization"] as const;
 export type CloudSuite = (typeof cloudSuites)[number];
 export const supportFiles = [
   "cloud-d1-fixture.ts",
