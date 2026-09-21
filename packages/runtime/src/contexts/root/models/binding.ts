@@ -7,6 +7,8 @@ import {
   type DurableObjectRequirement,
   durableObjectClient,
 } from "./durable-object.ts";
+import { type NativeR2, type R2Client, type R2Requirement, r2Client } from "./r2.ts";
+import { type R2TokenClient, type R2TokenRequirement, r2TokenClient } from "./r2-token.ts";
 
 export interface KVRequirement {
   readonly type: "cloudflare.kv";
@@ -24,8 +26,10 @@ export interface WorkerRequirement<
 export type BindingRequirement =
   | KVRequirement
   | D1Requirement
-  | WorkerRequirement<unknown>
-  | DurableObjectRequirement<DurableObjectInstance | undefined>;
+  | DurableObjectRequirement<DurableObjectInstance | undefined>
+  | R2Requirement
+  | R2TokenRequirement
+  | WorkerRequirement<unknown>;
 export type Requirements = Readonly<Record<string, BindingRequirement>>;
 export type NativeKV = KVNamespace;
 export class BindingError extends Error {
@@ -64,9 +68,13 @@ export type Resolved<R extends Requirements> = {
       ? D1Client
       : R[K] extends DurableObjectRequirement<infer Service>
         ? DurableObjectClient<Service>
-        : R[K] extends WorkerRequirement<infer Service>
-          ? WorkerClient<Service>
-          : never;
+        : R[K] extends R2Requirement
+          ? R2Client
+          : R[K] extends R2TokenRequirement
+            ? R2TokenClient
+            : R[K] extends WorkerRequirement<infer Service>
+              ? WorkerClient<Service>
+              : never;
 };
 export const resolveBindings = <R extends Requirements>(
   requirements: R,
@@ -84,11 +92,15 @@ export const resolveBindings = <R extends Requirements>(
             ? d1Client(native as NativeD1, name)
             : requirement.type === "cloudflare.durable-object"
               ? durableObjectClient(native as DurableObjectNamespace, name)
-              : {
-                  native,
-                  call: <A>(operation: (service: unknown) => Promise<A>) =>
-                    call(name, "rpc", () => operation(native)),
-                },
+              : requirement.type === "cloudflare.r2"
+                ? r2Client(native as NativeR2, name)
+                : requirement.type === "cloudflare.r2-token"
+                  ? r2TokenClient(native)
+                  : {
+                      native,
+                      call: <A>(operation: (service: unknown) => Promise<A>) =>
+                        call(name, "rpc", () => operation(native)),
+                    },
       ];
     }),
   ) as Resolved<R>;

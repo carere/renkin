@@ -161,3 +161,62 @@ it.effect("rechecks current protection before resuming an earlier destructive op
     expect(state.written).toBeUndefined();
   }),
 );
+
+it.effect(
+  "removal recovery supplies only identity-preserving explicit permissions and still honors protection",
+  () =>
+    Effect.gen(function* () {
+      const previous = {
+        definition: { ...resource(), protection: { data: true, allowDelete: true } },
+        physicalId: "owned",
+        outputs: null,
+      };
+      const state = new InMemoryStateRepository();
+      const initial = emptyState("app", "dev");
+      initial.resources.api = previous;
+      initial.pending = {
+        change: { id: "api", kind: "remove", previous },
+        physicalId: "owned",
+        phase: "remove",
+      };
+      let received: ResourceDefinition | undefined;
+      const options = {
+        environment: "dev",
+        state,
+        yes: true,
+        force: true,
+        services: () => ({
+          worker: {
+            apply: async () => null,
+            remove: async (
+              _resource: unknown,
+              _resources: unknown,
+              current?: ResourceDefinition,
+            ) => {
+              received = current;
+            },
+          },
+        }),
+      };
+      const correction = { ...previous.definition, properties: { forceDestroy: true } };
+      state.value = structuredClone(initial);
+      yield* deploy({ name: "app", resources: [correction] }, options);
+      expect(received).toEqual(correction);
+      state.value = structuredClone(initial);
+      state.written = undefined;
+      received = undefined;
+      const protectedAgain = { ...correction, protection: { data: true, allowDelete: false } };
+      expect(
+        (yield* Effect.exit(deploy({ name: "app", resources: [protectedAgain] }, options)))._tag,
+      ).toBe("Failure");
+      expect(received).toBeUndefined();
+      expect(state.written).toBeUndefined();
+      state.value = structuredClone(initial);
+      received = undefined;
+      yield* deploy(
+        { name: "app", resources: [{ ...correction, identity: "different" }] },
+        options,
+      );
+      expect(received).toBeUndefined();
+    }),
+);

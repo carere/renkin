@@ -8,3 +8,6 @@ import {
 } from "@renkin/runtime/models/binding";
 export const workerReference = reference;
 export const externalWorker = external;
+
+import { localS3Endpoint as endpoint } from "@renkin/runtime/models/local-r2-s3";
+export const localS3Endpoint = endpoint;

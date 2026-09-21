@@ -81,3 +81,35 @@ it.effect("requires an explicit settlement assertion even with yes and force", (
     }
   }),
 );
+
+it.effect(
+  "requires an explicit nonempty management credential variable without echoing values",
+  () =>
+    Effect.promise(async () => {
+      const cli = new URL("../../../src/contexts/root/cli/main.ts", import.meta.url).pathname;
+      const executable = process.versions.bun ? process.execPath : "bun";
+      try {
+        await promisify(execFile)(
+          executable,
+          [
+            cli,
+            "remove",
+            "--stack",
+            "app",
+            "--env",
+            "preview",
+            "--yes",
+            "--token-management-token-env",
+            "RENKIN_MISSING_TEST_TOKEN",
+          ],
+          { env: { ...process.env, RENKIN_MISSING_TEST_TOKEN: "" } },
+        );
+        throw new Error("Missing management credential unexpectedly accepted.");
+      } catch (error) {
+        expect(error).toMatchObject({ code: 1, stdout: "" });
+        expect((error as { stderr: string }).stderr).toBe(
+          "--token-management-token-env must name a nonempty credential environment variable.\n",
+        );
+      }
+    }),
+);

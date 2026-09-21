@@ -100,6 +100,7 @@
       },
       "devDependencies": {
         "@effect/vitest": "^4.0.0-rc.115",
+        "aws4fetch": "^1.0.20",
         "vitest": "^5.0.0",
       },
       "peerDependencies": {
@@ -118,6 +119,7 @@
       },
       "devDependencies": {
         "@effect/vitest": "^4.0.0-rc.115",
+        "aws4fetch": "^1.0.20",
         "drizzle-orm": "^0.45.3",
         "vitest": "^5.0.0",
       },
@@ -528,6 +530,8 @@
     "@vitest/spy": ["@vitest/spy@5.0.0", "", {}, "sha512-uy+luWBAPw9XfthoHi5AkfHUnuPYEESjl0p/r+meoBnU8bxg5GDQ3Ey8MjcJ6sqahkL4PFyrvfMJJBw7LbU06g=="],
 
     "assertion-error": ["assertion-error@2.0.1", "", {}, "sha512-Izi8RQcffqCeNVgFigKli1ssklIbpHnCYc6AknXGYoB6grJqyeby7jv12JUQgmTAnIDnbck1uxksT4dzN3PWBA=="],
+
+    "aws4fetch": ["aws4fetch@1.0.20", "", {}, "sha512-/djoAN709iY65ETD6LKCtyyEI04XIBP5xVvfmNxsEP0uJB5tyaGBztSryRr4HqMStr9R06PisQE7m9zDTXKu6g=="],
 
     "chai": ["chai@6.2.2", "", {}, "sha512-NUPRluOfOiTKBKvWPtSD4PhFvWCqOi0BGStNWs57X9js7XGTprSmFoz5F0tWhR4WPjNeR9jXqdC7/UpSJTnlRg=="],
 

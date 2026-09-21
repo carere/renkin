@@ -11,6 +11,8 @@ storage and explicit renames; see [connected Worker usage](docs/connected-worker
 Assets, custom domains and Access controls are covered in [site usage](docs/sites-and-access.md).
 Native SQLite Durable Objects, alarms and restart fixtures are covered in
 [Durable Object usage](docs/durable-objects.md).
+R2 buckets, opt-in local presigned uploads and scoped preview credentials are described in
+[R2 and preview usage](docs/r2-and-previews.md).
 Additional resources, framework integrations and the release artifact remain in
 progress. See the
 [architecture](docs/architecture.md) for the agreed workspace boundaries and open

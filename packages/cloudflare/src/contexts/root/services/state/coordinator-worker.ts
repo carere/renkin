@@ -1,3 +1,5 @@
+import { decodeState } from "@renkin/core/models/state";
+import { assertEmptyState } from "@renkin/core/services/state/empty-state";
 import { ChunkedStateStorage } from "./chunked-state-storage.ts";
 import {
   acknowledgesReceipt,
@@ -7,6 +9,7 @@ import {
   receiptRequest,
 } from "./mutation-receipts.ts";
 import { type ReconciliationReceipt, summarizeOperation, validDecision } from "./reconciliation.ts";
+import { authenticatesStateToken } from "./state-authentication.ts";
 import { decryptState, encryptState, newStateKey } from "./state-cipher.ts";
 import { type CoordinatorRequest, encodeBytes, type GatewayResponse } from "./state-protocol.ts";
 import {
@@ -127,11 +130,47 @@ export class StateCoordinator {
       this.remove(`lease:${environment}`);
       return response(null);
     }
+    if (action === "remove-empty") return this.removeEmpty(input, environment, key, context);
     if (action === "write") {
       return this.writeState(input, environment, key, context);
     }
     if (action === "mutate") return this.mutate(request, input, environment);
     return response({ error: "Unknown operation." }, 404);
+  }
+  private async removeEmpty(
+    input: CoordinatorRequest,
+    environment: string,
+    key: string,
+    context: string,
+  ): Promise<Response> {
+    const encrypted = this.stateStorage.read(environment);
+    const current =
+      encrypted === undefined
+        ? undefined
+        : decodeState(await decryptState(key, context, encrypted), input.stack, environment);
+    assertEmptyState(current);
+    const removed = this.ctx.storage.transactionSync(() => {
+      if (
+        !this.valid(environment, input.token) ||
+        this.get(`operation:${environment}`) ||
+        this.stateStorage.read(environment) !== encrypted
+      )
+        return false;
+      const receipts = this.ctx.storage.sql
+        .exec<{ key: string }>(
+          "SELECT key FROM records WHERE substr(key, 1, ?) = ?",
+          `receipt:${environment}:`.length,
+          `receipt:${environment}:`,
+        )
+        .toArray();
+      if (receipts.length) return false;
+      this.stateStorage.remove(environment);
+      this.remove(`lease:${environment}`);
+      return true;
+    });
+    return removed
+      ? response(null)
+      : response({ error: "Environment changed or still has unfinished operations." }, 409);
   }
   private async writeState(
     input: CoordinatorRequest,
@@ -345,6 +384,7 @@ export class StateCoordinator {
         ? await decryptState(key, JSON.stringify([1, input.stack, environment]), savedState)
         : undefined,
       receipt.allocationId,
+      receipt.resourceType,
     );
 
     const receiptKey = `receipt:${environment}:${receipt.operationKey}`;
@@ -446,18 +486,4 @@ export default {
       new Request(request, { headers }),
     );
   },
-};
-
-/** WebCrypto performs MAC verification without a token-prefix timing comparison. */
-const authenticatesStateToken = async (expected: string, provided: string): Promise<boolean> => {
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(expected),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign", "verify"],
-  );
-  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(expected));
-  return crypto.subtle.verify("HMAC", key, signature, encoder.encode(provided));
 };

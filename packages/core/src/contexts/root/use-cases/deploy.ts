@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Effect } from "effect";
-import { defineStack, type Stack, validateName } from "../models/stack.ts";
+import { defineStack, type ResourceDefinition, type Stack, validateName } from "../models/stack.ts";
 import {
   type Change,
   type EnvironmentState,
@@ -14,6 +14,8 @@ import { assertProtection, plan } from "./plan.ts";
 import { renamedState } from "./rename.ts";
 
 export interface DeployOptions {
+  /** Used only for explicit removal; record deletion remains fenced by the same lease. */
+  readonly removeEmpty?: boolean;
   readonly environment: string;
   readonly state: StateRepository;
   readonly services: ResourceServices;
@@ -70,6 +72,14 @@ const applyPending = async (
   return op;
 };
 
+const currentDefinition = (stack: Stack | undefined, previous: ResourceDefinition) =>
+  stack?.resources.find(
+    (resource) =>
+      resource.id === previous.id &&
+      resource.type === previous.type &&
+      resource.identity === previous.identity,
+  );
+
 const resume = async (
   state: EnvironmentState,
   lease: StateLease,
@@ -102,12 +112,7 @@ const resume = async (
   }
   if (op.phase === "bindings" && op.applied) {
     const appliedDefinition = op.applied.definition;
-    const desired = stack?.resources.find(
-      (resource) =>
-        resource.id === appliedDefinition.id &&
-        resource.type === appliedDefinition.type &&
-        resource.identity === appliedDefinition.identity,
-    );
+    const desired = currentDefinition(stack, appliedDefinition);
     const outputs = await service.bind?.(
       op.applied,
       { ...state.resources, [op.change.id]: op.applied },
@@ -136,7 +141,11 @@ const resume = async (
     const previousService = services[oldType];
     if (!previousService) throw new Error(`No adapter registered for resource type ${oldType}.`);
     if (!op.change.previous.definition.retain)
-      await previousService.remove(op.change.previous, state.resources);
+      await previousService.remove(
+        op.change.previous,
+        state.resources,
+        currentDefinition(stack, op.change.previous.definition),
+      );
   }
   if (op.phase === "remove") delete state.resources[op.change.id];
   delete state.pending;
@@ -232,6 +241,8 @@ const validateDeployment = async (
 
 const execute = async (stack: Stack, options: DeployOptions): Promise<EnvironmentState> => {
   defineStack(stack);
+  if (options.removeEmpty && stack.resources.length)
+    throw new DeploymentError("Environment removal requires an empty desired stack.");
   validateName(options.environment);
   const lease = await options.state.acquire(stack.name, options.environment);
   try {
@@ -287,6 +298,7 @@ const execute = async (stack: Stack, options: DeployOptions): Promise<Environmen
       stack.outputs ?? {},
     );
     await lease.write(state);
+    if (options.removeEmpty) await lease.removeEmpty();
     return state;
   } finally {
     await lease.release();

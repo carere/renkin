@@ -29,6 +29,8 @@ export interface ResourceService {
   remove(
     resource: ResourceState,
     resources?: Readonly<Record<string, ResourceState>>,
+    /** Explicit retry configuration, validated to preserve logical ID, type and physical identity. */
+    currentDesired?: ResourceDefinition,
   ): Promise<void>;
 }
 

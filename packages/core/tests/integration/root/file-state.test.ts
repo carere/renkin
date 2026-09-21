@@ -81,3 +81,38 @@ it.effect("a killed process releases its lock without waiting for a stale timeou
     }
   }),
 );
+
+it.effect(
+  "empty record removal is exact, terminal and serialized before releasing the SQLite lock",
+  () =>
+    Effect.promise(async () => {
+      const directory = await mkdtemp(join(tmpdir(), "renkin-remove-"));
+      const repository = new FileStateRepository(directory);
+      try {
+        const other = await repository.acquire("app", "preview-other");
+        await other.write(emptyState("app", "preview-other"));
+        await other.release();
+        const lease = await repository.acquire("app", "preview");
+        const value = emptyState("app", "preview");
+        value.outputs.keep = { value: "not-empty" };
+        await lease.write(value);
+        await expect(lease.removeEmpty()).rejects.toThrow("still has");
+        expect(await repository.list("app")).toEqual(["preview", "preview-other"]);
+        delete value.outputs.keep;
+        const write = lease.write(value);
+        const removal = lease.removeEmpty();
+        const release = lease.release();
+        await expect(repository.acquire("app", "preview")).rejects.toThrow("already being changed");
+        await Promise.all([write, removal, release]);
+        expect(await repository.read("app", "preview")).toBeUndefined();
+        expect(await repository.list("app")).toEqual(["preview-other"]);
+        await expect(lease.write(value)).rejects.toThrow("lease has ended");
+        const next = await repository.acquire("app", "preview");
+        await next.write(value);
+        await next.release();
+        expect(await repository.list("app")).toEqual(["preview", "preview-other"]);
+      } finally {
+        await rm(directory, { recursive: true, force: true });
+      }
+    }),
+);

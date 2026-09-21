@@ -19,6 +19,8 @@ const inspect = (value: unknown): Requirements => {
       item.type !== "cloudflare.kv" &&
       item.type !== "cloudflare.d1" &&
       item.type !== "cloudflare.durable-object" &&
+      item.type !== "cloudflare.r2" &&
+      item.type !== "cloudflare.r2-token" &&
       item.type !== "cloudflare.worker-reference"
     )
       throw new Error("Unsupported Worker requirement.");

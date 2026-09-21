@@ -15,7 +15,7 @@ export interface DeploymentOptions
   readonly cloudflare?: CloudflareOptions;
 }
 
-export const deploy = (stack: Stack, options: DeploymentOptions) =>
+const apply = (stack: Stack, options: DeploymentOptions, removeEmpty = false) =>
   Effect.gen(function* () {
     const prepared = yield* Effect.tryPromise({
       try: () => prepareStack(stack),
@@ -29,12 +29,14 @@ export const deploy = (stack: Stack, options: DeploymentOptions) =>
           "Cloud state initialization failed. Check account ID, token permissions and the state Worker.",
         ),
     });
-    return yield* reconcile(prepared, { ...options, ...environment });
+    return yield* reconcile(prepared, { ...options, ...environment, removeEmpty });
   });
+
+export const deploy = (stack: Stack, options: DeploymentOptions) => apply(stack, options);
 
 /** Removal uses persisted ownership; it does not evaluate infrastructure declarations. */
 export const removeEnvironment = (stack: string, options: DeploymentOptions) =>
-  deploy({ name: stack, resources: [] }, options);
+  apply({ name: stack, resources: [] }, options, true);
 
 /** A read-only preview. Deployment plans again under its exclusive environment lock. */
 export const planDeployment = (

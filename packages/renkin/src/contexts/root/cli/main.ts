@@ -16,7 +16,7 @@ import {
 } from "../api.ts";
 
 const usage =
-  "Usage: renkin dev|plan|deploy [--file renkin.ts] [--env name] [--yes] [--force]; renkin list|outputs|remove|inspect|reconcile --stack name [--env name]. Use --local only with list or outputs.";
+  "Usage: renkin dev|plan|deploy [--file renkin.ts] [--env name] [--yes] [--force]; renkin list|outputs|remove|inspect|reconcile --stack name [--env name]. Use --local only with list or outputs. Scoped R2 tokens require --token-management-token-env VARIABLE for deploy/remove.";
 class CommandError extends Error {
   readonly name = "CommandError";
 }
@@ -34,6 +34,15 @@ const required = (name: string): string => {
   const value = option(name);
   if (!value) throw new CommandError(`--${name} is required.`);
   return value;
+};
+const tokenManagement = (): { tokenManagementApiToken?: string } => {
+  const name = option("token-management-token-env");
+  if (!name) return {};
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name) || !process.env[name])
+    throw new CommandError(
+      "--token-management-token-env must name a nonempty credential environment variable.",
+    );
+  return { tokenManagementApiToken: process.env[name] };
 };
 const confirm = async (): Promise<boolean> => {
   if (!process.stdin.isTTY) return false;
@@ -118,6 +127,7 @@ const run = async (): Promise<void> => {
     throw new Error("--local is supported only by list and outputs; use dev for local execution.");
   const environment = option("env", "dev") ?? "dev";
   const cloudflare = {
+    ...tokenManagement(),
     ...(option("state-worker") ? { stateScriptName: option("state-worker") as string } : {}),
   };
   if (await runRecovery(environment, cloudflare)) return;

@@ -1,4 +1,5 @@
 import type { EnvironmentState } from "../../../../../src/contexts/root/models/state.ts";
+import { assertEmptyState } from "../../../../../src/contexts/root/services/state/empty-state.ts";
 import type {
   StateLease,
   StateRepository,
@@ -19,6 +20,11 @@ export class InMemoryStateRepository implements StateRepository {
       read: () => this.read(),
       write: async (state) => {
         this.written = structuredClone(state);
+      },
+      removeEmpty: async () => {
+        assertEmptyState(this.written ?? this.value);
+        this.value = undefined;
+        this.written = undefined;
       },
       release: async () => {},
     };

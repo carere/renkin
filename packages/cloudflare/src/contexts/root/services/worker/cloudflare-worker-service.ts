@@ -37,6 +37,28 @@ const input = (definition: ResourceDefinition): Metadata => {
     compatibilityFlags: flags,
   };
 };
+const credentialBinding = (
+  target: ResourceState | undefined,
+  name: string,
+): NonNullable<Metadata["bindings"]>[number] => {
+  if (target?.definition.type !== "cloudflare.r2-token" || !target.definition.secretOutputs)
+    throw new Error("R2 credential binding target is not provisioned.");
+  const { accessKeyId, secretAccessKey, endpoint, region, buckets } = object(target.outputs);
+  if (
+    typeof accessKeyId !== "string" ||
+    typeof secretAccessKey !== "string" ||
+    typeof endpoint !== "string" ||
+    region !== "auto" ||
+    !buckets
+  )
+    throw new Error("R2 credential binding is incomplete.");
+  return {
+    type: "secret_text",
+    name,
+    text: JSON.stringify({ accessKeyId, secretAccessKey, endpoint, region, buckets }),
+  };
+};
+
 const bindings = (
   definition: ResourceDefinition,
   resources: Readonly<Record<string, ResourceState>>,
@@ -73,6 +95,18 @@ const bindings = (
         name,
         scriptName: owned.worker,
         className: owned.className,
+      });
+    } else if (requirement.type === "cloudflare.r2-token") {
+      result.push(credentialBinding(target, name));
+    } else if (requirement.type === "cloudflare.r2") {
+      if (target?.definition.type !== "cloudflare.r2")
+        throw new Error("R2 binding target is not provisioned.");
+      const jurisdiction = object(target.definition.properties).jurisdiction;
+      result.push({
+        type: "r2_bucket",
+        name,
+        bucketName: target.physicalId,
+        ...(typeof jurisdiction === "string" && jurisdiction !== "default" ? { jurisdiction } : {}),
       });
     } else if (requirement.type === "cloudflare.worker-reference") {
       const external = requirement.external ? object(requirement.external) : undefined;
