@@ -3,6 +3,8 @@ import { type Request as EmulatorRequest, Miniflare, Response } from "miniflare"
 import { afterAll, beforeAll, expect, it } from "vitest";
 
 let emulator: Miniflare;
+let coordinatorScript: string;
+const stateAuthToken = "independent-state-auth-secret";
 let acceptedTags: string[] = [];
 let subdomainEnabled = false;
 beforeAll(async () => {
@@ -18,13 +20,17 @@ beforeAll(async () => {
     format: "esm",
     platform: "browser",
   });
+  coordinatorScript = bundle.outputFiles[0]?.text ?? "";
   emulator = new Miniflare({
     modules: true,
-    script: bundle.outputFiles[0]?.text ?? "",
+    script: coordinatorScript,
     compatibilityDate: "2026-08-01",
-    bindings: { ACCOUNT_ID: "test-account" },
+    bindings: { ACCOUNT_ID: "test-account", RENKIN_STATE_AUTH: stateAuthToken },
     durableObjects: { STATE_COORDINATOR: { className: "StateCoordinator", useSQLite: true } },
     outboundService: async (request: EmulatorRequest) => {
+      expect(request.headers.get("authorization")).toMatch(/^Bearer valid-[ab]$/);
+      expect(request.headers.get("x-renkin-cloudflare-token")).toBeNull();
+      expect(request.headers.get("authorization")).not.toContain(stateAuthToken);
       const path = new URL(request.url).pathname;
       if (path.includes("invalid-route"))
         return Response.json({ errors: [{ code: 7003 }] }, { status: 404 });
@@ -55,7 +61,11 @@ afterAll(async () => {
 const call = async (action: string, input: Record<string, unknown>, token = "valid-a") => {
   return emulator.dispatchFetch(`https://state.example/v1/${action}`, {
     method: "POST",
-    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+    headers: {
+      authorization: `Bearer ${stateAuthToken}`,
+      "x-renkin-cloudflare-token": token,
+      "content-type": "application/json",
+    },
     body: JSON.stringify({ stack: "stack", environment: "preview", ...input }),
   });
 };
@@ -208,4 +218,41 @@ it("treats only WorkerNotFound as absence before delete", async () => {
       })
     ).status,
   ).toBe(200);
+});
+
+it("rejects account-read credentials as the state bearer", async () => {
+  const environment = "auth-protection";
+  const lease = (await (await call("acquire", { environment })).json()) as { token: string };
+  await call("write", { environment, token: lease.token, state: "protected-state" });
+  for (const action of ["read", "write", "identity"]) {
+    const result = await emulator.dispatchFetch(`https://state.example/v1/${action}`, {
+      method: "POST",
+      headers: {
+        authorization: "Bearer account-settings-read-token",
+        "x-renkin-cloudflare-token": "valid-a",
+      },
+      body: JSON.stringify({ stack: "stack", environment, state: "corrupt" }),
+    });
+    expect(result.status).toBe(401);
+  }
+  expect(await (await call("read", { environment })).json()).toBe("protected-state");
+});
+it("fails closed when the state auth secret binding is missing", async () => {
+  const unconfigured = new Miniflare({
+    modules: true,
+    script: coordinatorScript,
+    compatibilityDate: "2026-08-01",
+    bindings: { ACCOUNT_ID: "test-account" },
+    durableObjects: { STATE_COORDINATOR: { className: "StateCoordinator", useSQLite: true } },
+  });
+  try {
+    const result = await unconfigured.dispatchFetch("https://state.example/v1/identity", {
+      method: "POST",
+      headers: { authorization: `Bearer ${stateAuthToken}` },
+      body: "{}",
+    });
+    expect(result.status).toBe(401);
+  } finally {
+    await unconfigured.dispose();
+  }
 });

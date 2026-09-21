@@ -9,6 +9,7 @@ import type { CoordinatorRequest, GatewayRequest, GatewayResponse } from "./stat
 export interface CloudflareStateOptions {
   readonly endpoint: string;
   readonly apiToken: string;
+  readonly stateAuthToken: string;
   readonly fetch?: typeof fetch;
 }
 /** The same account endpoint works in developer processes and fresh CI without a local key cache. */
@@ -22,7 +23,8 @@ export class CloudflareStateRepository implements StateRepository {
         {
           method: "POST",
           headers: {
-            authorization: `Bearer ${this.options.apiToken}`,
+            authorization: `Bearer ${this.options.stateAuthToken}`,
+            "x-renkin-cloudflare-token": this.options.apiToken,
             "content-type": "application/json",
           },
           body: JSON.stringify(body),
@@ -38,7 +40,7 @@ export class CloudflareStateRepository implements StateRepository {
           "Environment is busy, the lease expired, or a provider operation needs outcome reconciliation.",
         );
       if (result.status === 401 || result.status === 403)
-        throw new StateError("unauthorized", "Cloud state account authentication failed.");
+        throw new StateError("unauthorized", "Cloud state authentication failed.");
       throw new StateError(
         "unreadable",
         "Cloud state is unreadable; do not replace it with empty state.",

@@ -14,6 +14,7 @@ interface Context {
 }
 interface CoordinatorEnvironment {
   readonly ACCOUNT_ID: string;
+  readonly RENKIN_STATE_AUTH?: string;
   readonly STATE_COORDINATOR: {
     idFromName(name: string): unknown;
     get(id: unknown): { fetch(request: Request): Promise<Response> };
@@ -213,18 +214,38 @@ export default {
   async fetch(request: Request, env: CoordinatorEnvironment): Promise<Response> {
     if (request.method !== "POST") return response({ error: "POST required." }, 405);
     const authorization = request.headers.get("authorization");
-    if (!authorization?.startsWith("Bearer "))
-      return response({ error: "Authentication required." }, 401);
-    const access = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(env.ACCOUNT_ID)}`,
-      { headers: { authorization }, redirect: "manual" },
-    );
-    if (!access.ok) return response({ error: "Cloudflare account access denied." }, 403);
+    if (
+      !env.RENKIN_STATE_AUTH ||
+      !authorization?.startsWith("Bearer ") ||
+      !(await authenticatesStateToken(env.RENKIN_STATE_AUTH, authorization.slice(7)))
+    )
+      return response({ error: "State authentication failed." }, 401);
     if (new URL(request.url).pathname === "/v1/identity")
       return response({ protocol: 1, accountId: env.ACCOUNT_ID });
     const input = (await request.clone().json()) as CoordinatorRequest;
     if (typeof input.stack !== "string" || !input.stack)
       return response({ error: "Invalid stack." }, 400);
-    return env.STATE_COORDINATOR.get(env.STATE_COORDINATOR.idFromName(input.stack)).fetch(request);
+    const apiToken = request.headers.get("x-renkin-cloudflare-token");
+    if (!apiToken) return response({ error: "Cloudflare API token is required." }, 401);
+    const headers = new Headers(request.headers);
+    headers.set("authorization", `Bearer ${apiToken}`);
+    headers.delete("x-renkin-cloudflare-token");
+    return env.STATE_COORDINATOR.get(env.STATE_COORDINATOR.idFromName(input.stack)).fetch(
+      new Request(request, { headers }),
+    );
   },
+};
+
+/** WebCrypto performs MAC verification without a token-prefix timing comparison. */
+const authenticatesStateToken = async (expected: string, provided: string): Promise<boolean> => {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(expected),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign", "verify"],
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(expected));
+  return crypto.subtle.verify("HMAC", key, signature, encoder.encode(provided));
 };
