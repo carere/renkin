@@ -153,3 +153,111 @@ it.effect("rejects a protected mixed plan before any mutations even with yes and
     expect(state.written).toBeUndefined();
   }),
 );
+
+it.effect(
+  "persists force across a lost binding response without granting deletion permission",
+  () =>
+    Effect.gen(function* () {
+      const state = new InMemoryStateRepository();
+      let fail = true;
+      const observed: boolean[] = [];
+      const stack = { name: "app", resources: [definition("api")] };
+      const services = () => ({
+        worker: {
+          apply: async () => null,
+          bind: async (
+            _resource: unknown,
+            _resources: unknown,
+            _desired: unknown,
+            options?: { readonly force?: boolean },
+          ) => {
+            observed.push(options?.force ?? false);
+            if (fail) throw new Error("lost response");
+          },
+          remove: async () => {},
+        },
+      });
+      expect(
+        (yield* Effect.exit(
+          deploy(stack, { environment: "dev", state, services, yes: true, force: true }),
+        ))._tag,
+      ).toBe("Failure");
+      state.value = state.written;
+      fail = false;
+      yield* deploy(stack, { environment: "dev", state, services, yes: true });
+      expect(observed).toEqual([true, true]);
+    }),
+);
+
+it.effect("supplies corrected same-identity configuration while recovering a binding", () =>
+  Effect.gen(function* () {
+    const state = new InMemoryStateRepository();
+    const desired = { ...definition("data"), properties: { migration: "fixed" } };
+    const previous = { ...desired, properties: { migration: "failed" } };
+    const applied = { definition: previous, physicalId: "same-database", outputs: null };
+    state.value = emptyState("app", "dev");
+    state.value.pending = {
+      change: { id: "data", kind: "create", desired: previous },
+      physicalId: "same-database",
+      phase: "bindings",
+      applied,
+    };
+    const observed: unknown[] = [];
+    yield* deploy(
+      { name: "app", resources: [desired] },
+      {
+        environment: "dev",
+        state,
+        yes: true,
+        services: () => ({
+          worker: {
+            apply: async () => null,
+            bind: async (_resource, _resources, current) => {
+              observed.push(current?.properties);
+            },
+            remove: async () => {},
+          },
+        }),
+      },
+    );
+    expect(observed[0]).toEqual({ migration: "fixed" });
+    expect(state.written?.resources.data?.definition).toEqual(desired);
+  }),
+);
+
+it.effect(
+  "retention keeps the provider object while explicitly dropping its ownership record",
+  () =>
+    Effect.gen(function* () {
+      const state = new InMemoryStateRepository();
+      state.value = emptyState("app", "dev");
+      state.value.resources.data = {
+        definition: {
+          ...definition("data"),
+          retain: true,
+          protection: { data: true, allowDelete: false },
+        },
+        physicalId: "retained",
+        outputs: null,
+      };
+      let removed = false;
+      const result = yield* deploy(
+        { name: "app", resources: [] },
+        {
+          environment: "dev",
+          state,
+          yes: true,
+          services: () => ({
+            worker: {
+              apply: async () => null,
+              remove: async () => {
+                removed = true;
+              },
+            },
+          }),
+        },
+      );
+      expect(removed).toBe(false);
+      expect(result.resources).toEqual({});
+    }),
+);

@@ -87,7 +87,9 @@ const resume = async (
         resource.type === appliedDefinition.type &&
         resource.identity === appliedDefinition.identity,
     );
-    await service.bind?.(op.applied, { ...state.resources, [op.change.id]: op.applied }, desired);
+    await service.bind?.(op.applied, { ...state.resources, [op.change.id]: op.applied }, desired, {
+      force: op.force ?? false,
+    });
     state.resources[op.change.id] = op.applied;
     op = { ...op, phase: "remove-previous" };
     state.pending = op;
@@ -113,6 +115,7 @@ const applyChange = async (
   lease: StateLease,
   services: Readonly<Record<string, ResourceService>>,
   stack?: Stack,
+  force = false,
 ): Promise<void> => {
   if (change.kind === "unchanged" && change.desired && change.previous) {
     state.resources[change.id] = { ...change.previous, definition: change.desired };
@@ -125,6 +128,7 @@ const applyChange = async (
   }
   state.pending = {
     change,
+    force,
     physicalId:
       (change.kind === "update" || change.kind === "remove") && change.previous
         ? change.previous.physicalId
@@ -172,7 +176,10 @@ const validateDeployment = async (
   }
   const actionable = [
     ...(state.pending ? [state.pending.change] : []),
-    ...changes.filter((change) => change.kind !== "unchanged"),
+    ...changes.filter(
+      (change) =>
+        change.kind !== "unchanged" || (change.desired && services[change.desired.type]?.refresh),
+    ),
   ];
   if (state.pending)
     options.progress?.({
@@ -221,7 +228,7 @@ const execute = async (stack: Stack, options: DeployOptions): Promise<Environmen
         original.kind === "unchanged" && service?.refresh
           ? { ...original, kind: "update" as const }
           : original;
-      await applyChange(change, state, lease, services, stack);
+      await applyChange(change, state, lease, services, stack, options.force);
     }
     await finishBindings();
     // A recovered binding may describe the previous source. Apply the current

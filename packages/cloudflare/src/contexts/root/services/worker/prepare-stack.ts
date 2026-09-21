@@ -27,7 +27,7 @@ export const prepareStack = async (stack: Stack): Promise<Stack> => ({
         const result = options.build
           ? await readBuildResult(options.build)
           : {
-              source: (await bundleWorker(String(properties.entry))).code,
+              source: (await bundleWorker(String(properties.entry), { sourceMap: false })).code,
               mainModule: "worker.mjs",
               modules: [],
             };

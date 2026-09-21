@@ -100,13 +100,14 @@ const publishWorker = async (
   resources: Readonly<Record<string, ResourceState>>,
   marker: string,
   tags: readonly string[],
+  force = false,
 ) => {
   const resolved = bindings(resource.definition, resources);
   const hash = createHash("sha256")
     .update(canonical(resource.definition.properties))
     .update(JSON.stringify(resolved))
     .digest("hex");
-  if (!tags.includes(`renkin-config:${hash}`)) {
+  if (force || !tags.includes(`renkin-config:${hash}`)) {
     const publication = await prepareWorkerPublication(resource, options.siteClient, options.token);
     await Effect.runPromise(
       options.client.putWorker(
@@ -166,7 +167,7 @@ export const cloudflareWorkerService = (options: WorkerServiceOptions): Resource
         );
       return { url: `https://${physicalId}.${options.subdomain}.workers.dev`, name: physicalId };
     },
-    bind: async (resource, resources) => {
+    bind: async (resource, resources, _desired, operation) => {
       const current = await verifyOwner(
         resource.physicalId,
         resource.ownershipId ?? resource.definition.id,
@@ -177,6 +178,7 @@ export const cloudflareWorkerService = (options: WorkerServiceOptions): Resource
         resources,
         marker(resource.physicalId),
         current?.tags ?? [],
+        operation?.force,
       );
       await finalizeWorkerPublication(resource, options.siteClient, options.token);
     },

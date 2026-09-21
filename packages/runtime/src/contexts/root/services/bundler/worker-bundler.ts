@@ -26,5 +26,13 @@ export const readBundle = (result: BuildResult): WorkerBundle => {
   return { code, inputs: Object.keys(result.metafile?.inputs ?? {}) };
 };
 
-export const bundleWorker = async (entry: string): Promise<WorkerBundle> =>
-  readBundle(await build(bundleOptions(entry)));
+export const bundleWorker = async (
+  entry: string,
+  options: { readonly sourceMap?: boolean } = {},
+): Promise<WorkerBundle> =>
+  readBundle(
+    await build({
+      ...bundleOptions(entry),
+      sourcemap: options.sourceMap === false ? false : "inline",
+    }),
+  );
