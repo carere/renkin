@@ -48,7 +48,7 @@ it.effect("a killed process releases its lock without waiting for a stale timeou
       "../../../src/contexts/root/services/state/file-state-repository.ts",
       import.meta.url,
     ).href;
-    const script = `import {FileStateRepository} from ${JSON.stringify(modulePath)}; await new FileStateRepository(${JSON.stringify(directory)}).acquire("app","dev");console.log("locked");setInterval(()=>{},1000);`;
+    const script = `import {FileStateRepository} from ${JSON.stringify(modulePath)}; const lease=await new FileStateRepository(${JSON.stringify(directory)}).acquire("app","dev");console.log("locked");setInterval(()=>void lease.read(),1000);`;
     const child = spawn(
       process.execPath,
       [

@@ -146,7 +146,12 @@ The separate `renkin:test-cloud` suite creates only resources under the explicit
 `RENKIN_CLOUDFLARE_PRODUCTS_CONFIRMED=true`. It deploys and updates a temporary
 Worker, verifies HTTP and shared output reads, then removes that Worker. Cleanup
 failures report its exact stack/environment. The reusable prefixed account state
-service and empty environment record remain intentionally.
+service and empty environment record remain intentionally. The separate optional
+`cloudflare:test-cloud-authorization` suite additionally requires explicit
+token-management authorization and `RENKIN_CLOUDFLARE_TOKEN_MANAGEMENT_TOKEN`.
+It creates narrowly scoped read-only tokens, proves they cannot access shared
+state, then revokes both. The ordinary Worker cloud suite does not require token
+management credentials.
 
 The released Distilled dependency is `@distilled.cloud/cloudflare@1.0.0-rc.12`,
 compatible with the workspace's Effect `4.0.0-rc.115`. Its HTTP boundary tests
@@ -155,7 +160,7 @@ versus invalid-route errors, authentication failures, upload multipart encoding
 and fenced mutation transport. See the SDK README for details. No Alchemy or
 Distilled implementation source was copied into this slice.
 
-A macOS execution record is reported with this change. Linux execution is wired
+The [macOS execution record](validation/issue-4.md) reports the checks run with this change. Linux execution is wired
 into CI but is not implied by local macOS passes. The release artifact, broader
 cloud-only resources, full application graph and all resource-specific runtime
 regressions remain later tickets; empty projects are not behavioral coverage.
