@@ -42,7 +42,7 @@ it("prepares every maintained cloud suite without provider calls or private pack
       "utf8",
     );
     expect(authorization).toContain('from "renkin"');
-    expect(authorization).toContain("expect(permissionDenials).toBeGreaterThan(0)");
+    expect(authorization).toContain("expect(observer.count()).toBeGreaterThan(0)");
     expect(authorization).toContain("expect(denied.status).toBe(401)");
     expect(record.publicEquivalentForAdapterSuites).toEqual([
       "packages/cloudflare/tests/cloud/root/services/state/state-authorization.test.ts",

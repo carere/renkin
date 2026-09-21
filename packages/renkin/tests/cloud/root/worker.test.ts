@@ -122,6 +122,9 @@ it.effect("deploys, updates, reads shared outputs and removes a temporary Worker
     expect(completed).toBe(true);
     expect(
       await Effect.runPromise(readOutputs(stackName, "smoke", { cloudflare: options.cloudflare })),
-    ).toEqual({});
+    ).toBeUndefined();
+    expect(
+      await Effect.runPromise(listEnvironments(stackName, { cloudflare: options.cloudflare })),
+    ).not.toContain("smoke");
   }),
 );

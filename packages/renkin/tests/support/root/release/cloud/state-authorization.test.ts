@@ -75,15 +75,12 @@ const assertTokenActive = async (accountId: string, token: string, workerRead: b
   throw new Error("Restricted token never became usable for its authorized read operation.");
 };
 
-const assertPublicDenied = async (
-  stack: string,
-  options: { accountId: string; apiToken: string; stateScriptName: string },
-  value: string,
-) => {
-  // Public errors deliberately conceal bootstrap internals. Record only permission-denial
-  // statuses for this exact bearer during the public call, so a generic failure cannot pass.
+const observePermissionDenials = () => {
   const originalFetch = globalThis.fetch;
-  let permissionDenials = 0;
+  let bearer = "";
+  let count = 0;
+  // Effect caches its default fetch service on first use. Install the observer before
+  // the authorized control, then select the exact restricted bearer for each assertion.
   globalThis.fetch = (async (input: string | Request | URL, init?: RequestInit) => {
     const request = new Request(input, init);
     const response = await originalFetch(
@@ -93,96 +90,118 @@ const assertPublicDenied = async (
     );
     if (
       new URL(request.url).origin === "https://api.cloudflare.com" &&
-      request.headers.get("authorization") === `Bearer ${value}` &&
+      request.headers.get("authorization") === `Bearer ${bearer}` &&
       (response.status === 401 || response.status === 403)
     )
-      permissionDenials++;
+      count++;
     return response;
   }) as typeof fetch;
-  try {
-    const result = await Effect.runPromise(
-      listEnvironments(stack, {
-        cloudflare: { ...options, apiToken: value },
-      }).pipe(
-        Effect.match({
-          onSuccess: () => "unexpected success",
-          onFailure: (error) => error.message,
-        }),
-      ),
-    );
-    expect(result).toBe(
-      "Environment state is unavailable. Check account credentials and state service.",
-    );
-    expect(permissionDenials).toBeGreaterThan(0);
-  } finally {
-    globalThis.fetch = originalFetch;
-  }
+  return {
+    select(value: string) {
+      bearer = value;
+      count = 0;
+    },
+    count: () => count,
+    restore() {
+      bearer = "";
+      count = 0;
+      globalThis.fetch = originalFetch;
+    },
+  };
+};
+
+const assertPublicDenied = async (
+  stack: string,
+  options: { accountId: string; apiToken: string; stateScriptName: string },
+  value: string,
+  observer: ReturnType<typeof observePermissionDenials>,
+) => {
+  observer.select(value);
+  const result = await Effect.runPromise(
+    listEnvironments(stack, {
+      cloudflare: { ...options, apiToken: value },
+    }).pipe(
+      Effect.match({
+        onSuccess: () => "unexpected success",
+        onFailure: (error) => error.message,
+      }),
+    ),
+  );
+  expect(result).toBe(
+    "Environment state is unavailable. Check account credentials and state service.",
+  );
+  expect(observer.count()).toBeGreaterThan(0);
 };
 
 // Public equivalent of the adapter authorization suite; values remain in memory.
 it("rejects restricted credentials as state bearers and through installed public state discovery", async () => {
-  const authorized = scope();
-  const scriptName = `${authorized.prefix}-state-v2`;
-  const stack = `${authorized.prefix}-authorization`;
-  const options = {
-    accountId: authorized.accountId,
-    apiToken: authorized.apiToken,
-    stateScriptName: scriptName,
-  };
-  // A working authorized read rules out a missing backend or broken installed bootstrap asset.
-  expect(
-    Array.isArray(await Effect.runPromise(listEnvironments(stack, { cloudflare: options }))),
-  ).toBe(true);
-  const subdomainResponse = await fetch(
-    `https://api.cloudflare.com/client/v4/accounts/${authorized.accountId}/workers/subdomain`,
-    {
-      headers: { authorization: `Bearer ${authorized.apiToken}` },
-      redirect: "error",
-      signal: AbortSignal.timeout(15000),
-    },
-  );
-  expect(subdomainResponse.status).toBe(200);
-  const subdomainBody = (await subdomainResponse.json()) as {
-    success: boolean;
-    result: { subdomain: string };
-  };
-  expect(subdomainBody.success).toBe(true);
-  const subdomain = subdomainBody.result.subdomain;
-  expect(subdomain).toMatch(/^[a-z0-9][a-z0-9-]*$/);
-  const endpoint = `https://${scriptName}.${subdomain}.workers.dev`;
-  for (const permissionId of [
-    "c1fde68c7bcc44588cbb6ddbc16d6480", // Account Settings Read
-    "1a71c399035b4950a1bd1466bbe4f420", // Workers Scripts Read
-  ]) {
-    const { id, value } = await createToken(authorized, permissionId);
-    try {
-      await assertTokenActive(
-        authorized.accountId,
-        value,
-        permissionId === "1a71c399035b4950a1bd1466bbe4f420",
-      );
-      const denied = await fetch(`${endpoint}/v1/list`, {
-        method: "POST",
-        headers: { authorization: `Bearer ${value}`, "content-type": "application/json" },
-        body: JSON.stringify({ stack }),
+  const observer = observePermissionDenials();
+  try {
+    const authorized = scope();
+    const scriptName = `${authorized.prefix}-state-v2`;
+    const stack = `${authorized.prefix}-authorization`;
+    const options = {
+      accountId: authorized.accountId,
+      apiToken: authorized.apiToken,
+      stateScriptName: scriptName,
+    };
+    // A working authorized read rules out a missing backend or broken installed bootstrap asset.
+    expect(
+      Array.isArray(await Effect.runPromise(listEnvironments(stack, { cloudflare: options }))),
+    ).toBe(true);
+    const subdomainResponse = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${authorized.accountId}/workers/subdomain`,
+      {
+        headers: { authorization: `Bearer ${authorized.apiToken}` },
         redirect: "error",
         signal: AbortSignal.timeout(15000),
-      });
-      expect(denied.status).toBe(401);
-      await assertPublicDenied(stack, options, value);
-    } finally {
-      const removed = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${authorized.accountId}/tokens/${id}`,
-        {
-          method: "DELETE",
-          headers: { authorization: `Bearer ${authorized.managementToken}` },
+      },
+    );
+    expect(subdomainResponse.status).toBe(200);
+    const subdomainBody = (await subdomainResponse.json()) as {
+      success: boolean;
+      result: { subdomain: string };
+    };
+    expect(subdomainBody.success).toBe(true);
+    const subdomain = subdomainBody.result.subdomain;
+    expect(subdomain).toMatch(/^[a-z0-9][a-z0-9-]*$/);
+    const endpoint = `https://${scriptName}.${subdomain}.workers.dev`;
+    for (const permissionId of [
+      "c1fde68c7bcc44588cbb6ddbc16d6480", // Account Settings Read
+      "1a71c399035b4950a1bd1466bbe4f420", // Workers Scripts Read
+    ]) {
+      const { id, value } = await createToken(authorized, permissionId);
+      try {
+        await assertTokenActive(
+          authorized.accountId,
+          value,
+          permissionId === "1a71c399035b4950a1bd1466bbe4f420",
+        );
+        const denied = await fetch(`${endpoint}/v1/list`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${value}`, "content-type": "application/json" },
+          body: JSON.stringify({ stack }),
           redirect: "error",
           signal: AbortSignal.timeout(15000),
-        },
-      );
-      expect(removed.ok, `Temporary test token cleanup failed: ${id}`).toBe(true);
-      const result = (await removed.json()) as { success?: boolean };
-      expect(result.success).toBe(true);
+        });
+        expect(denied.status).toBe(401);
+        await assertPublicDenied(stack, options, value, observer);
+      } finally {
+        const removed = await fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${authorized.accountId}/tokens/${id}`,
+          {
+            method: "DELETE",
+            headers: { authorization: `Bearer ${authorized.managementToken}` },
+            redirect: "error",
+            signal: AbortSignal.timeout(15000),
+          },
+        );
+        expect(removed.ok, `Temporary test token cleanup failed: ${id}`).toBe(true);
+        const result = (await removed.json()) as { success?: boolean };
+        expect(result.success).toBe(true);
+      }
     }
+  } finally {
+    observer.restore();
   }
 }, 180000);
