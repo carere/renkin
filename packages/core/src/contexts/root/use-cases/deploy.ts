@@ -41,6 +41,7 @@ const resume = async (
   lease: StateLease,
   services: Readonly<Record<string, ResourceService>>,
   defer = true,
+  stack?: Stack,
 ): Promise<void> => {
   let op = state.pending;
   if (!op) return;
@@ -79,7 +80,14 @@ const resume = async (
     return;
   }
   if (op.phase === "bindings" && op.applied) {
-    await service.bind?.(op.applied, { ...state.resources, [op.change.id]: op.applied });
+    const appliedDefinition = op.applied.definition;
+    const desired = stack?.resources.find(
+      (resource) =>
+        resource.id === appliedDefinition.id &&
+        resource.type === appliedDefinition.type &&
+        resource.identity === appliedDefinition.identity,
+    );
+    await service.bind?.(op.applied, { ...state.resources, [op.change.id]: op.applied }, desired);
     state.resources[op.change.id] = op.applied;
     op = { ...op, phase: "remove-previous" };
     state.pending = op;
@@ -104,6 +112,7 @@ const applyChange = async (
   state: EnvironmentState,
   lease: StateLease,
   services: Readonly<Record<string, ResourceService>>,
+  stack?: Stack,
 ): Promise<void> => {
   if (change.kind === "unchanged" && change.desired && change.previous) {
     state.resources[change.id] = { ...change.previous, definition: change.desired };
@@ -123,7 +132,7 @@ const applyChange = async (
     phase: change.kind === "remove" ? "remove" : "apply",
   };
   await lease.write(state);
-  await resume(state, lease, services);
+  await resume(state, lease, services, true, stack);
 };
 
 const validateDeployment = async (
@@ -192,7 +201,7 @@ const execute = async (stack: Stack, options: DeployOptions): Promise<Environmen
       state = renamedState(stack, state);
       await lease.write(state);
     }
-    await resume(state, lease, services);
+    await resume(state, lease, services, true, stack);
     // Finish a prior graph before beginning another change to its resources.
     const finishBindings = async () => {
       while (state.bindings?.length) {
@@ -201,7 +210,7 @@ const execute = async (stack: Stack, options: DeployOptions): Promise<Environmen
         state.pending = operation;
         state.bindings = remaining;
         await lease.write(state);
-        await resume(state, lease, services, false);
+        await resume(state, lease, services, false, stack);
       }
       delete state.bindings;
     };
@@ -212,13 +221,13 @@ const execute = async (stack: Stack, options: DeployOptions): Promise<Environmen
         original.kind === "unchanged" && service?.refresh
           ? { ...original, kind: "update" as const }
           : original;
-      await applyChange(change, state, lease, services);
+      await applyChange(change, state, lease, services, stack);
     }
     await finishBindings();
     // A recovered binding may describe the previous source. Apply the current
     // declarations after that durable graph has completed, never silently skip it.
     for (const change of plan(stack, state).filter((item) => item.kind !== "unchanged")) {
-      await applyChange(change, state, lease, services);
+      await applyChange(change, state, lease, services, stack);
     }
     await finishBindings();
     Object.keys(state.outputs).forEach((key) => {
