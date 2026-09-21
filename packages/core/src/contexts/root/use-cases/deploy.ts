@@ -10,6 +10,7 @@ import {
 import type { ResourceService, ResourceServices } from "../services/resource/resource-service.ts";
 import type { StateLease, StateRepository } from "../services/state/state-repository.ts";
 import { assertProtection, plan } from "./plan.ts";
+import { renamedState } from "./rename.ts";
 
 export interface DeployOptions {
   readonly environment: string;
@@ -39,20 +40,43 @@ const resume = async (
   state: EnvironmentState,
   lease: StateLease,
   services: Readonly<Record<string, ResourceService>>,
+  defer = true,
 ): Promise<void> => {
   let op = state.pending;
   if (!op) return;
   assertProtection([op.change]);
   const service = serviceFor(op, services);
   if (op.phase === "apply" && op.change.desired) {
-    const outputs = await service.apply(op.change.desired, op.physicalId, op.change.previous);
+    const outputs = await service.apply(
+      op.change.desired,
+      op.physicalId,
+      op.change.previous,
+      state.resources,
+    );
+    const physicalId =
+      service.resolvePhysicalId?.(op.change.desired, op.physicalId, outputs) ?? op.physicalId;
+    if (!physicalId) throw new Error("Provider did not return a resource identity.");
     op = {
       ...op,
+      physicalId,
       phase: "bindings",
-      applied: { definition: op.change.desired, physicalId: op.physicalId, outputs },
+      applied: {
+        definition: op.change.desired,
+        physicalId,
+        outputs,
+        ownershipId:
+          op.change.previous?.ownershipId ?? op.change.previous?.definition.id ?? op.change.id,
+      },
     };
     state.pending = op;
     await lease.write(state);
+  }
+  if (op.phase === "bindings" && op.applied && service.deferredBindings && defer) {
+    state.resources[op.change.id] = op.applied;
+    state.bindings = [...(state.bindings ?? []), op];
+    delete state.pending;
+    await lease.write(state);
+    return;
   }
   if (op.phase === "bindings" && op.applied) {
     await service.bind?.(op.applied, { ...state.resources, [op.change.id]: op.applied });
@@ -102,57 +126,95 @@ const applyChange = async (
   await resume(state, lease, services);
 };
 
+const validateDeployment = async (
+  stack: Stack,
+  state: EnvironmentState,
+  services: Readonly<Record<string, ResourceService>>,
+  options: DeployOptions,
+): Promise<void> => {
+  // Validate the entire requested plan before resuming any old provider operation.
+  const projected = structuredClone(state);
+  if (state.pending?.change.desired) {
+    projected.resources[state.pending.change.id] = state.pending.applied ?? {
+      definition: state.pending.change.desired,
+      physicalId: state.pending.physicalId,
+      outputs: null,
+    };
+  }
+  const changes = plan(stack, projected, options.force);
+  assertProtection(
+    (state.bindings ?? []).map((op) => {
+      const desired = stack.resources.find((resource) => resource.id === op.change.id);
+      return { ...op.change, ...(desired ? { desired } : {}) };
+    }),
+  );
+  for (const resource of [
+    ...stack.resources,
+    ...Object.values(state.resources).map((item) => item.definition),
+    ...(state.pending?.change.desired ? [state.pending.change.desired] : []),
+    ...(state.pending?.change.previous ? [state.pending.change.previous.definition] : []),
+  ]) {
+    if (!services[resource.type])
+      throw new DeploymentError(`No adapter registered for ${resource.type}.`);
+  }
+  if (state.pending) {
+    const current = stack.resources.find((resource) => resource.id === state.pending?.change.id);
+    assertProtection([{ ...state.pending.change, ...(current ? { desired: current } : {}) }]);
+  }
+  const actionable = [
+    ...(state.pending ? [state.pending.change] : []),
+    ...changes.filter((change) => change.kind !== "unchanged"),
+  ];
+  if (state.pending)
+    options.progress?.({
+      id: state.pending.change.id,
+      kind: `resume ${state.pending.change.kind}`,
+    });
+  for (const change of changes) options.progress?.({ id: change.id, kind: change.kind });
+  if (
+    (actionable.length || state.pending) &&
+    !options.yes &&
+    !(await options.confirm?.(actionable))
+  ) {
+    throw new DeploymentError("Deployment requires confirmation; use --yes in automation.");
+  }
+};
+
 const execute = async (stack: Stack, options: DeployOptions): Promise<EnvironmentState> => {
   defineStack(stack);
   validateName(options.environment);
   const lease = await options.state.acquire(stack.name, options.environment);
   try {
-    const state = (await lease.read()) ?? emptyState(stack.name, options.environment);
+    let state = (await lease.read()) ?? emptyState(stack.name, options.environment);
     const services = options.services(lease);
-    // Validate the entire requested plan before resuming any old provider operation.
-    const projected = structuredClone(state);
-    if (state.pending?.change.desired) {
-      projected.resources[state.pending.change.id] = state.pending.applied ?? {
-        definition: state.pending.change.desired,
-        physicalId: state.pending.physicalId,
-        outputs: null,
-      };
-    }
-    const changes = plan(stack, projected, options.force);
-    for (const resource of [
-      ...stack.resources,
-      ...Object.values(state.resources).map((item) => item.definition),
-      ...(state.pending?.change.desired ? [state.pending.change.desired] : []),
-      ...(state.pending?.change.previous ? [state.pending.change.previous.definition] : []),
-    ]) {
-      if (!services[resource.type])
-        throw new DeploymentError(`No adapter registered for ${resource.type}.`);
-    }
-    if (state.pending) {
-      const current = stack.resources.find((resource) => resource.id === state.pending?.change.id);
-      assertProtection([{ ...state.pending.change, ...(current ? { desired: current } : {}) }]);
-    }
-    const actionable = [
-      ...(state.pending ? [state.pending.change] : []),
-      ...changes.filter((change) => change.kind !== "unchanged"),
-    ];
-    if (state.pending)
-      options.progress?.({
-        id: state.pending.change.id,
-        kind: `resume ${state.pending.change.kind}`,
-      });
-    for (const change of changes) options.progress?.({ id: change.id, kind: change.kind });
-    if (
-      (actionable.length || state.pending) &&
-      !options.yes &&
-      !(await options.confirm?.(actionable))
-    ) {
-      throw new DeploymentError("Deployment requires confirmation; use --yes in automation.");
+    await validateDeployment(stack, state, services, options);
+    if (stack.renames?.length) {
+      state = renamedState(stack, state);
+      await lease.write(state);
     }
     await resume(state, lease, services);
-    for (const change of plan(stack, state, options.force)) {
+    // Finish a prior graph before beginning another change to its resources.
+    const finishBindings = async () => {
+      while (state.bindings?.length) {
+        const [operation, ...remaining] = state.bindings;
+        if (!operation) break;
+        state.pending = operation;
+        state.bindings = remaining;
+        await lease.write(state);
+        await resume(state, lease, services, false);
+      }
+      delete state.bindings;
+    };
+    for (const original of plan(stack, state, options.force)) {
+      if (state.bindings?.some((operation) => operation.change.id === original.id)) continue;
+      const service = original.desired ? services[original.desired.type] : undefined;
+      const change =
+        original.kind === "unchanged" && service?.refresh
+          ? { ...original, kind: "update" as const }
+          : original;
       await applyChange(change, state, lease, services);
     }
+    await finishBindings();
     Object.keys(state.outputs).forEach((key) => {
       delete state.outputs[key];
     });

@@ -8,7 +8,14 @@ export interface ResourceService {
     definition: ResourceDefinition,
     physicalId: string,
     previous?: ResourceState,
+    resources?: Readonly<Record<string, ResourceState>>,
   ): Promise<Json>;
+  /** Extract a server-assigned provider ID from an observed create result. */
+  resolvePhysicalId?(definition: ResourceDefinition, allocationId: string, outputs: Json): string;
+  /** Complete binding after every resource has been provisioned. */
+  readonly deferredBindings?: boolean;
+  /** Observe/reconcile even when desired properties are unchanged. */
+  readonly refresh?: boolean;
   bind?(resource: ResourceState, resources: Readonly<Record<string, ResourceState>>): Promise<void>;
   remove(resource: ResourceState): Promise<void>;
 }

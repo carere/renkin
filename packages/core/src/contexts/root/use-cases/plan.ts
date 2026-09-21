@@ -1,5 +1,6 @@
 import type { Json, ResourceDefinition, Stack } from "../models/stack.ts";
 import type { Change, EnvironmentState } from "../models/state.ts";
+import { renamedState } from "./rename.ts";
 
 export const canonical = (value: Json): string => {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
@@ -34,6 +35,13 @@ const ordered = (resources: readonly ResourceDefinition[]): readonly ResourceDef
 };
 
 export const plan = (stack: Stack, state: EnvironmentState, force = false): readonly Change[] => {
+  state = renamedState(stack, state);
+  for (const resource of stack.resources) {
+    for (const id of resource.references ?? []) {
+      if (!stack.resources.some((target) => target.id === id))
+        throw new Error(`Unknown binding reference ${id}`);
+    }
+  }
   const changes: Change[] = ordered(stack.resources).map((desired) => {
     const previous = Object.hasOwn(state.resources, desired.id)
       ? state.resources[desired.id]
