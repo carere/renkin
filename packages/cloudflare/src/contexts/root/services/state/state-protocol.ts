@@ -4,6 +4,7 @@ export interface GatewayRequest {
   readonly path: string;
   readonly bodyBase64?: string;
   readonly headers?: Record<string, string>;
+  readonly assetUploadToken?: string;
 }
 export interface GatewayResponse {
   readonly status: number;

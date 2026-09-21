@@ -21,6 +21,7 @@ export const prepareWorkerOperation = async (
   authorization: string,
 ): Promise<PreparedWorkerOperation> => {
   const headers = new Headers({ authorization });
+  if (mutation.assetUploadToken) headers.set("authorization", `Bearer ${mutation.assetUploadToken}`);
   if (mutation.headers?.["content-type"])
     headers.set("content-type", mutation.headers["content-type"]);
   const id = crypto.randomUUID();
