@@ -14,17 +14,35 @@ const inspectBrowser = async (browser: Browser, url: string) => {
   const page = await browser.newPage();
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto(url);
-  await page.getByRole("button", { name: "Clicks: 0" }).click();
-  await page.getByRole("button", { name: "Clicks: 1" }).waitFor();
-  await page.getByRole("link", { name: "Details", exact: true }).click();
-  await page.getByRole("heading", { name: "SSR details" }).waitFor();
-  await page.getByRole("link", { name: "Home", exact: true }).click();
-  await page.locator("#native-value").filter({ hasText: "stage: development" }).waitFor();
-  await page.getByRole("link", { name: "Details", exact: true }).click();
-  await page.getByRole("heading", { name: "SSR details" }).waitFor();
-  assert.deepEqual(errors, []);
-  return page;
+  const failedResponses: { path: string; status: number }[] = [];
+  page.on("response", (response) => {
+    if (response.status() >= 400)
+      failedResponses.push({ path: new URL(response.url()).pathname, status: response.status() });
+  });
+  try {
+    await page.goto(url);
+    await page.getByRole("button", { name: "Clicks: 0" }).click();
+    await page.getByRole("button", { name: "Clicks: 1" }).waitFor();
+    await page.getByRole("link", { name: "Details", exact: true }).click();
+    await page.getByRole("heading", { name: "SSR details" }).waitFor();
+    await page.getByRole("link", { name: "Home", exact: true }).click();
+    await page.locator("#native-value").filter({ hasText: "stage: development" }).waitFor();
+    await page.getByRole("link", { name: "Details", exact: true }).click();
+    await page.getByRole("heading", { name: "SSR details" }).waitFor();
+    assert.deepEqual(errors, []);
+    return page;
+  } catch (cause) {
+    throw new Error(
+      `SSR browser failure: ${JSON.stringify({
+        url: page.url(),
+        headings: await page.getByRole("heading").allTextContents(),
+        body: (await page.locator("body").innerText()).slice(0, 1200),
+        errors,
+        failedResponses,
+      })}`,
+      { cause },
+    );
+  }
 };
 
 const inspectBuild = async (build: WorkerBuildResult) => {
