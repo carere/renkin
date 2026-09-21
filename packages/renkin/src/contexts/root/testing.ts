@@ -7,3 +7,6 @@ import {
 } from "@renkin/testing/services/background/background-helpers";
 export const scheduled = dispatchScheduled;
 export const capturedEmails = captures;
+
+import { applicationFixture as application } from "@renkin/testing/services/application/application-fixture";
+export const applicationFixture = application;
