@@ -9,12 +9,12 @@ The specification and issue acceptance criteria remain authoritative.
 | [#4: Run and deploy a Worker safely](https://github.com/carere/renkin/issues/4) | None | Complete; merged and closed |
 | [#5: Build a connected application with protected storage](https://github.com/carere/renkin/issues/5) | #4 | Complete; merged and closed |
 | [#6: Run database-backed applications with SQL and Drizzle migrations](https://github.com/carere/renkin/issues/6) | #5 | Complete; merged and closed |
-| [#7: Upload files and manage isolated preview storage](https://github.com/carere/renkin/issues/7) | #5 | In progress in isolated worktree |
-| [#8: Process scheduled and durable background jobs](https://github.com/carere/renkin/issues/8) | #5 | In progress in isolated worktree |
-| [#9: Run persistent stateful services with Durable Objects](https://github.com/carere/renkin/issues/9) | #5 | In progress in isolated worktree |
+| [#7: Upload files and manage isolated preview storage](https://github.com/carere/renkin/issues/7) | #5 | Complete; merged and closed |
+| [#8: Process scheduled and durable background jobs](https://github.com/carere/renkin/issues/8) | #5 | Complete; merged and closed |
+| [#9: Run persistent stateful services with Durable Objects](https://github.com/carere/renkin/issues/9) | #5 | Complete; merged and closed |
 | [#10: Serve a protected application on its domain](https://github.com/carere/renkin/issues/10) | #4 | Complete; merged and closed |
-| [#11: Run and deploy TanStack Start Solid applications](https://github.com/carere/renkin/issues/11) | #10, #5 | Pending |
-| [#12: Run and deploy Astro sites](https://github.com/carere/renkin/issues/12) | #10, #5 | Pending |
+| [#11: Run and deploy TanStack Start Solid applications](https://github.com/carere/renkin/issues/11) | #10, #5 | In progress in isolated worktree |
+| [#12: Run and deploy Astro sites](https://github.com/carere/renkin/issues/12) | #10, #5 | In progress in isolated worktree |
 | [#13: Run the complete application graph with reliable build reuse](https://github.com/carere/renkin/issues/13) | #12, #11, #9, #8, #7, #6 | Pending |
 | [#14: Deliver and validate the first release artifact](https://github.com/carere/renkin/issues/14) | #13 | Pending |
 
@@ -61,3 +61,11 @@ behavioral tests and static checks passed locally. Its real Cloudflare protected
 suite passed isolation, token recovery, configuration updates and teardown; see
 [site validation](../validation/issue-10.md). Ticket #9 is now active in an isolated
 worktree.
+
+Tickets #7, #8 and #9 are complete after integration `7e35c34`: 175 behavioral
+tests across eight populated suites and all required static checks passed.
+Their separate real Cloudflare suites passed and cleaned their temporary
+application resources; the authorized email recipient also confirmed delivery.
+See [R2 evidence](../validation/issue-7.md), [background jobs](../background-jobs.md)
+and [Durable Objects](../durable-objects.md). TanStack and Astro integration
+are active in separate worktrees; full-graph and release-artifact validation follow.
