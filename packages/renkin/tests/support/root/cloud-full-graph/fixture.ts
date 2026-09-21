@@ -38,6 +38,21 @@ const authorizedGraphScope = () => {
   };
 };
 
+const boundRequests = () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = (input, init) => {
+    const signal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
+    const timeout = AbortSignal.timeout(60000);
+    return original(input, {
+      ...init,
+      signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+    });
+  };
+  return () => {
+    globalThis.fetch = original;
+  };
+};
+
 export const createCloudGraphFixture = async () => {
   authorizedGraphScope();
   const name = `renkin-test-graph-${randomUUID().slice(0, 8)}`;
@@ -80,6 +95,7 @@ export const createCloudGraphFixture = async () => {
     );
   };
   await record("allocated-scope");
+  const restoreFetch = boundRequests();
   return {
     name,
     options,
@@ -92,12 +108,16 @@ export const createCloudGraphFixture = async () => {
       return state;
     },
     async close() {
-      authorizedGraphScope();
-      await Effect.runPromise(removeEnvironment(name, options));
-      if ((await Effect.runPromise(listEnvironments(name, { cloudflare }))).length)
-        throw new Error("Cloud graph environment was not removed.");
-      await record("cleanup-complete");
-      console.info(`Cloud graph exact cleanup complete: ${name}/${options.environment}`);
+      try {
+        authorizedGraphScope();
+        await Effect.runPromise(removeEnvironment(name, options));
+        if ((await Effect.runPromise(listEnvironments(name, { cloudflare }))).length)
+          throw new Error("Cloud graph environment was not removed.");
+        await record("cleanup-complete");
+        console.info(`Cloud graph exact cleanup complete: ${name}/${options.environment}`);
+      } finally {
+        restoreFetch();
+      }
     },
   };
 };

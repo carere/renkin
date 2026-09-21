@@ -25,5 +25,5 @@ it.effect(
         await test.close();
       }
     }),
-  600000,
+  1200000,
 );

@@ -135,6 +135,7 @@ export const cloudEnvironment = async (
     "cloudflare.worker": cloudflareWorkerService({
       client,
       siteClient,
+      backgroundClient,
       durableObjectClient,
       desired,
       token: lease.token,
