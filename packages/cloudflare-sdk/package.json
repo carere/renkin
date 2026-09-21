@@ -2,9 +2,17 @@
   "name": "@renkin/cloudflare-sdk",
   "version": "0.0.0",
   "private": true,
-  "description": "Cloudflare HTTP clients and types. SDK sourcing remains an open decision.",
+  "description": "Cloudflare HTTP boundary using Distilled.",
   "type": "module",
+  "exports": {
+    "./*": "./src/contexts/root/*.ts"
+  },
+  "dependencies": {
+    "@distilled.cloud/cloudflare": "^1.0.0-rc.12",
+    "effect": "^4.0.0-rc.115"
+  },
   "devDependencies": {
+    "@effect/vitest": "^4.0.0-rc.115",
     "vitest": "^5.0.0"
   }
 }
