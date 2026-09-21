@@ -4,3 +4,18 @@ The initial Cloudflare resource adapter deploys stateless Workers through the re
 
 See [Worker usage and validation](../../docs/worker-first-slice.md) and
 [architecture](../../docs/architecture.md) for interfaces, ownership and limitations.
+
+The opt-in state pressure regression creates one disposable coordinator containing
+only synthetic data, writes and reads twenty 20 MiB encrypted checkpoints, then
+removes its Worker and Durable Object namespace. It requires the normal explicit
+Cloudflare test scope plus `RENKIN_CLOUDFLARE_STATE_PRESSURE_TESTS=true`:
+
+```sh
+bun --bun vitest run --config vitest.cloud.config.ts tests/cloud/root/services/state/state-pressure.test.ts
+```
+
+Run it from this package with the authorized environment already loaded. Local
+workerd tests cannot substitute for this provider memory/admission regression.
+The state wire format and atomic checkpoint transaction remain unchanged; native
+Base64 conversion avoids temporary binary strings on Workers and Bun, with a
+standard Base64 fallback for host tooling that lacks those native APIs.
