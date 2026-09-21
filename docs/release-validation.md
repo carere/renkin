@@ -82,11 +82,10 @@ nor browser reload retries. Two narrow cold network-denied probes and the comple
 maintained artifact test passed after those changes.
 
 Linux and hosted macOS artifact validation now pass (see the final candidate below).
-Installed cloud validation is partial: 10 of 12 non-email test cases passed; two
-custom-host readiness checks failed. The two email suites remain unrun pending
-explicit approval of their payloads and destinations. Source-workspace cloud results
-are not claimed as installed-artifact results. The scaffold publication warning
-remains until release acceptance finishes.
+Installed cloud acceptance remains partial. Subsequent approved runs completed both
+email sends and domain retries; the full graph's cron/update reuse checks remain
+blocked by cloud-state failures. The chronological evidence below distinguishes
+successful assertions, failed attempts and cleanup. The publication warning remains.
 
 The merged candidate's extended macOS harness passed in 34.39s, including an actual
 installed Moon → Bun → `buildAstro` nested command, reuse of its result, recovery of
@@ -128,7 +127,7 @@ Source Checks CI `35635021057` passed all static checks and 219 behavioral tests
 across 14 populated suites. These source results are recorded separately from the
 installed-artifact and cloud results.
 
-## Installed cloud validation: partial, September 21, 2026
+## Initial installed cloud validation, September 21, 2026
 
 The exact final archive above was installed outside the source checkout and used
 unchanged for these provider tests. Nine complete suites passed: Worker, connected
@@ -181,8 +180,43 @@ certificate packs matched the exact `site-fef366d3`, `astro-e6817058`, or
 tokens were revoked. No independent physical-ID inventory of every other resource
 is claimed.
 
-Release acceptance remains incomplete. The remaining criteria are successful
-installed protected-site and SSR custom-host checks, the two authorized email
-suites once approval arrives, their final cleanup audit, and the final release
-review. Ticket #14 remains open and the publication warning remains in place;
-this record does not authorize registry publication.
+## Subsequent approved validation and remaining blockers
+
+The user subsequently approved the two exact email payloads and destinations.
+Background `renkin-test-jobs-7c6919bf/background` passed and cleaned up. The original
+full graph `renkin-test-graph-9fa869f0/full-graph` passed its native flow and accepted
+its one order email, then failed during the cron-only deployment with cloud state
+unavailable. Both messages were accepted once; the shared project count became
+4/20. Neither send was repeated.
+
+Protected-site `renkin-test-site-35047f19` and TanStack SSR
+`renkin-test-ssr-794253e6/framework` passed with a bounded 15-minute custom-domain
+readiness window and normal TLS/content checks. Live inspections showed shared
+certificate packs pending validation with no returned validation errors. Their
+cleanup and final domain/certificate/backend audits passed; temporary inspection
+tokens were revoked and the canonical backend was preserved. The already-passed
+SPA case was deliberately skipped in the SSR retry.
+
+A distinct reuse-only graph run, `renkin-test-graph-cbc3e382/full-graph`, omitted all
+application-flow requests and emails while retaining the original compilation,
+cron and Worker-identity assertions. It failed during initial deployment with the
+same cloud-state error. The first failed graph checkpoint was 21,298,604 bytes,
+pending Storefront bindings; the second was 15,010,028 bytes, pending Auth bindings.
+Both were subsequently readable with no active lease or uncertain provider
+operation. The first was recovered and removed through the installed public API,
+with environment/output absence verified. The second recovery cleanup also failed with cloud state unavailable. Its exact
+`renkin-test-graph-cbc3e382/full-graph` scope remains unresolved and may retain
+resources; ownership state and the isolated consumer were preserved. No cleanup
+claim is made for that scope. These failures do not establish a provider state-size
+limit.
+
+Twelve complete installed suites (13 test cases) have passed. Full-graph acceptance
+is incomplete: its native flow passed, but the cron-only deployment return,
+unchanged compilation count of three, changed cron and stable Tracking Worker ID
+still need proof. The failed graph runs are not counted as passing suites. The
+canonical archive remains unchanged; no additional email is needed for these checks.
+Later source Checks `35640386188` and its single unchanged retry also failed at
+local startup (SSR, then the full graph), despite the earlier 219-test pass and
+successful release-artifact CI. Investigation is separate from the cloud failures.
+Ticket #14 and release acceptance remain open; the publication warning stays in
+place and no registry publication has occurred.

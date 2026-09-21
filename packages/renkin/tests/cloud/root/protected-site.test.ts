@@ -345,14 +345,20 @@ it.live(
       }
       if (failures.length) throw new AggregateError(failures, "Protected-site validation failed.");
     }),
-  480_000,
+  1_200_000,
 );
 
 const waitForSite = async (test: Scenario, headers: Record<string, string>) => {
   let last = "";
-  for (let attempt = 0; attempt < 180; attempt++) {
+  // Provider certificate validation may outlast Worker publication readiness.
+  const deadline = Date.now() + 900_000;
+  while (Date.now() < deadline) {
     try {
-      const response = await fetch(`https://${test.hostname}`, { headers, redirect: "manual" });
+      const response = await fetch(`https://${test.hostname}`, {
+        headers,
+        redirect: "manual",
+        signal: AbortSignal.timeout(Math.max(1, Math.min(10_000, deadline - Date.now()))),
+      });
       const body = await response.text();
       if (response.ok && body.includes("protected-one")) return;
       const status = `HTTP ${response.status}; type=${response.headers.get("content-type")}; redirect=${response.headers.get("location") ? new URL(response.headers.get("location") ?? "", response.url).hostname : "none"}; expectedAsset=${body.includes("protected-one")}; api=${body === "api"}`;

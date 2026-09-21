@@ -67,10 +67,12 @@ cog check --ignore-merge-commits       # Commit history, once commits exist
 ```
 
 Foundation validation runs Biome, TypeScript, Knip and manifest sorting directly.
-TypeScript checks the workspace-owned tool configurations. The Worker slice has behavioral unit, integration and separately invoked
-credentialed Cloudflare tests. CI runs the populated local suites. Test tasks
-remain strict and fail for empty suites; untouched apps and framework workspaces
-still have no behavioral tests. Release artifact validation remains outstanding.
+TypeScript checks the workspace-owned tool configurations. Populated behavioral
+suites cover resources, runtime, frameworks, example apps and the full local graph;
+credentialed Cloudflare suites run separately. Empty test projects remain strict.
+Standalone artifact validation passed on Linux and macOS. Installed cloud acceptance
+is partial, and subsequent source CI startup failures remain under investigation;
+see [release validation](docs/release-validation.md) for exact evidence and limits.
 
 Each workspace owns its `vitest.config.ts` and its Moon test tasks. Its initial
 unit and integration projects discover local `tests/unit/**/*.test.ts` and

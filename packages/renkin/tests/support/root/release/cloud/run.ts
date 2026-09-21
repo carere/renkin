@@ -48,6 +48,8 @@ export const runInstalledCloud = async (
   consumerDirectory: string,
   scopeEnvironment: Readonly<Record<string, string>>,
   suites: readonly CloudSuite[] = cloudSuites,
+  testNamePattern?: string,
+  graphReuseOnly = false,
 ): Promise<void> => {
   const authorized = scope(scopeEnvironment);
   if (!process.versions.bun) throw new Error("Installed cloud harness requires Bun.");
@@ -74,6 +76,7 @@ export const runInstalledCloud = async (
     CLOUDFLARE_AUTH_USE_KEYRING: "false",
     PROTO_OFFLINE: "true",
     NO_COLOR: "1",
+    ...(graphReuseOnly ? { RENKIN_CLOUDFLARE_GRAPH_REUSE_ONLY: "true" } : {}),
   };
   await new Promise<void>((resolve, reject) => {
     const child = spawn(
@@ -85,6 +88,7 @@ export const runInstalledCloud = async (
         "--config",
         "vitest.installed-cloud.config.ts",
         ...suites.map((name) => `tests/cloud/root/${name}.test.ts`),
+        ...(testNamePattern ? ["--testNamePattern", testNamePattern] : []),
       ],
       {
         cwd: join(directory, "packages/renkin"),
