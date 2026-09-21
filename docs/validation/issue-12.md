@@ -15,7 +15,7 @@ packaging and shared build caching remain separate tickets.
 | Production page generation | Actual official workerd prerender, native resource binding unavailable during generation; explicit Node fallback separately verified. |
 | Configuration and build output | Base paths/trailing slash, alternate config file, Vite source-map hooks, maps retained as build output, assets/headers and separate SSR modules. |
 | Native local behavior | Request-scoped graph bindings, native persistent KV, source reload, browser sessions, no Cloudflare credentials. |
-| Cloud behavior and cleanup | Dedicated maintained cloud scenario exists; actual publication validation is still pending the shared failure investigation below. |
+| Cloud behavior and cleanup | Dedicated maintained cloud scenario exists; actual cloud validation is still pending after the shared state-serialization fix below. |
 
 ## Local evidence
 
@@ -62,7 +62,7 @@ was performed by this ticket.
   combined build; its empty environment was removed.
 - `renkin-test-astro-c559686b/preview`, `renkin-test-astro-edffc9b2/preview` and
   `renkin-test-astro-54773f62/preview` passed build and provisioned two Workers,
-  two KV namespaces and their exact custom domain, then failed at publication.
+  two KV namespaces and their exact custom domain, then failed during the final deployment-state planning pass.
   Finally blocks removed the owned domain, Workers, KV namespaces and empty
   environment in every case. These are failed acceptance runs, not cloud success.
 - Exact-host certificate inventories for c559686b and edffc9b2 found zero packs;
@@ -70,6 +70,14 @@ was performed by this ticket.
 - A response-only diagnostic for 54773f62 observed no failing mutation gateway
   HTTP status. Its synthetic check proved that it preserved request/response
   bodies and emitted only numeric codes and fixed error categories.
+- A deterministic local reproduction identified the shared cause: prepared
+  resources retained executable builder functions, and the final core planning
+  pass attempted to clone them. The public deployment boundary now projects only
+  `ResourceDefinition` fields into durable state. Development retains its
+  executable recipe options. The maintained real-file-state regression passes
+  initial deployment, repeated deployment and removal without `DataCloneError`.
+  Astro built-artifact/session and native development regressions also pass with
+  that fix. This is local evidence; no cloud rerun has occurred after the fix.
 - The actual SSR build artifact passed local asset session/upload and SDK
   multi-module publication through an inert capture gateway: 22 script parts,
   nested chunks preserved, approximately 655 KB multipart payload. This proves
