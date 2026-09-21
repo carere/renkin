@@ -4,7 +4,14 @@ import { join } from "node:path";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { defineStack, development, type WorkerBuildResult } from "renkin";
-import { worker } from "renkin/cloudflare";
+import {
+  accessApplication,
+  accessPolicy,
+  accessServiceToken,
+  customDomain,
+  observabilityDestination,
+  worker,
+} from "renkin/cloudflare";
 
 it.live(
   "runs an external build through public development with assets, routing and reload",
@@ -32,13 +39,10 @@ it.live(
         },
         compatibilityDate: "2026-07-30",
       };
-      const session = yield* development(
-        defineStack({
-          name: "external",
-          resources: [worker("site", { build, compatibilityDate: "2026-07-30" })],
-        }),
-        { directory: join(directory, "state"), watch: false },
-      );
+      const session = yield* development(protectedStack(build), {
+        directory: join(directory, "state"),
+        watch: false,
+      });
       const site = session.workers.site;
       if (!site) throw new Error("Missing site Worker");
       const response = yield* Effect.promise(() => site.fetch());
@@ -65,3 +69,43 @@ it.live(
     }).pipe(Effect.scoped),
   30_000,
 );
+
+const protectedStack = (build: WorkerBuildResult) => {
+  const token = accessServiceToken("token", { name: "token", duration: "1h" });
+  const policy = accessPolicy("policy", {
+    name: "policy",
+    decision: "non_identity",
+    serviceTokens: [token],
+  });
+  const app = accessApplication("access", {
+    name: "site",
+    domain: "site.example",
+    policies: [policy],
+  });
+  const site = worker("site", {
+    build,
+    compatibilityDate: "2026-07-30",
+    workersDev: false,
+    dependencies: [app],
+  });
+  return defineStack({
+    name: "external",
+    resources: [
+      token,
+      policy,
+      app,
+      site,
+      customDomain("domain", {
+        hostname: "site.example",
+        zoneId: "local-no-provider-zone",
+        worker: site,
+        access: app,
+      }),
+      observabilityDestination("traces", {
+        name: "traces",
+        url: "https://not-contacted.example",
+        logpushDataset: "opentelemetry-traces",
+      }),
+    ],
+  });
+};

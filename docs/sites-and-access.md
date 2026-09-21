@@ -86,7 +86,9 @@ log invocation settings and query-string redaction. A destination's endpoint
 must accept Cloudflare's validation request before creation.
 
 `development` runs external builds and native assets without Cloudflare
-credentials, including rebuild reloads. Local execution does not emulate Access
+credentials, including rebuild reloads. The same stack may declare Access, domain
+and observability resources: local execution skips those control-plane operations
+and does not create service-token credentials. Local HTTP remains unauthenticated. Local execution does not emulate Access
 login, Access service-token enforcement, custom-domain DNS or TLS issuance,
 OpenTelemetry export delivery, or third-party OAuth redirects and provider
 callbacks. Validate those flows separately in an authorized cloud environment.

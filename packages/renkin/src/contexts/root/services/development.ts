@@ -47,7 +47,16 @@ const start = async (stack: Stack, options: DevelopmentOptions) => {
         namespaces[resource.id] = state.resources[resource.id]?.physicalId ?? resource.id;
       else if (resource.type === "cloudflare.worker" && "options" in resource)
         workerResources.push(resource as WorkerResource);
-      else throw new Error("Unsupported local resource.");
+      else if (
+        ![
+          "cloudflare.access-service-token",
+          "cloudflare.access-policy",
+          "cloudflare.access-application",
+          "cloudflare.custom-domain",
+          "cloudflare.observability-destination",
+        ].includes(resource.type)
+      )
+        throw new Error("Unsupported local resource.");
     }
     for (const id of Object.keys(state.resources))
       if (!stack.resources.some((resource) => resource.id === id)) delete state.resources[id];
