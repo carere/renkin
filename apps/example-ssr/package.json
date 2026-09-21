@@ -4,7 +4,13 @@
   "private": true,
   "description": "TanStack Start with Solid SSR example and validation app.",
   "type": "module",
+  "imports": {
+    "#project/*": "./*",
+    "#src/*": "./src/*",
+    "#test-support/*": "./tests/support/*"
+  },
   "dependencies": {
+    "@tanstack/solid-query": "^5.103.2",
     "@tanstack/solid-router": "^1.170.36",
     "@tanstack/solid-start": "^1.168.54",
     "effect": "^4.0.0-rc.115",

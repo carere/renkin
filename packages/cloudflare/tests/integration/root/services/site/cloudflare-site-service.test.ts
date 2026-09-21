@@ -4,9 +4,9 @@ import { expect, it } from "@effect/vitest";
 import type { MutationGateway } from "@renkin/cloudflare-sdk/services/cloudflare-client/cloudflare-client";
 import { createSiteClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/site-client";
 import { Effect } from "effect";
-import { customDomain } from "../../../../../src/contexts/root/models/site.ts";
-import { worker } from "../../../../../src/contexts/root/models/worker.ts";
-import { cloudflareSiteServices } from "../../../../../src/contexts/root/services/site/cloudflare-site-service.ts";
+import { customDomain } from "#src/contexts/root/models/site.ts";
+import { worker } from "#src/contexts/root/models/worker.ts";
+import { cloudflareSiteServices } from "#src/contexts/root/services/site/cloudflare-site-service.ts";
 
 it.live("moves an owned domain to its replacement Worker and observes the resulting route", () =>
   Effect.promise(async () => {

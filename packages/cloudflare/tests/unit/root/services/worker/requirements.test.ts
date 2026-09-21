@@ -1,8 +1,8 @@
 import { expect, it } from "@effect/vitest";
 import type { ResourceDefinition } from "@renkin/core/models/stack";
 import { Effect } from "effect";
-import { kv } from "../../../../../src/contexts/root/models/kv.ts";
-import { finalizeRequirements } from "../../../../../src/contexts/root/services/worker/prepare-requirements.ts";
+import { kv } from "#src/contexts/root/models/kv.ts";
+import { finalizeRequirements } from "#src/contexts/root/services/worker/prepare-requirements.ts";
 
 it.effect("rejects undeclared and incorrectly typed binding targets before provisioning", () =>
   Effect.sync(() => {

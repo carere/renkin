@@ -7,7 +7,7 @@ import { Effect } from "effect";
 import { chromium, type Page } from "playwright";
 import { development } from "renkin";
 import { applicationFixture, capturedEmails, scheduled } from "renkin/testing";
-import type { graph as fixtureGraph } from "../../../fixtures/full-graph/graph.ts";
+import type { graph as fixtureGraph } from "#test-fixtures/full-graph/graph.ts";
 
 import { assertIsolated } from "./network-control.ts";
 

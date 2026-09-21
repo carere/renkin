@@ -2,8 +2,8 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import type { GatewayRequest } from "../../../../../src/contexts/root/services/cloudflare-client/cloudflare-client.ts";
-import { createR2Client } from "../../../../../src/contexts/root/services/cloudflare-client/r2-client.ts";
+import type { GatewayRequest } from "#src/contexts/root/services/cloudflare-client/cloudflare-client.ts";
+import { createR2Client } from "#src/contexts/root/services/cloudflare-client/r2-client.ts";
 
 const fixture = (status = 200) =>
   Effect.acquireRelease(

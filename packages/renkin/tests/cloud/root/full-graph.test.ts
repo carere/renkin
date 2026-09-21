@@ -3,8 +3,8 @@ import { Effect } from "effect";
 import {
   assertCloudCron,
   assertCloudFlow,
-} from "../../support/root/cloud-full-graph/assertions.ts";
-import { createCloudGraphFixture } from "../../support/root/cloud-full-graph/fixture.ts";
+} from "#test-support/root/cloud-full-graph/assertions.ts";
+import { createCloudGraphFixture } from "#test-support/root/cloud-full-graph/fixture.ts";
 
 const reuseOnly = process.env.RENKIN_CLOUDFLARE_GRAPH_REUSE_ONLY === "true";
 

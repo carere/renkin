@@ -31,7 +31,7 @@ export const tanstackStart = (id: string, options: TanStackOptions): TanStackRes
         const moduleUrl = new URL("../services/tanstack/build-tanstack.ts", import.meta.url);
         const { buildTanStack } = (await import(
           moduleUrl.href
-        )) as typeof import("../services/tanstack/build-tanstack.ts");
+        )) as typeof import("#src/contexts/root/services/tanstack/build-tanstack.ts");
         return buildTanStack(website, context);
       },
       develop: async (context) => {
@@ -39,7 +39,7 @@ export const tanstackStart = (id: string, options: TanStackOptions): TanStackRes
         const { developTanStack } = (await frameworkStartup(
           "load-tanstack-development",
           () => import(moduleUrl.href),
-        )) as typeof import("../services/tanstack/develop-tanstack.ts");
+        )) as typeof import("#src/contexts/root/services/tanstack/develop-tanstack.ts");
         return frameworkStartup("invoke-tanstack-development", () =>
           developTanStack(website, context),
         );

@@ -3,9 +3,9 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import { assembleRelease } from "./src/contexts/root/services/release/assemble.ts";
-import { sha256File } from "./src/contexts/root/services/release/build-info.ts";
-import { validateRelease } from "./src/contexts/root/services/release/validate.ts";
+import { assembleRelease } from "#src/contexts/root/services/release/assemble.ts";
+import { sha256File } from "#src/contexts/root/services/release/build-info.ts";
+import { validateRelease } from "#src/contexts/root/services/release/validate.ts";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const stage = join(root, ".renkin/release/package");

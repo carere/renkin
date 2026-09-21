@@ -1,7 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { WorkerOptions } from "miniflare";
-import type { Requirements } from "../../models/binding.ts";
+import type { Requirements } from "#src/contexts/root/models/binding.ts";
 
 export interface LocalWorkflow {
   readonly name: string;

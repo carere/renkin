@@ -8,7 +8,7 @@ import { chromium } from "playwright";
 import { defineStack, development } from "renkin";
 import { buildAstro } from "renkin/astro";
 import { worker } from "renkin/cloudflare";
-import { site } from "../../../renkin.ts";
+import { site } from "#project/renkin.ts";
 
 it.effect(
   "runs the built SSR website with native bindings, sessions and workerd page generation",

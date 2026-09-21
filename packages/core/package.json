@@ -4,6 +4,10 @@
   "private": true,
   "description": "Effect-based infrastructure engine, stacks, dependency graph, bindings, state and reconciliation.",
   "type": "module",
+  "imports": {
+    "#src/*": "./src/*",
+    "#test-support/*": "./tests/support/*"
+  },
   "exports": {
     "./*": "./src/contexts/root/*.ts"
   },

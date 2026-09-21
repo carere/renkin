@@ -5,9 +5,9 @@ import type {
   WorkerDevelopmentSession,
 } from "@renkin/runtime/models/worker-builder";
 import { createServer } from "vite";
-import { frameworkStartup } from "../../models/framework-startup.ts";
-import type { TanStackOptions } from "../../models/tanstack.ts";
-import { createPlatformBridge } from "../development/platform-bridge.ts";
+import { frameworkStartup } from "#src/contexts/root/models/framework-startup.ts";
+import type { TanStackOptions } from "#src/contexts/root/models/tanstack.ts";
+import { createPlatformBridge } from "#src/contexts/root/services/development/platform-bridge.ts";
 
 export const developTanStack = async (
   options: TanStackOptions,

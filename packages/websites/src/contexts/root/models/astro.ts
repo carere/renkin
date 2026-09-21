@@ -51,14 +51,14 @@ export const astro = (id: string, options: AstroOptions): AstroResource => {
         const entry = new URL("../services/astro/build-astro.ts", import.meta.url);
         const module = (await import(
           entry.href
-        )) as typeof import("../services/astro/build-astro.ts");
+        )) as typeof import("#src/contexts/root/services/astro/build-astro.ts");
         return module.buildAstro(options, {}, context);
       },
       develop: async (context) => {
         const entry = new URL("../services/astro/develop-astro.ts", import.meta.url);
         const module = (await import(
           entry.href
-        )) as typeof import("../services/astro/develop-astro.ts");
+        )) as typeof import("#src/contexts/root/services/astro/develop-astro.ts");
         return module.developAstro(options, context);
       },
     },

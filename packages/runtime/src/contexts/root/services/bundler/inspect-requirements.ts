@@ -1,6 +1,6 @@
 import { Log, LogLevel, Miniflare, supportedCompatibilityDate } from "miniflare";
-import type { BindingRequirement, Requirements } from "../../models/binding.ts";
-import { validateEmailOptions } from "../../models/email.ts";
+import type { BindingRequirement, Requirements } from "#src/contexts/root/models/binding.ts";
+import { validateEmailOptions } from "#src/contexts/root/models/email.ts";
 
 const inspect = (value: unknown): Requirements => {
   if (!value || typeof value !== "object" || Array.isArray(value))

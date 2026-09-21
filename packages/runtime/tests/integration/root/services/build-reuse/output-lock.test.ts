@@ -4,7 +4,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { expect, it } from "@effect/vitest";
-import { withBuildOutput } from "../../../../../src/contexts/root/services/build-reuse/output-lock.ts";
+import { withBuildOutput } from "#src/contexts/root/services/build-reuse/output-lock.ts";
 
 it("rejects another process while output is owned and releases only after its capture completes", async () => {
   const directory = await mkdtemp(resolve(tmpdir(), "renkin-output-owner-"));

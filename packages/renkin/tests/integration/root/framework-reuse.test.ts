@@ -3,7 +3,7 @@ import { dirname, resolve } from "node:path";
 import { expect, it } from "@effect/vitest";
 import { prepareStack } from "@renkin/cloudflare/services/worker/prepare-stack";
 import { defineStack } from "renkin";
-import { appendInput, type Mode, reuseFixture } from "../../support/root/build/reuse-fixture.ts";
+import { appendInput, type Mode, reuseFixture } from "#test-support/root/build/reuse-fixture.ts";
 
 type Fixture = Awaited<ReturnType<typeof reuseFixture>>;
 

@@ -7,7 +7,7 @@ import { type Browser, chromium } from "playwright";
 import { defineStack, development } from "renkin";
 import { buildAstro } from "renkin/astro";
 import { worker } from "renkin/cloudflare";
-import { site } from "../../../renkin.ts";
+import { site } from "#project/renkin.ts";
 
 const navigateAbout = async (browser: Browser, url: string) => {
   const page = await browser.newPage();

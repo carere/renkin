@@ -4,6 +4,9 @@
   "private": true,
   "description": "Cloudflare HTTP boundary using Distilled.",
   "type": "module",
+  "imports": {
+    "#src/*": "./src/*"
+  },
   "exports": {
     "./*": "./src/contexts/root/*.ts"
   },

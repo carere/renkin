@@ -1,6 +1,11 @@
 import { AwsClient } from "aws4fetch";
 import { defineWorker, workerReference } from "renkin/worker";
-import { Files, Orders, PendingOrders, UploadToken } from "../shared/resources.ts";
+import {
+  Files,
+  Orders,
+  PendingOrders,
+  UploadToken,
+} from "#test-fixtures/full-graph/shared/resources.ts";
 
 export default defineWorker(
   { Auth: workerReference("Auth"), Orders, Files, PendingOrders, UploadToken },

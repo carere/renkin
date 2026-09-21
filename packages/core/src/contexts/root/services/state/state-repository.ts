@@ -1,4 +1,4 @@
-import type { EnvironmentState } from "../../models/state.ts";
+import type { EnvironmentState } from "#src/contexts/root/models/state.ts";
 
 export interface StateLease {
   /** Authoritative fencing token, when the repository routes remote mutations. */

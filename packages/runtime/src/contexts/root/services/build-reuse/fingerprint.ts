@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { lstat, readdir, readFile, realpath } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import ignore from "ignore";
-import type { BuildProducer, BuildValue } from "../../models/build-reuse.ts";
+import type { BuildProducer, BuildValue } from "#src/contexts/root/models/build-reuse.ts";
 import { workspaceInputs } from "./workspace-inputs.ts";
 
 export const digest = (value: string | Uint8Array): string =>

@@ -1,11 +1,11 @@
 import { expect, it } from "@effect/vitest";
 import type { ResourceState } from "@renkin/core/models/state";
 import { Effect } from "effect";
-import { durableObject } from "../../../../../src/contexts/root/models/durable-object.ts";
+import { durableObject } from "#src/contexts/root/models/durable-object.ts";
 import {
   durableObjectLedger,
   durableObjectMetadata,
-} from "../../../../../src/contexts/root/services/durable-object/worker-durable-objects.ts";
+} from "#src/contexts/root/services/durable-object/worker-durable-objects.ts";
 
 const owner: ResourceState = {
   definition: {

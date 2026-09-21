@@ -3,9 +3,12 @@ import {
   deploy as apply,
   planDeployment as preview,
   removeEnvironment as remove,
-} from "./services/deployment.ts";
-import { development as local } from "./services/development.ts";
-import { listEnvironments as list, readOutputs as outputs } from "./services/read-environment.ts";
+} from "#src/contexts/root/services/deployment/deployment.ts";
+import { development as local } from "#src/contexts/root/services/development/development.ts";
+import {
+  listEnvironments as list,
+  readOutputs as outputs,
+} from "#src/contexts/root/services/read-environment.ts";
 
 export const defineStack = stackDefinition;
 export const output = stackOutput;
@@ -27,12 +30,12 @@ export type AssetRouting = Routing;
 import {
   inspectRecovery as inspect,
   reconcileOperation as reconcile,
-} from "./services/recovery.ts";
+} from "#src/contexts/root/services/recovery.ts";
 export const inspectRecovery = inspect;
 export const reconcileOperation = reconcile;
 
 import { buildCommand as command } from "@renkin/runtime/services/build-command/build-command";
-import { withBuildCommand as external } from "./services/build/with-build-command.ts";
+import { withBuildCommand as external } from "#src/contexts/root/services/build/with-build-command.ts";
 export const buildCommand = command;
 export const withBuildCommand = external;
 

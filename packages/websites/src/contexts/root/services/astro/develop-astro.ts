@@ -6,8 +6,8 @@ import type {
   WorkerDevelopmentSession,
 } from "@renkin/runtime/models/worker-builder";
 import { type AstroInlineConfig, dev } from "astro";
-import type { AstroBuildOptions } from "../../models/astro-options.ts";
-import { createPlatformBridge } from "../development/platform-bridge.ts";
+import type { AstroBuildOptions } from "#src/contexts/root/models/astro-options.ts";
+import { createPlatformBridge } from "#src/contexts/root/services/development/platform-bridge.ts";
 
 const driverEntry = async (directory: string, binding: string): Promise<string> => {
   await mkdir(directory, { recursive: true, mode: 0o700 });

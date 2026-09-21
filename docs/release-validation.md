@@ -40,9 +40,9 @@ Its inventory contains 341 files and 522 checked relative references.
 [Release CI](https://github.com/carere/renkin/actions/runs/35656934871) passed
 on Ubuntu 24.04 and macOS 15. The exact Linux bytes also passed the full local
 macOS installed-consumer harness in 39.47 seconds without repacking.
-[Source CI](https://github.com/carere/renkin/actions/runs/35656934762) passed
-227 tests across 14 populated tasks and all static checks. Four offline cloud-harness
-preparation tests passed separately and are now wired into ordinary Checks.
+[Source CI](https://github.com/carere/renkin/actions/runs/35658651597) at `2909af0` passed
+231 tests across 15 populated tasks and all static checks, including four offline
+cloud-harness preparation tests.
 
 | Candidate | Actual Cloudflare evidence |
 | --- | --- |
@@ -222,7 +222,11 @@ certificate packs matched the exact `site-fef366d3`, `astro-e6817058`, or
 tokens were revoked. No independent physical-ID inventory of every other resource
 is claimed.
 
-## Subsequent approved validation and remaining blockers
+## Historical validation and blockers (superseded)
+
+This section records intermediate candidates and failures before the completed
+acceptance above. Its former blockers are resolved; the chronology does not
+change the candidate-specific cloud evidence.
 
 The user subsequently approved the two exact email payloads and destinations.
 Background `renkin-test-jobs-7c6919bf/background` passed and cleaned up. The original
@@ -253,16 +257,17 @@ A temporary diagnostic tail was removed. The canonical backend's code, secrets,
 namespace and ownership state were preserved. These failures alone did not
 establish a provider state-size limit.
 
-Twelve complete installed suites (13 test cases) have passed. Full-graph acceptance
-is incomplete: its native flow passed, but the cron-only deployment return,
+At this intermediate checkpoint, twelve complete installed suites (13 test cases)
+had passed. Full-graph acceptance was incomplete: its native flow passed, but the cron-only deployment return,
 unchanged compilation count of three, changed cron and stable Tracking Worker ID
-still need proof. The failed graph runs are not counted as passing suites. The
-canonical archive remains unchanged; no additional email is needed for these checks.
+still needed proof. The failed graph runs were not counted as passing suites. The
+canonical archive remained unchanged; no additional email was needed for these checks.
 Later source Checks `35640386188` and its single unchanged retry also failed at
 local startup (SSR, then the full graph), despite the earlier 219-test pass and
 successful release-artifact CI. Investigation is separate from the cloud failures.
-Ticket #14 and release acceptance remain open; the publication warning stays in
-place and no registry publication has occurred.
+Ticket #14 and release acceptance were still open at that point, with a publication
+warning in place. The completed acceptance above supersedes that status. No registry
+publication has occurred.
 
 ### Repeated large-checkpoint regression
 

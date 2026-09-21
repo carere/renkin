@@ -1,13 +1,14 @@
-import type { EnvironmentState } from "../../../../../src/contexts/root/models/state.ts";
-import { assertEmptyState } from "../../../../../src/contexts/root/services/state/empty-state.ts";
+import type { EnvironmentState } from "#src/contexts/root/models/state.ts";
 import type {
   StateLease,
   StateRepository,
-} from "../../../../../src/contexts/root/services/state/state-repository.ts";
+} from "#src/contexts/root/services/state/state-repository.ts";
 
 export class InMemoryStateRepository implements StateRepository {
   value: EnvironmentState | undefined;
   written: EnvironmentState | undefined;
+  removeEmptyCalls = 0;
+  removeEmptyError: Error | undefined;
   async read() {
     return this.value;
   }
@@ -22,9 +23,8 @@ export class InMemoryStateRepository implements StateRepository {
         this.written = structuredClone(state);
       },
       removeEmpty: async () => {
-        assertEmptyState(this.written ?? this.value);
-        this.value = undefined;
-        this.written = undefined;
+        this.removeEmptyCalls++;
+        if (this.removeEmptyError) throw this.removeEmptyError;
       },
       release: async () => {},
     };

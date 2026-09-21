@@ -4,6 +4,10 @@
   "private": true,
   "description": "Selected Cloudflare resources and capabilities implemented through the SDK.",
   "type": "module",
+  "imports": {
+    "#src/*": "./src/*",
+    "#test-support/*": "./tests/support/*"
+  },
   "exports": {
     "./*": "./src/contexts/root/*.ts"
   },

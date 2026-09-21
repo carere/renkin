@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { readFile, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import type { WorkerBuildResult } from "../../models/build-result.ts";
-import type { BuildProducer, WorkerBuildContext } from "../../models/build-reuse.ts";
+import type { WorkerBuildResult } from "#src/contexts/root/models/build-result.ts";
+import type { BuildProducer, WorkerBuildContext } from "#src/contexts/root/models/build-reuse.ts";
 import { captureArtifact, saveArtifact } from "./artifact.ts";
 import { canonicalBuildValue, digest, fingerprint } from "./fingerprint.ts";
 import { withBuildOutput } from "./output-lock.ts";

@@ -3,7 +3,7 @@ import type { AddressInfo } from "node:net";
 import { expect, it } from "@effect/vitest";
 import { createBackgroundClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/background-client";
 import { Effect } from "effect";
-import { boundRequests } from "../../support/root/cloud-full-graph/bounded-fetch.ts";
+import { boundRequests } from "#test-support/root/cloud-full-graph/bounded-fetch.ts";
 
 it("bounded cloud requests preserve SDK pagination auth when fetch receives Request as init", async () => {
   let authorization: string | undefined;

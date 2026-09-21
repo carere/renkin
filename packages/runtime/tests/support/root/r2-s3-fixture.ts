@@ -4,8 +4,8 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { AwsClient } from "aws4fetch";
 import { Miniflare } from "miniflare";
-import type { NativeR2 } from "../../../src/contexts/root/models/r2.ts";
-import { bundleWorker } from "../../../src/contexts/root/services/bundler/worker-bundler.ts";
+import type { NativeR2 } from "#src/contexts/root/models/r2.ts";
+import { bundleWorker } from "#src/contexts/root/services/bundler/worker-bundler.ts";
 
 interface SignOptions {
   readonly bucket?: string;

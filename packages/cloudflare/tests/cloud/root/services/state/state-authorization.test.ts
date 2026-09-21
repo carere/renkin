@@ -4,7 +4,7 @@ import { expect, it } from "@effect/vitest";
 import { readStateAuth } from "@renkin/cloudflare-sdk/services/cloudflare-client/state-preview-client";
 import { bundleWorker } from "@renkin/runtime/services/bundler/worker-bundler";
 import { Effect } from "effect";
-import { ensureCloudflareState } from "../../../../../src/contexts/root/services/state/bootstrap-cloudflare-state.ts";
+import { ensureCloudflareState } from "#src/contexts/root/services/state/bootstrap-cloudflare-state.ts";
 
 const scope = () => {
   const env = process.env;

@@ -4,7 +4,7 @@ import { drizzle } from "drizzle-orm/d1";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { Effect } from "effect";
 import { Miniflare } from "miniflare";
-import { d1Client, guardD1, type NativeD1 } from "../../../../../src/contexts/root/models/d1.ts";
+import { d1Client, guardD1, type NativeD1 } from "#src/contexts/root/models/d1.ts";
 
 const users = sqliteTable("users", {
   id: integer("id").primaryKey(),

@@ -2,7 +2,7 @@ import { expect, it } from "@effect/vitest";
 import {
   moduleSpecifiers,
   rewriteSpecifiers,
-} from "../../../../../src/contexts/root/services/release/module-specifiers.ts";
+} from "#src/contexts/root/services/release/module-specifiers.ts";
 
 it("rewrites only module and import-meta URL syntax, preserving consumer source strings", () => {
   const source = `import { value } from '@renkin/core/models/stack';

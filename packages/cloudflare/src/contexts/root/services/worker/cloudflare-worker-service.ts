@@ -16,7 +16,7 @@ import {
   durableObjectMetadata,
   observedDurableObjectClasses,
   prepareDurableObjectLedger,
-} from "../durable-object/worker-durable-objects.ts";
+} from "#src/contexts/root/services/durable-object/worker-durable-objects.ts";
 import { backgroundBinding } from "./background-bindings.ts";
 import {
   assertNoOwnedWorkflows,

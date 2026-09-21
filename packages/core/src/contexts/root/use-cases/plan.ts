@@ -1,5 +1,5 @@
-import type { Json, ResourceDefinition, Stack } from "../models/stack.ts";
-import type { Change, EnvironmentState } from "../models/state.ts";
+import type { Json, ResourceDefinition, Stack } from "#src/contexts/root/models/stack.ts";
+import type { Change, EnvironmentState } from "#src/contexts/root/models/state.ts";
 import { renamedState } from "./rename.ts";
 
 export const canonical = (value: Json): string => {

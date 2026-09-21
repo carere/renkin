@@ -2,8 +2,8 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { createBackgroundClient } from "../../../../../src/contexts/root/services/cloudflare-client/background-client.ts";
-import type { GatewayRequest } from "../../../../../src/contexts/root/services/cloudflare-client/cloudflare-client.ts";
+import { createBackgroundClient } from "#src/contexts/root/services/cloudflare-client/background-client.ts";
+import type { GatewayRequest } from "#src/contexts/root/services/cloudflare-client/cloudflare-client.ts";
 
 const fixture = (failWrites = false) =>
   Effect.acquireRelease(

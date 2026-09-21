@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { stat, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { externalNetworkAvailable } from "../full-graph/network-control.ts";
+import { externalNetworkAvailable } from "#test-support/root/full-graph/network-control.ts";
 import { execute, type InstalledConsumer } from "./consumer.ts";
 
 export const verifyGraph = async (consumer: InstalledConsumer) => {

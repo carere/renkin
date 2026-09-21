@@ -7,7 +7,7 @@ import { type Browser, chromium } from "playwright";
 import { defineStack, development, type WorkerBuildResult } from "renkin";
 import { worker } from "renkin/cloudflare";
 import { buildTanStack } from "renkin/vite";
-import { site } from "../../resources.ts";
+import { site } from "#project/resources.ts";
 import { createBuildProbe } from "./build-probe.ts";
 
 const inspectBrowser = async (browser: Browser, url: string) => {
@@ -103,7 +103,16 @@ const check = async () => {
       assert.deepEqual(value, { value: 1, stage: "development" });
       const response = await fetch(url);
       assert.equal(response.headers.get("x-renkin-example-entry"), "custom");
-      assert.match(await response.text(), /Stored count:/);
+      assert.match(
+        (await response.text()).replace(/<[^>]*>/g, ""),
+        /Stored count: 1; stage: development/,
+      );
+      await fetch(new URL("/api/counter", url), { method: "POST" });
+      const nextRequest = await fetch(url);
+      assert.match(
+        (await nextRequest.text()).replace(/<[^>]*>/g, ""),
+        /Stored count: 2; stage: development/,
+      );
       await page.close();
     });
   } finally {

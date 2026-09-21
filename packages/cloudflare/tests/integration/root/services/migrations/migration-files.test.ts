@@ -6,7 +6,7 @@ import { Effect } from "effect";
 import {
   orderSqlNames,
   readMigrationFiles,
-} from "../../../../../src/contexts/root/services/migrations/migration-files.ts";
+} from "#src/contexts/root/services/migrations/migration-files.ts";
 
 const directory = Effect.acquireRelease(
   Effect.promise(() => mkdtemp(join(tmpdir(), "renkin-migrations-"))),

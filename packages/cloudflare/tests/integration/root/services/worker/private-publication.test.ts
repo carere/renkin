@@ -8,7 +8,7 @@ import {
 import { createSiteClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/site-client";
 import type { ResourceState } from "@renkin/core/models/state";
 import { Effect } from "effect";
-import { cloudflareWorkerService } from "../../../../../src/contexts/root/services/worker/cloudflare-worker-service.ts";
+import { cloudflareWorkerService } from "#src/contexts/root/services/worker/cloudflare-worker-service.ts";
 
 const fixture = (rejectClosure: boolean) =>
   Effect.acquireRelease(

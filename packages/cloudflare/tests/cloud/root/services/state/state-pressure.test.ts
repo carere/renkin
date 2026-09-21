@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import type { StateLease } from "@renkin/core/services/state/state-repository";
 import { expect, it } from "vitest";
-import { ensureCloudflareState } from "../../../../../src/contexts/root/services/state/bootstrap-cloudflare-state.ts";
-import { CloudflareStateRepository } from "../../../../../src/contexts/root/services/state/cloudflare-state-repository.ts";
+import { ensureCloudflareState } from "#src/contexts/root/services/state/bootstrap-cloudflare-state.ts";
+import { CloudflareStateRepository } from "#src/contexts/root/services/state/cloudflare-state-repository.ts";
 
 type Provider = (path: string, method?: string) => Promise<Response>;
 const removeBackend = async (provider: Provider, scriptName: string): Promise<void> => {

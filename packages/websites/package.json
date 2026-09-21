@@ -4,6 +4,9 @@
   "private": true,
   "description": "TanStack SPA/SSR and Astro SSG build and deployment integration, including public Vite integration.",
   "type": "module",
+  "imports": {
+    "#src/*": "./src/*"
+  },
   "exports": {
     "./*": "./src/contexts/root/*.ts"
   },

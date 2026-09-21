@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { removeEnvironment } from "renkin";
-import { createCloudD1Fixture, readCloudD1 } from "../../support/root/cloud-d1-fixture.ts";
+import { createCloudD1Fixture, readCloudD1 } from "#test-support/root/cloud-d1-fixture.ts";
 
 it.effect(
   "deploys protected D1, inferred typed/native binding, migrations and corrected failure recovery",

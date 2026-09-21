@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import { mkdir, open, readdir, readFile, rename, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { validateName } from "../../models/stack.ts";
-import { decodeState, type EnvironmentState } from "../../models/state.ts";
+import { validateName } from "#src/contexts/root/models/stack.ts";
+import { decodeState, type EnvironmentState } from "#src/contexts/root/models/state.ts";
 import { assertEmptyState } from "./empty-state.ts";
 import { StateError, type StateLease, type StateRepository } from "./state-repository.ts";
 

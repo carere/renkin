@@ -3,7 +3,7 @@ import * as Retry from "@distilled.cloud/cloudflare/Retry";
 import * as Workers from "@distilled.cloud/cloudflare/workers";
 import { Effect } from "effect";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
-import type { DurableObjectExports } from "../../models/durable-object-exports.ts";
+import type { DurableObjectExports } from "#src/contexts/root/models/durable-object-exports.ts";
 import { createOperationClient } from "./operation-client.ts";
 
 export interface CloudflareConfig {

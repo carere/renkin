@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { initializeCloudflareTransport } from "../../../../src/contexts/root/services/build-transport/cloudflare-transport.ts";
+import { initializeCloudflareTransport } from "#src/contexts/root/services/build-transport/cloudflare-transport.ts";
 
 const plugin = createRequire(import.meta.url).resolve("@cloudflare/vite-plugin/package.json");
 const path = createRequire(plugin).resolve("miniflare");

@@ -1,6 +1,6 @@
 import { context as buildContext } from "esbuild";
 import { Miniflare, type MiniflareOptions } from "miniflare";
-import { bundleOptions, readBundle } from "../bundler/worker-bundler.ts";
+import { bundleOptions, readBundle } from "#src/contexts/root/services/bundler/worker-bundler.ts";
 
 export interface LocalWorkerOptions {
   readonly entry: string;

@@ -4,7 +4,7 @@ import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { defineStack } from "renkin";
 import { d1 } from "renkin/cloudflare";
-import { createD1Fixture } from "../../support/root/d1-fixture.ts";
+import { createD1Fixture } from "#test-support/root/d1-fixture.ts";
 
 it.effect(
   "public D1 clients, native proxy and migrations preserve data across restart and logical rename",

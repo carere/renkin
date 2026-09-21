@@ -24,7 +24,7 @@ import {
   navigation,
   siteFetch,
   traceStateCalls,
-} from "../../support/root/site-http.ts";
+} from "#test-support/root/site-http.ts";
 
 const scope = () => {
   const prefix = process.env.RENKIN_CLOUDFLARE_TEST_PREFIX;

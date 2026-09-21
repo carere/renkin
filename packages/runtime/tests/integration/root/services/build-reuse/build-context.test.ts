@@ -3,8 +3,8 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import type { BuildProducer } from "../../../../../src/contexts/root/models/build-reuse.ts";
-import { createBuildContext } from "../../../../../src/contexts/root/services/build-reuse/build-context.ts";
+import type { BuildProducer } from "#src/contexts/root/models/build-reuse.ts";
+import { createBuildContext } from "#src/contexts/root/services/build-reuse/build-context.ts";
 
 const fixture = Effect.acquireRelease(
   Effect.promise(async () => {

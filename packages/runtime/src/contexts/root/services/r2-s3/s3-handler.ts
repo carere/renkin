@@ -1,5 +1,5 @@
-import { type LocalR2S3Options, localR2S3Path } from "../../models/local-r2-s3.ts";
-import type { NativeR2 } from "../../models/r2.ts";
+import { type LocalR2S3Options, localR2S3Path } from "#src/contexts/root/models/local-r2-s3.ts";
+import type { NativeR2 } from "#src/contexts/root/models/r2.ts";
 import { errorResponse, invalidArgument, S3Error, unsupported } from "./s3-error.ts";
 import { objectHeaders, uploadMetadata, validateQueries } from "./s3-metadata.ts";
 import { parseRange } from "./s3-range.ts";

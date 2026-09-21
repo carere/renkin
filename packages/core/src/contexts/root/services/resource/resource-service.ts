@@ -1,6 +1,6 @@
-import type { Json, ResourceDefinition } from "../../models/stack.ts";
-import type { ResourceState } from "../../models/state.ts";
-import type { StateLease } from "../state/state-repository.ts";
+import type { Json, ResourceDefinition } from "#src/contexts/root/models/stack.ts";
+import type { ResourceState } from "#src/contexts/root/models/state.ts";
+import type { StateLease } from "#src/contexts/root/services/state/state-repository.ts";
 
 // biome-ignore lint/suspicious/noConfusingVoidType: Preserve existing Promise<void> adapters while accepting full observed outputs.
 type BindingOutputs = Json | void;

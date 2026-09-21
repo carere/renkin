@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { startLocalBuild } from "../../../../../src/contexts/root/services/local/local-build-service.ts";
+import { startLocalBuild } from "#src/contexts/root/services/local/local-build-service.ts";
 
 describe("external Worker build and native assets", () => {
   it.live(

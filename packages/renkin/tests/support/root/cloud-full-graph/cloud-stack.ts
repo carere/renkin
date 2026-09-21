@@ -1,7 +1,7 @@
 import type { ResourceDefinition } from "@renkin/core/models/stack";
 import { defineStack } from "renkin";
 import { r2, r2Token, tanstackStart, worker } from "renkin/cloudflare";
-import { graph } from "../../../fixtures/full-graph/graph.ts";
+import { graph } from "#test-fixtures/full-graph/graph.ts";
 
 const disposable = (resource: ResourceDefinition): ResourceDefinition => ({
   ...resource,

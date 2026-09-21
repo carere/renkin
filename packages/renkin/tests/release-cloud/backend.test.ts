@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { removeGraphBackend } from "../support/root/cloud-full-graph/backend.ts";
+import { removeGraphBackend } from "#test-support/root/cloud-full-graph/backend.ts";
 
 it("removes only the verified generated backend and audits every namespace page", async () => {
   const paths: string[] = [];
