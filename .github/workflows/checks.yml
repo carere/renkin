@@ -61,7 +61,7 @@ jobs:
           bun moon run core:test-unit core:test-integration
           bun moon run cloudflare-sdk:test-integration cloudflare:test-unit cloudflare:test-integration
           bun moon run runtime:test-integration renkin:test-unit renkin:test-integration
-          bun moon run websites:test-integration example-spa:test-integration example-ssr:test-integration
+          bun moon run websites:test-unit websites:test-integration example-spa:test-integration example-ssr:test-integration
           bun moon run example-static:test-integration website:test-integration
 
       - name: Ensure checks leave tracked files unchanged
