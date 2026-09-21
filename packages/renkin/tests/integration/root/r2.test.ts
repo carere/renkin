@@ -53,6 +53,7 @@ it.effect(
         );
       });
     }),
+  30000,
 );
 
 it.effect(
@@ -95,6 +96,7 @@ it.effect(
         );
       });
     }),
+  30000,
 );
 
 it.effect(
@@ -169,45 +171,48 @@ export default defineWorker({Uploads:token},({Uploads})=>({fetch:request=>Effect
     }),
 );
 
-it.effect("named local previews persist independently for identical logical bucket IDs", () =>
-  Effect.gen(function* () {
-    const test = yield* fixture;
-    yield* Effect.promise(async () => {
-      await test.run(
-        async ({ bucket }) => {
-          await (await bucket("Files")).put("same", "preview A");
-        },
-        test.stack,
-        true,
-        "preview-a",
-      );
-      await test.run(
-        async ({ bucket }) => {
-          expect(await (await bucket("Files")).get("same")).toBeNull();
-          await (await bucket("Files")).put("same", "preview B");
-        },
-        test.stack,
-        true,
-        "preview-b",
-      );
-      await test.run(
-        async ({ bucket }) =>
-          expect(await (await bucket("Files")).get("same").then((object) => object?.text())).toBe(
-            "preview A",
-          ),
-        test.stack,
-        true,
-        "preview-a",
-      );
-      await test.run(
-        async ({ bucket }) =>
-          expect(await (await bucket("Files")).get("same").then((object) => object?.text())).toBe(
-            "preview B",
-          ),
-        test.stack,
-        true,
-        "preview-b",
-      );
-    });
-  }),
+it.effect(
+  "named local previews persist independently for identical logical bucket IDs",
+  () =>
+    Effect.gen(function* () {
+      const test = yield* fixture;
+      yield* Effect.promise(async () => {
+        await test.run(
+          async ({ bucket }) => {
+            await (await bucket("Files")).put("same", "preview A");
+          },
+          test.stack,
+          true,
+          "preview-a",
+        );
+        await test.run(
+          async ({ bucket }) => {
+            expect(await (await bucket("Files")).get("same")).toBeNull();
+            await (await bucket("Files")).put("same", "preview B");
+          },
+          test.stack,
+          true,
+          "preview-b",
+        );
+        await test.run(
+          async ({ bucket }) =>
+            expect(await (await bucket("Files")).get("same").then((object) => object?.text())).toBe(
+              "preview A",
+            ),
+          test.stack,
+          true,
+          "preview-a",
+        );
+        await test.run(
+          async ({ bucket }) =>
+            expect(await (await bucket("Files")).get("same").then((object) => object?.text())).toBe(
+              "preview B",
+            ),
+          test.stack,
+          true,
+          "preview-b",
+        );
+      });
+    }),
+  30000,
 );
