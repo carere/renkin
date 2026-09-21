@@ -22,7 +22,8 @@ export const deploy = (stack: Stack, options: DeploymentOptions) =>
       catch: () => new DeploymentError("Worker build failed."),
     });
     const environment = yield* Effect.tryPromise({
-      try: () => cloudEnvironment(stack.name, options.environment, options.cloudflare),
+      try: () =>
+        cloudEnvironment(stack.name, options.environment, options.cloudflare, prepared.resources),
       catch: () =>
         new DeploymentError(
           "Cloud state initialization failed. Check account ID, token permissions and the state Worker.",

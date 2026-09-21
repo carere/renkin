@@ -21,3 +21,6 @@ export const observabilityDestination = destination;
 
 import { d1 as database } from "@renkin/cloudflare/models/d1";
 export const d1 = database;
+
+import { durableObject as objectNamespace } from "@renkin/cloudflare/models/durable-object";
+export const durableObject = objectNamespace;

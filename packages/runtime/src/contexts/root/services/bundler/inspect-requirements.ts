@@ -18,6 +18,7 @@ const inspect = (value: unknown): Requirements => {
     if (
       item.type !== "cloudflare.kv" &&
       item.type !== "cloudflare.d1" &&
+      item.type !== "cloudflare.durable-object" &&
       item.type !== "cloudflare.worker-reference"
     )
       throw new Error("Unsupported Worker requirement.");
@@ -64,7 +65,7 @@ export const inspectRequirements = async (
       {
         type: "ESModule",
         path: "inspect.mjs",
-        contents: `import implementation from ${JSON.stringify(`./${artifact.mainModule}`)}; export default {fetch(){return Response.json(implementation.__renkinRequirements ?? {})}}`,
+        contents: `import * as implementation from ${JSON.stringify(`./${artifact.mainModule}`)}; export default {fetch(){const result={};for(const exported of Object.values(implementation)){for(const [name, requirement] of Object.entries(exported?.__renkinRequirements ?? {})){if(name in result && JSON.stringify(result[name])!==JSON.stringify(requirement))throw new Error("Conflicting Worker requirements");result[name]=requirement;}}return Response.json(result)}}`,
       },
       { type: "ESModule", path: artifact.mainModule, contents: source },
       ...artifact.modules.map((module) => ({

@@ -1,17 +1,20 @@
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import type { WorkerResource } from "@renkin/cloudflare/models/worker";
-import { prepareD1, preparedMigrations } from "@renkin/cloudflare/services/d1/prepare-d1";
+import { preparedMigrations } from "@renkin/cloudflare/services/d1/prepare-d1";
+import { durableObjectProperties } from "@renkin/cloudflare/services/durable-object/prepare-durable-objects";
 import {
   applyMigrations,
   MigrationError,
 } from "@renkin/cloudflare/services/migrations/migration-service";
 import { nativeD1MigrationExecutor } from "@renkin/cloudflare/services/migrations/native-d1-migration-executor";
+import { prepareStack } from "@renkin/cloudflare/services/worker/prepare-stack";
 import type { Stack } from "@renkin/core/models/stack";
 import { emptyState } from "@renkin/core/models/state";
 import { FileStateRepository } from "@renkin/core/services/state/file-state-repository";
 import { plan } from "@renkin/core/use-cases/plan";
 import { renamedState } from "@renkin/core/use-cases/rename";
+import type { LocalDurableObject } from "@renkin/runtime/services/local/local-durable-objects";
 import { startLocalGraph } from "@renkin/runtime/services/local/local-graph-service";
 import { Effect } from "effect";
 
@@ -46,7 +49,7 @@ const migrateDatabases = async (
 };
 
 const start = async (input: Stack, options: DevelopmentOptions) => {
-  const stack = { ...input, resources: await Promise.all(input.resources.map(prepareD1)) };
+  const stack = await prepareStack(input);
   const directory = resolve(options.directory ?? ".renkin");
   const environment = options.environment ?? "local";
   const repository = new FileStateRepository(directory);
@@ -65,6 +68,7 @@ const start = async (input: Stack, options: DevelopmentOptions) => {
     state = renamedState(stack, state);
     const namespaces: Record<string, string> = {};
     const databases: Record<string, string> = {};
+    const durableObjects: Record<string, LocalDurableObject> = {};
     const workerResources: WorkerResource[] = [];
     for (const resource of stack.resources) {
       const previous =
@@ -79,6 +83,11 @@ const start = async (input: Stack, options: DevelopmentOptions) => {
         namespaces[resource.id] = state.resources[resource.id]?.physicalId ?? resource.id;
       else if (resource.type === "cloudflare.d1")
         databases[resource.id] = state.resources[resource.id]?.physicalId ?? resource.id;
+      else if (resource.type === "cloudflare.durable-object")
+        durableObjects[resource.id] = {
+          ...durableObjectProperties(resource),
+          namespace: state.resources[resource.id]?.physicalId ?? resource.id,
+        };
       else if (resource.type === "cloudflare.worker" && "options" in resource)
         workerResources.push(resource as WorkerResource);
       else if (!cloudOnlyControls.has(resource.type))
@@ -91,6 +100,7 @@ const start = async (input: Stack, options: DevelopmentOptions) => {
       workers: workerResources.map((resource) => ({ id: resource.id, ...resource.options })),
       namespaces,
       databases,
+      durableObjects,
       persist: resolve(directory, "data", stack.name, environment),
       watch: options.watch ?? true,
       onReload: (id) => options.progress?.(`Reloaded ${id}`),

@@ -1,5 +1,6 @@
 import { cloudflareAccessServices } from "@renkin/cloudflare/services/access/cloudflare-access-service";
 import { cloudflareD1Service } from "@renkin/cloudflare/services/d1/cloudflare-d1-service";
+import { cloudflareDurableObjectService } from "@renkin/cloudflare/services/durable-object/cloudflare-durable-object-service";
 import { cloudflareKVService } from "@renkin/cloudflare/services/kv/cloudflare-kv-service";
 import { cloudflareSiteServices } from "@renkin/cloudflare/services/site/cloudflare-site-service";
 import {
@@ -15,8 +16,10 @@ import {
   createCloudflareClient,
 } from "@renkin/cloudflare-sdk/services/cloudflare-client/cloudflare-client";
 import { createD1Client } from "@renkin/cloudflare-sdk/services/cloudflare-client/d1-client";
+import { createDurableObjectClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/durable-object-client";
 import { createKVClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/kv-client";
 import { createSiteClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/site-client";
+import type { ResourceDefinition } from "@renkin/core/models/stack";
 import type { ResourceServices } from "@renkin/core/services/resource/resource-service";
 import { Effect } from "effect";
 
@@ -51,6 +54,7 @@ export const cloudEnvironment = async (
   stack: string,
   environment: string,
   options?: CloudflareOptions,
+  desired: readonly ResourceDefinition[] = [],
 ) => {
   const { config, state } = await cloudState(options);
   const { subdomain } = await Effect.runPromise(
@@ -72,14 +76,27 @@ export const cloudEnvironment = async (
   const d1Client = createD1Client(config, {
     request: (request, token) => state.gateway(stack, environment, token, request),
   });
+  const durableObjectClient = createDurableObjectClient(config, {
+    request: (request, token) => state.gateway(stack, environment, token, request),
+  });
   const services: ResourceServices = (lease) => ({
     ...cloudflareAccessServices({ client: accessClient, token: lease.token }),
     ...cloudflareSiteServices({ client: siteClient, token: lease.token }),
     "cloudflare.d1": cloudflareD1Service(d1Client, lease.token),
     "cloudflare.kv": cloudflareKVService(kvClient, lease.token),
+    "cloudflare.durable-object": cloudflareDurableObjectService({
+      client: durableObjectClient,
+      workers: client,
+      token: lease.token,
+      stack,
+      environment,
+      desired,
+    }),
     "cloudflare.worker": cloudflareWorkerService({
       client,
       siteClient,
+      durableObjectClient,
+      desired,
       token: lease.token,
       stack,
       environment,

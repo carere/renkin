@@ -3,12 +3,19 @@ import type {
   createCloudflareClient,
   WorkerUpload,
 } from "@renkin/cloudflare-sdk/services/cloudflare-client/cloudflare-client";
+import type { createDurableObjectClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/durable-object-client";
 import type { createSiteClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/site-client";
 import type { Json, ResourceDefinition } from "@renkin/core/models/stack";
 import type { ResourceState } from "@renkin/core/models/state";
 import type { ResourceService } from "@renkin/core/services/resource/resource-service";
 import { canonical } from "@renkin/core/use-cases/plan";
 import { Effect } from "effect";
+import {
+  assertNoDurableObjects,
+  durableObjectMetadata,
+  observedDurableObjectClasses,
+  prepareDurableObjectLedger,
+} from "../durable-object/worker-durable-objects.ts";
 import { finalizeWorkerPublication, prepareWorkerPublication } from "./worker-publication.ts";
 
 type Metadata = NonNullable<WorkerUpload["metadata"]>;
@@ -55,6 +62,18 @@ const bindings = (
       if (target?.definition.type !== "cloudflare.d1")
         throw new Error("D1 binding target is not provisioned.");
       result.push({ type: "d1", name, databaseId: target.physicalId });
+    } else if (requirement.type === "cloudflare.durable-object") {
+      if (target?.definition.type !== "cloudflare.durable-object")
+        throw new Error("Durable Object binding target is not provisioned.");
+      const owned = object(target.outputs);
+      if (typeof owned.worker !== "string" || typeof owned.className !== "string")
+        throw new Error("Durable Object ownership checkpoint is missing.");
+      result.push({
+        type: "durable_object_namespace",
+        name,
+        scriptName: owned.worker,
+        className: owned.className,
+      });
     } else if (requirement.type === "cloudflare.worker-reference") {
       const external = requirement.external ? object(requirement.external) : undefined;
       if (!external && !target && ignoreRemovedWorkers) continue;
@@ -90,6 +109,8 @@ const stub = (definition: ResourceDefinition) => {
 interface WorkerServiceOptions {
   readonly client: ReturnType<typeof createCloudflareClient>;
   readonly siteClient: ReturnType<typeof createSiteClient>;
+  readonly durableObjectClient?: ReturnType<typeof createDurableObjectClient>;
+  readonly desired?: readonly ResourceDefinition[];
   readonly token: string;
   readonly stack: string;
   readonly environment: string;
@@ -117,6 +138,10 @@ const publishWorker = async (
   const hash = configurationHash(resource.definition, resolved);
   if (force || !tags.includes(`renkin-config:${hash}`)) {
     const publication = await prepareWorkerPublication(resource, options.siteClient, options.token);
+    const classes = await observedDurableObjectClasses(
+      resource.physicalId,
+      options.durableObjectClient,
+    );
     await Effect.runPromise(
       options.client.putWorker(
         {
@@ -124,6 +149,7 @@ const publishWorker = async (
           metadata: {
             ...input(resource.definition),
             ...publication.metadata,
+            ...durableObjectMetadata(resource, resources, classes),
             bindings: [...resolved, ...(publication.metadata.bindings ?? [])],
             tags: [marker, `renkin-config:${hash}`],
           },
@@ -172,6 +198,10 @@ const detachCallers = async (
         "Owned caller configuration changed; reconcile it before removing its target.",
       );
     const publication = await prepareWorkerPublication(caller, options.siteClient, options.token);
+    const classes = await observedDurableObjectClasses(
+      caller.physicalId,
+      options.durableObjectClient,
+    );
     const resolved = expected.filter(
       (binding) => binding.type !== "service" || binding.service !== target.physicalId,
     );
@@ -182,6 +212,7 @@ const detachCallers = async (
           metadata: {
             ...input(caller.definition),
             ...publication.metadata,
+            ...durableObjectMetadata(caller, resources, classes),
             bindings: [...resolved, ...(publication.metadata.bindings ?? [])],
             tags: [
               marker(caller.physicalId),
@@ -203,6 +234,24 @@ const observeWorker = (options: WorkerServiceOptions, name: string) =>
       .pipe(Effect.catchTag("WorkerNotFound", () => Effect.succeed(undefined))),
   );
 
+const workerOutputs = async (
+  options: WorkerServiceOptions,
+  definition: ResourceDefinition,
+  physicalId: string,
+  previous: ResourceState | undefined,
+  resources: Readonly<Record<string, ResourceState>>,
+) => ({
+  url: `https://${physicalId}.${options.subdomain}.workers.dev`,
+  name: physicalId,
+  ...(await prepareDurableObjectLedger(
+    definition,
+    previous,
+    resources,
+    options.desired ?? [],
+    options.durableObjectClient,
+  )),
+});
+
 export const cloudflareWorkerService = (options: WorkerServiceOptions): ResourceService => {
   const marker = (id: string) => `renkin:${options.stack}:${options.environment}:${id}`;
   const verifyOwner = async (name: string, ownershipId: string) => {
@@ -217,7 +266,7 @@ export const cloudflareWorkerService = (options: WorkerServiceOptions): Resource
   return {
     deferredBindings: true,
     refresh: true,
-    apply: async (definition, physicalId, previous) => {
+    apply: async (definition, physicalId, previous, resources = {}) => {
       const existing = await verifyOwner(
         physicalId,
         previous?.ownershipId ?? previous?.definition.id ?? definition.id,
@@ -237,7 +286,7 @@ export const cloudflareWorkerService = (options: WorkerServiceOptions): Resource
             options.token,
           ),
         );
-      return { url: `https://${physicalId}.${options.subdomain}.workers.dev`, name: physicalId };
+      return workerOutputs(options, definition, physicalId, previous, resources);
     },
     bind: async (resource, resources, _desired, operation) => {
       const current = await verifyOwner(
@@ -257,6 +306,7 @@ export const cloudflareWorkerService = (options: WorkerServiceOptions): Resource
     remove: async (resource, resources = {}) => {
       if (!(await verifyOwner(resource.physicalId, resource.ownershipId ?? resource.definition.id)))
         return;
+      await assertNoDurableObjects(resource.physicalId, options.durableObjectClient);
       await detachCallers(resource, resources, options, marker, verifyOwner);
       await Effect.runPromise(
         options.client

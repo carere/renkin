@@ -156,7 +156,9 @@ it.effect("checkpoints server-assigned identity before binding", () =>
           worker: {
             apply: async () => ({ id: "provider-id" }),
             resolvePhysicalId: () => "provider-id",
-            bind: async () => expect(state.written?.pending?.physicalId).toBe("provider-id"),
+            bind: async () => {
+              expect(state.written?.pending?.physicalId).toBe("provider-id");
+            },
             remove: async () => {},
           },
         }),
