@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@effect/vitest": "^4.0.0-rc.115",
+    "aws4fetch": "^1.0.20",
     "drizzle-orm": "^0.45.3",
     "vitest": "^5.0.0"
   }
