@@ -228,3 +228,66 @@ it.live("fences and encrypts account token receipts without accepting Access-tok
     expect(dispatches).toBe(before + 1);
   }),
 );
+
+it.live(
+  "removes only an empty named state, preserving other environments and fencing the old lease",
+  () =>
+    Effect.promise(async () => {
+      const environment = "remove-preview";
+      const lease = await acquire(environment);
+      const empty = { version: 1, stack: "stack", environment, resources: {}, outputs: {} };
+      await call("write", environment, {
+        token: lease.token,
+        state: JSON.stringify({ ...empty, pending }),
+      });
+      expect((await call("remove-empty", environment, { token: lease.token })).status).toBe(502);
+      await call("write", environment, {
+        token: lease.token,
+        state: JSON.stringify({ ...empty, outputs: { keep: { value: "keep" } } }),
+      });
+      expect((await call("remove-empty", environment, { token: lease.token })).status).toBe(502);
+      await call("write", environment, { token: lease.token, state: JSON.stringify(empty) });
+      expect((await call("remove-empty", environment, { token: "foreign" })).status).toBe(409);
+      const otherBefore = await (await call("read", "account-receipt")).text();
+      expect((await call("remove-empty", environment, { token: lease.token })).status).toBe(200);
+      expect(await (await call("read", environment)).json()).toBeNull();
+      expect(await (await call("list", environment)).json()).not.toContain(environment);
+      expect(await (await call("read", "account-receipt")).text()).toBe(otherBefore);
+      expect(
+        (await call("write", environment, { token: lease.token, state: JSON.stringify(empty) }))
+          .status,
+      ).toBe(409);
+      const next = await acquire(environment);
+      expect(next.token).not.toBe(lease.token);
+      expect(
+        (await call("write", environment, { token: next.token, state: JSON.stringify(empty) }))
+          .status,
+      ).toBe(200);
+    }),
+);
+
+it.live(
+  "cannot discard an unacknowledged one-time receipt even when a caller writes empty state",
+  () =>
+    Effect.promise(async () => {
+      const environment = "remove-receipt";
+      const lease = await acquire(environment);
+      await call("write", environment, {
+        token: lease.token,
+        state: JSON.stringify({ ...state, environment }),
+      });
+      expect((await gateway(environment, lease.token)).status).toBe(200);
+      await call("write", environment, {
+        token: lease.token,
+        state: JSON.stringify({
+          version: 1,
+          stack: "stack",
+          environment,
+          resources: {},
+          outputs: {},
+        }),
+      });
+      expect((await call("remove-empty", environment, { token: lease.token })).status).toBe(409);
+      expect(await (await call("read", environment)).json()).not.toBeNull();
+    }),
+);

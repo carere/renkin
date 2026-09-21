@@ -14,6 +14,8 @@ import { assertProtection, plan } from "./plan.ts";
 import { renamedState } from "./rename.ts";
 
 export interface DeployOptions {
+  /** Used only for explicit removal; record deletion remains fenced by the same lease. */
+  readonly removeEmpty?: boolean;
   readonly environment: string;
   readonly state: StateRepository;
   readonly services: ResourceServices;
@@ -226,6 +228,8 @@ const validateDeployment = async (
 
 const execute = async (stack: Stack, options: DeployOptions): Promise<EnvironmentState> => {
   defineStack(stack);
+  if (options.removeEmpty && stack.resources.length)
+    throw new DeploymentError("Environment removal requires an empty desired stack.");
   validateName(options.environment);
   const lease = await options.state.acquire(stack.name, options.environment);
   try {
@@ -281,6 +285,7 @@ const execute = async (stack: Stack, options: DeployOptions): Promise<Environmen
       stack.outputs ?? {},
     );
     await lease.write(state);
+    if (options.removeEmpty) await lease.removeEmpty();
     return state;
   } finally {
     await lease.release();

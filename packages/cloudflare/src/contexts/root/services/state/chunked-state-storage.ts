@@ -50,6 +50,10 @@ export class ChunkedStateStorage {
       throw new Error("Encrypted state chunks are missing or truncated.");
     return chunks.map((chunk) => chunk.value).join("");
   }
+  remove(environment: string): void {
+    this.sql.exec("DELETE FROM state_chunks WHERE environment = ?", environment);
+    this.sql.exec("DELETE FROM records WHERE key = ?", `state:${environment}`);
+  }
   write(environment: string, ciphertext: string): void {
     if (ciphertext.length < 1 || ciphertext.length > maximumSize)
       throw new Error("Encrypted state exceeds the supported 64 MiB size.");

@@ -5,6 +5,8 @@ export interface StateLease {
   readonly token: string;
   read(): Promise<EnvironmentState | undefined>;
   write(state: EnvironmentState): Promise<void>;
+  /** Remove only an empty environment record under this lease, then invalidate the lease. */
+  removeEmpty(): Promise<void>;
   release(): Promise<void>;
 }
 

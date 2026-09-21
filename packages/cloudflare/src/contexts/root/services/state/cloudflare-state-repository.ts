@@ -102,6 +102,7 @@ export class CloudflareStateRepository implements StateRepository {
     const { token } = await this.call<{ token: string }>("acquire", { stack, environment });
     if (typeof token !== "string") throw new StateError("invalid", "Cloud state lease is invalid.");
     let failure: unknown;
+    let ended = false;
     const timer = setInterval(() => {
       void this.call("renew", { stack, environment, token }).catch((error: unknown) => {
         failure = error;
@@ -109,6 +110,7 @@ export class CloudflareStateRepository implements StateRepository {
     }, 15_000);
     const ensure = () => {
       if (failure) throw failure;
+      if (ended) throw new StateError("busy", "The environment lease has ended.");
     };
     return {
       token,
@@ -120,8 +122,16 @@ export class CloudflareStateRepository implements StateRepository {
         ensure();
         return this.call("write", { stack, environment, token, state: JSON.stringify(state) });
       },
+      removeEmpty: async () => {
+        ensure();
+        await this.call("remove-empty", { stack, environment, token });
+        ended = true;
+        clearInterval(timer);
+      },
       release: async () => {
         clearInterval(timer);
+        if (ended) return;
+        ended = true;
         await this.call("release", { stack, environment, token });
       },
     };
