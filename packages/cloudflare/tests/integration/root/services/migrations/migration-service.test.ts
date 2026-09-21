@@ -8,8 +8,8 @@ import { Miniflare } from "miniflare";
 import {
   applyMigrations,
   migrationHistoryTable,
-} from "../../../../../src/contexts/root/services/migrations/migration-service.ts";
-import { nativeD1MigrationExecutor } from "../../../../../src/contexts/root/services/migrations/native-d1-migration-executor.ts";
+} from "#src/contexts/root/services/migrations/migration-service.ts";
+import { nativeD1MigrationExecutor } from "#src/contexts/root/services/migrations/native-d1-migration-executor.ts";
 
 const migration = (name: string, sql: string) => ({
   name,

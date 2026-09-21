@@ -1,5 +1,5 @@
-import type { ResourceDefinition, Stack } from "../models/stack.ts";
-import type { EnvironmentState } from "../models/state.ts";
+import type { ResourceDefinition, Stack } from "#src/contexts/root/models/stack.ts";
+import type { EnvironmentState } from "#src/contexts/root/models/state.ts";
 
 /** Validate every move before changing a clone; committing the clone is one state transaction. */
 export const renamedState = (stack: Stack, state: EnvironmentState): EnvironmentState => {

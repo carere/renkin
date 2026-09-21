@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
-import { sha256File } from "../../../../src/contexts/root/services/release/build-info.ts";
+import { sha256File } from "#src/contexts/root/services/release/build-info.ts";
 import { execute } from "./consumer.ts";
 
 export const releaseArchive = async (root: string) => {

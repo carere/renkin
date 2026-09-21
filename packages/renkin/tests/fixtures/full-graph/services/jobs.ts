@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { defineWorker, workerReference } from "renkin/worker";
 import { defineWorkflow } from "renkin/workflow";
-import { Audit, OrderFlow, Orders } from "../shared/resources.ts";
+import { Audit, OrderFlow, Orders } from "#test-fixtures/full-graph/shared/resources.ts";
 
 export const FulfillOrder = defineWorkflow(
   {

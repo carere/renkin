@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { removeEnvironment } from "renkin";
-import { createCloudBackgroundFixture } from "../../support/root/cloud-background-fixture.ts";
+import { createCloudBackgroundFixture } from "#test-support/root/cloud-background-fixture.ts";
 
 it.effect(
   "cloud queues, Workflow tasks and authorized email use native bindings with protected cleanup",

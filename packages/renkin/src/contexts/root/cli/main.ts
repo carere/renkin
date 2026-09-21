@@ -13,7 +13,7 @@ import {
   readOutputs,
   reconcileOperation,
   removeEnvironment,
-} from "../api.ts";
+} from "#src/contexts/root/api.ts";
 import { routeCliOutput } from "./output.ts";
 
 const writeOutput = routeCliOutput();

@@ -17,3 +17,12 @@ See [TanStack sites](../../docs/tanstack-sites.md) for options and cloud validat
 `src/routeTree.gen.ts` is owned by the official TanStack Router generator and is
 excluded from manual formatting. The Vite polling flag is only for deterministic
 source-reload tests in environments without native filesystem notifications.
+
+The router creates a fresh Effect ManagedRuntime and TanStack Query client for
+its lifetime. SSR request cleanup (including aborted streams) disposes both;
+the browser disposes them when the router provider unmounts. Typed router context
+provides these dependencies to loaders and components. The counter query runs the
+server-function service through that runtime and forwards Query's cancellation
+signal. Its JSON-compatible query cache is dehydrated for browser hydration.
+The installed Query v5 exposes `fetchQuery`, so the loader uses that method with
+`staleTime: Infinity` to reuse cached data; the component retains normal revalidation.

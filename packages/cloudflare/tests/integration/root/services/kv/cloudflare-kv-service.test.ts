@@ -9,8 +9,8 @@ import { emptyState } from "@renkin/core/models/state";
 import { FileStateRepository } from "@renkin/core/services/state/file-state-repository";
 import { deploy } from "@renkin/core/use-cases/deploy";
 import { Effect } from "effect";
-import { kv } from "../../../../../src/contexts/root/models/kv.ts";
-import { cloudflareKVService } from "../../../../../src/contexts/root/services/kv/cloudflare-kv-service.ts";
+import { kv } from "#src/contexts/root/models/kv.ts";
+import { cloudflareKVService } from "#src/contexts/root/services/kv/cloudflare-kv-service.ts";
 
 const seedNamespace = async (state: FileStateRepository) => {
   const initial = emptyState("app", "preview");

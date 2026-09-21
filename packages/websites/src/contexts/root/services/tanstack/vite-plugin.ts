@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import type { Plugin, PluginOption } from "vite";
-import type { TanStackResource } from "../../models/tanstack.ts";
-import { initializeCloudflareTransport } from "../build-transport/cloudflare-transport.ts";
+import type { TanStackResource } from "#src/contexts/root/models/tanstack.ts";
+import { initializeCloudflareTransport } from "#src/contexts/root/services/build-transport/cloudflare-transport.ts";
 
 /** Official framework plugins, configured once from the resource declaration. */
 export const renkin = async (site: TanStackResource): Promise<PluginOption[]> => {

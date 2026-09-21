@@ -3,7 +3,7 @@ import { Effect } from "effect";
 import {
   createCloudflareClient,
   type GatewayRequest,
-} from "../../../../../src/contexts/root/services/cloudflare-client/cloudflare-client.ts";
+} from "#src/contexts/root/services/cloudflare-client/cloudflare-client.ts";
 
 it.effect("preserves declarative class lifecycle through the Distilled multipart boundary", () =>
   Effect.gen(function* () {

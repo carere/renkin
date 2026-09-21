@@ -2,9 +2,9 @@ import { expect, it } from "@effect/vitest";
 import { emptyState } from "@renkin/core/models/state";
 import { plan } from "@renkin/core/use-cases/plan";
 import { Effect } from "effect";
-import { durableObject } from "../../../../../src/contexts/root/models/durable-object.ts";
-import { worker } from "../../../../../src/contexts/root/models/worker.ts";
-import { prepareDurableObjects } from "../../../../../src/contexts/root/services/durable-object/prepare-durable-objects.ts";
+import { durableObject } from "#src/contexts/root/models/durable-object.ts";
+import { worker } from "#src/contexts/root/models/worker.ts";
+import { prepareDurableObjects } from "#src/contexts/root/services/durable-object/prepare-durable-objects.ts";
 
 const api = worker("Api", { entry: "api.ts", compatibilityDate: "2026-07-30" });
 const counters = durableObject("Counters", { worker: "Api", className: "Counter" });

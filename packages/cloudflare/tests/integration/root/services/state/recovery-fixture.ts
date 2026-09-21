@@ -1,6 +1,6 @@
 import worker, {
   StateCoordinator as Coordinator,
-} from "../../../../../src/contexts/root/services/state/coordinator-worker.ts";
+} from "#src/contexts/root/services/state/coordinator-worker.ts";
 
 /** Test-only clock seam: expire durable leases without sleeping, preserving real encrypted storage. */
 export class StateCoordinator extends Coordinator {

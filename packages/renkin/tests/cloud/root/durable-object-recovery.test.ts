@@ -4,7 +4,7 @@ import { removeEnvironment } from "renkin";
 import {
   createCloudDurableObjectFixture,
   durableObjectUrl,
-} from "../../support/root/cloud-durable-object-fixture.ts";
+} from "#test-support/root/cloud-durable-object-fixture.ts";
 
 it.effect(
   "interrupted post-publication namespace observation preserves protection and recovers native data",

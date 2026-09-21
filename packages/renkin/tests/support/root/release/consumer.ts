@@ -23,6 +23,11 @@ const copy = (source: string, destination: string) =>
         path,
       ),
   });
+const graphManifest = JSON.stringify({
+  private: true,
+  type: "module",
+  imports: { "#test-fixtures/full-graph/*": "./*" },
+});
 const applications = ["example-spa", "example-ssr", "example-static", "website"];
 const appDependencies = async (root: string) => {
   const dependencies: Record<string, string> = {};
@@ -64,6 +69,10 @@ export const installConsumer = async (root: string, archive: string) => {
         {
           private: true,
           type: "module",
+          imports: {
+            "#test-fixtures/*": "./tests/fixtures/*",
+            "#test-support/*": "./tests/support/*",
+          },
           dependencies: {
             ...dependencies,
             renkin: `file:${archive}`,
@@ -100,10 +109,7 @@ export const installConsumer = async (root: string, archive: string) => {
       join(root, "packages/renkin/tests/fixtures/full-graph"),
       join(directory, "tests/fixtures/full-graph"),
     );
-    await writeFile(
-      join(directory, "tests/fixtures/full-graph/package.json"),
-      JSON.stringify({ private: true, type: "module" }),
-    );
+    await writeFile(join(directory, "tests/fixtures/full-graph/package.json"), graphManifest);
     await copy(
       join(root, "packages/renkin/tests/support/root/full-graph"),
       join(directory, "tests/support/root/full-graph"),

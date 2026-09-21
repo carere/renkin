@@ -39,6 +39,7 @@
       "name": "@renkin/example-ssr",
       "version": "0.0.0",
       "dependencies": {
+        "@tanstack/solid-query": "^5.103.2",
         "@tanstack/solid-router": "^1.170.36",
         "@tanstack/solid-start": "^1.168.54",
         "effect": "^4.0.0-rc.115",

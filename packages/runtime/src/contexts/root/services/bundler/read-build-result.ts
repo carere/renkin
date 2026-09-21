@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { lstat, readdir, readFile, realpath } from "node:fs/promises";
 import { basename, dirname, extname, isAbsolute, relative, resolve, sep } from "node:path";
 import ignore from "ignore";
-import type { WorkerBuildResult } from "../../models/build-result.ts";
+import type { WorkerBuildResult } from "#src/contexts/root/models/build-result.ts";
 
 export interface PreparedAsset {
   readonly hash: string;

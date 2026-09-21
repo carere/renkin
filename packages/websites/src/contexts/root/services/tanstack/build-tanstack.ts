@@ -6,8 +6,8 @@ import { fileURLToPath } from "node:url";
 import type { WorkerBuildResult } from "@renkin/runtime/models/build-result";
 import type { WorkerBuildContext } from "@renkin/runtime/models/build-reuse";
 import { createBuildContext } from "@renkin/runtime/services/build-reuse/build-context";
-import type { TanStackOptions } from "../../models/tanstack.ts";
-import { buildIdentity } from "../build/reuse-options.ts";
+import type { TanStackOptions } from "#src/contexts/root/models/tanstack.ts";
+import { buildIdentity } from "#src/contexts/root/services/build/reuse-options.ts";
 
 const buildEnvironment = (options: TanStackOptions, directory: string): NodeJS.ProcessEnv => {
   const environment: NodeJS.ProcessEnv = {};

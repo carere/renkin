@@ -6,9 +6,9 @@ import { createAccountTokenClient } from "@renkin/cloudflare-sdk/services/cloudf
 import type { GatewayRequest } from "@renkin/cloudflare-sdk/services/cloudflare-client/cloudflare-client";
 import type { ResourceState } from "@renkin/core/models/state";
 import { Effect } from "effect";
-import { r2 } from "../../../../../src/contexts/root/models/r2.ts";
-import { r2Token } from "../../../../../src/contexts/root/models/r2-token.ts";
-import { cloudflareR2TokenService } from "../../../../../src/contexts/root/services/r2-token/cloudflare-r2-token-service.ts";
+import { r2 } from "#src/contexts/root/models/r2.ts";
+import { r2Token } from "#src/contexts/root/models/r2-token.ts";
+import { cloudflareR2TokenService } from "#src/contexts/root/services/r2-token/cloudflare-r2-token-service.ts";
 
 const fixture = (existing = false, failed = false) =>
   Effect.acquireRelease(

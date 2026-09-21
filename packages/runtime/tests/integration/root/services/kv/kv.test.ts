@@ -2,7 +2,7 @@ import type { KVNamespace } from "@cloudflare/workers-types";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { Miniflare } from "miniflare";
-import { kvClient, type NativeKV } from "../../../../../src/contexts/root/models/binding.ts";
+import { kvClient, type NativeKV } from "#src/contexts/root/models/binding.ts";
 
 const nativeConsumer = (namespace: KVNamespace) =>
   namespace.getWithMetadata<{ count: number }, { author: string }>("record", {

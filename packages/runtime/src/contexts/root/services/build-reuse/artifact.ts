@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, isAbsolute, relative, resolve } from "node:path";
-import type { WorkerBuildResult } from "../../models/build-result.ts";
-import { readBuildResult } from "../bundler/read-build-result.ts";
+import type { WorkerBuildResult } from "#src/contexts/root/models/build-result.ts";
+import { readBuildResult } from "#src/contexts/root/services/bundler/read-build-result.ts";
 import { canonicalBuildValue, digest } from "./fingerprint.ts";
 
 const optionalFile = async (path: string) => {

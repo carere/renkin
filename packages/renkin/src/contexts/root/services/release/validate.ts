@@ -53,6 +53,7 @@ export const validateRelease = async (stage: string, checkout?: string) => {
     const source = await readFile(file, "utf8");
     if (checkout && source.includes(checkout)) throw new Error(`Checkout path leaked into ${file}`);
     for (const { value } of moduleSpecifiers(source)) {
+      if (value.startsWith("#")) throw new Error(`Unresolved project alias leaked: ${value}`);
       if (prohibited.test(value)) throw new Error(`Private/prohibited import leaked: ${value}`);
       if (!value.startsWith(".")) continue;
       const target = resolve(dirname(file), value);

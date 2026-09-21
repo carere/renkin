@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { readBuildResult } from "../../../../../src/contexts/root/services/bundler/read-build-result.ts";
+import { readBuildResult } from "#src/contexts/root/services/bundler/read-build-result.ts";
 
 it.live("captures external modules and assets with ignore, header and redirect rules", () =>
   Effect.gen(function* () {

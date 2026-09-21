@@ -2,7 +2,7 @@ import { EmailMessage } from "cloudflare:email";
 import { env } from "cloudflare:workers";
 import { email } from "renkin/cloudflare";
 import { defineWorker } from "renkin/worker";
-import { Audit } from "../shared/resources.ts";
+import { Audit } from "#test-fixtures/full-graph/shared/resources.ts";
 
 export default defineWorker(
   {

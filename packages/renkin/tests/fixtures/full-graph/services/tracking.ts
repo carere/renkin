@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { durableObject } from "renkin/cloudflare";
 import { defineDurableObject } from "renkin/durable-object";
 import { defineWorker } from "renkin/worker";
-import { Audit } from "../shared/resources.ts";
+import { Audit } from "#test-fixtures/full-graph/shared/resources.ts";
 
 export class OrderEvents extends defineDurableObject({ Audit }) {
   async record(id: string) {

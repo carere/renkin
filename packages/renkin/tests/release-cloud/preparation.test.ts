@@ -1,10 +1,11 @@
-import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { expect, it } from "@effect/vitest";
-import { cloudSuites } from "../support/root/release/cloud/catalog.ts";
-import { prepareInstalledCloud } from "../support/root/release/cloud/prepare.ts";
-import { runInstalledCloud } from "../support/root/release/cloud/run.ts";
+import { cloudSuites } from "#test-support/root/release/cloud/catalog.ts";
+import { prepareInstalledCloud } from "#test-support/root/release/cloud/prepare.ts";
+import { runInstalledCloud } from "#test-support/root/release/cloud/run.ts";
 
 it("prepares every maintained cloud suite without provider calls or private package imports", async () => {
   const directory = await mkdtemp(join(tmpdir(), "renkin-cloud-preparation-"));
@@ -19,7 +20,14 @@ it("prepares every maintained cloud suite without provider calls or private pack
     for (const app of ["example-spa", "example-ssr", "example-static", "website"])
       await mkdir(join(directory, "apps", app), { recursive: true });
     await prepareInstalledCloud(resolve("../.."), directory);
-    const base = join(directory, "packages/renkin/tests");
+    const base = await realpath(join(directory, "packages/renkin/tests"));
+    const resolveImport = createRequire(join(directory, "packages/renkin/package.json")).resolve;
+    expect(resolveImport("#test-support/root/cloud-full-graph/cloud-stack.ts")).toBe(
+      join(base, "support/root/cloud-full-graph/cloud-stack.ts"),
+    );
+    expect(resolveImport("#test-fixtures/full-graph/graph.ts")).toBe(
+      join(base, "fixtures/full-graph/graph.ts"),
+    );
     expect((await readdir(join(base, "cloud/root"))).sort()).toEqual(
       cloudSuites.map((name) => `${name}.test.ts`).sort(),
     );

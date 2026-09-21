@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from "node:util";
 import { type ResourceDefinition, validateName } from "@renkin/core/models/stack";
-import type { WorkerResource } from "../../models/worker.ts";
+import type { WorkerResource } from "#src/contexts/root/models/worker.ts";
 
 /** Framework-owned resources use the same declarations and lifecycle as explicit resources. */
 export const expandResources = (

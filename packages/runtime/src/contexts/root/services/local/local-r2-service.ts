@@ -1,8 +1,8 @@
 import { fileURLToPath } from "node:url";
 import type { WorkerOptions } from "miniflare";
-import type { Requirements } from "../../models/binding.ts";
-import { type LocalR2S3Options, localR2S3Path } from "../../models/local-r2-s3.ts";
-import { bundleWorker } from "../bundler/worker-bundler.ts";
+import type { Requirements } from "#src/contexts/root/models/binding.ts";
+import { type LocalR2S3Options, localR2S3Path } from "#src/contexts/root/models/local-r2-s3.ts";
+import { bundleWorker } from "#src/contexts/root/services/bundler/worker-bundler.ts";
 import type { LocalGraphOptions } from "./local-graph-service.ts";
 
 export const localR2Credentials = (options: LocalGraphOptions, tokenId: string) => {

@@ -5,11 +5,8 @@ import { createAccessClient } from "@renkin/cloudflare-sdk/services/cloudflare-c
 import type { MutationGateway } from "@renkin/cloudflare-sdk/services/cloudflare-client/cloudflare-client";
 import type { ResourceState } from "@renkin/core/models/state";
 import { Effect } from "effect";
-import {
-  accessApplication,
-  accessServiceToken,
-} from "../../../../../src/contexts/root/models/access.ts";
-import { cloudflareAccessServices } from "../../../../../src/contexts/root/services/access/cloudflare-access-service.ts";
+import { accessApplication, accessServiceToken } from "#src/contexts/root/models/access.ts";
+import { cloudflareAccessServices } from "#src/contexts/root/services/access/cloudflare-access-service.ts";
 
 const provider = (results: unknown[]) =>
   Effect.acquireRelease(

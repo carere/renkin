@@ -1,6 +1,6 @@
 import { renkin } from "renkin/vite";
 import { defineConfig } from "vite";
-import { frontend } from "../config.ts";
+import { frontend } from "#test-fixtures/full-graph/frontends/config.ts";
 export default defineConfig({
   optimizeDeps: { include: ["@tanstack/solid-query > @tanstack/query-core"] },
   plugins: [renkin(frontend("Console", "console", "spa"))],

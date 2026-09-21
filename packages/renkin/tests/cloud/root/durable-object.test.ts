@@ -4,7 +4,7 @@ import { removeEnvironment } from "renkin";
 import {
   createCloudDurableObjectFixture,
   durableObjectUrl,
-} from "../../support/root/cloud-durable-object-fixture.ts";
+} from "#test-support/root/cloud-durable-object-fixture.ts";
 
 it.effect(
   "public cloud class addition, persistent identity, alarm, rename and protected cleanup",

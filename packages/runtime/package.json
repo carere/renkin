@@ -4,6 +4,10 @@
   "private": true,
   "description": "Worker execution, native bindings, bundling and local emulation.",
   "type": "module",
+  "imports": {
+    "#src/*": "./src/*",
+    "#test-support/*": "./tests/support/*"
+  },
   "exports": {
     "./*": "./src/contexts/root/*.ts"
   },

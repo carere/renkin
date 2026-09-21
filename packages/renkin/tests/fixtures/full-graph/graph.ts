@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { defineStack } from "renkin";
 import { d1, worker } from "renkin/cloudflare";
-import { frontend } from "./frontends/config.ts";
+import { frontend } from "#test-fixtures/full-graph/frontends/config.ts";
 import {
   Audit,
   Events,
@@ -11,7 +11,7 @@ import {
   PendingOrders,
   Sessions,
   UploadToken,
-} from "./shared/resources.ts";
+} from "#test-fixtures/full-graph/shared/resources.ts";
 
 export const graph = (
   options: {

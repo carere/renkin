@@ -4,8 +4,8 @@ import { expect, it } from "@effect/vitest";
 import { createR2Client } from "@renkin/cloudflare-sdk/services/cloudflare-client/r2-client";
 import type { ResourceState } from "@renkin/core/models/state";
 import { Effect } from "effect";
-import { r2 } from "../../../../../src/contexts/root/models/r2.ts";
-import { cloudflareR2Service } from "../../../../../src/contexts/root/services/r2/cloudflare-r2-service.ts";
+import { r2 } from "#src/contexts/root/models/r2.ts";
+import { cloudflareR2Service } from "#src/contexts/root/services/r2/cloudflare-r2-service.ts";
 
 const fixture = Effect.acquireRelease(
   Effect.promise(async () => {

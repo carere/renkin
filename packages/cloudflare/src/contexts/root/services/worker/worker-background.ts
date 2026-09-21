@@ -8,7 +8,7 @@ import { Effect } from "effect";
 import {
   backgroundProperties as object,
   stringProperty,
-} from "../background/background-properties.ts";
+} from "#src/contexts/root/services/background/background-properties.ts";
 
 type Client = ReturnType<typeof createBackgroundClient>;
 type Resources = Readonly<Record<string, ResourceState>>;

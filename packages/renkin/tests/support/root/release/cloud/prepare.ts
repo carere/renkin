@@ -101,6 +101,14 @@ export const prepareInstalledCloud = async (
     join(source, "tests/fixtures/durable-object"),
     join(target, "tests/fixtures/durable-object"),
   );
+  await writeFile(
+    join(target, "package.json"),
+    JSON.stringify({
+      private: true,
+      type: "module",
+      imports: { "#test-fixtures/*": "./tests/fixtures/*", "#test-support/*": "./tests/support/*" },
+    }),
+  );
   await writeFile(join(target, "tests/support/root/installed-cloud-paths.ts"), installedPaths, {
     mode: 0o600,
   });

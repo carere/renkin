@@ -10,7 +10,7 @@ import { createSiteClient } from "@renkin/cloudflare-sdk/services/cloudflare-cli
 import type { ResourceState } from "@renkin/core/models/state";
 import { canonical } from "@renkin/core/use-cases/plan";
 import { Effect } from "effect";
-import { cloudflareWorkerService } from "../../../../../src/contexts/root/services/worker/cloudflare-worker-service.ts";
+import { cloudflareWorkerService } from "#src/contexts/root/services/worker/cloudflare-worker-service.ts";
 
 const caller: ResourceState = {
   definition: {

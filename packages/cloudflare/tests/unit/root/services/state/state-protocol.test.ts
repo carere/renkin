@@ -1,9 +1,6 @@
 import { Buffer } from "node:buffer";
 import { expect, it } from "vitest";
-import {
-  decodeBytes,
-  encodeBytes,
-} from "../../../../../src/contexts/root/services/state/state-protocol.ts";
+import { decodeBytes, encodeBytes } from "#src/contexts/root/services/state/state-protocol.ts";
 
 it("preserves standard padded Base64 for binary views and large payloads", () => {
   for (const length of [0, 1, 2, 3, 255, 32_767, 32_768, 32_769, 2 * 1024 * 1024 + 1]) {

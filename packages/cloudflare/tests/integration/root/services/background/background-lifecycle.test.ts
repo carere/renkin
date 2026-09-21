@@ -1,14 +1,14 @@
 import { expect, it } from "@effect/vitest";
 import type { ResourceState } from "@renkin/core/models/state";
 import { Effect } from "effect";
-import { queue } from "../../../../../src/contexts/root/models/queue.ts";
-import { cloudflareQueueService } from "../../../../../src/contexts/root/services/background/cloudflare-queue-service.ts";
-import { cloudflareWorkflowService } from "../../../../../src/contexts/root/services/background/cloudflare-workflow-service.ts";
+import { queue } from "#src/contexts/root/models/queue.ts";
+import { cloudflareQueueService } from "#src/contexts/root/services/background/cloudflare-queue-service.ts";
+import { cloudflareWorkflowService } from "#src/contexts/root/services/background/cloudflare-workflow-service.ts";
 import {
   assertNoOwnedWorkflows,
   reconcileWorkerBackground,
-} from "../../../../../src/contexts/root/services/worker/worker-background.ts";
-import { backgroundHttp } from "../../../../support/root/services/background/background-http.ts";
+} from "#src/contexts/root/services/worker/worker-background.ts";
+import { backgroundHttp } from "#test-support/root/services/background/background-http.ts";
 
 const job: ResourceState = {
   definition: queue("Jobs"),

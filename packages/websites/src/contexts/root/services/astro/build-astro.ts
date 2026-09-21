@@ -7,9 +7,9 @@ import type { WorkerBuildContext } from "@renkin/runtime/models/build-reuse";
 import { createBuildContext } from "@renkin/runtime/services/build-reuse/build-context";
 import { type AstroConfig, type AstroInlineConfig, build } from "astro";
 import { sessionDrivers } from "astro/config";
-import type { AstroBuildOptions } from "../../models/astro-options.ts";
-import { buildIdentity } from "../build/reuse-options.ts";
-import { initializeCloudflareTransport } from "../build-transport/cloudflare-transport.ts";
+import type { AstroBuildOptions } from "#src/contexts/root/models/astro-options.ts";
+import { buildIdentity } from "#src/contexts/root/services/build/reuse-options.ts";
+import { initializeCloudflareTransport } from "#src/contexts/root/services/build-transport/cloudflare-transport.ts";
 import { adapterResolution } from "./adapter-resolution.ts";
 import { checkedPrerender } from "./checked-prerender.ts";
 

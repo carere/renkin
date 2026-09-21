@@ -1,5 +1,5 @@
 import { defineWorker } from "renkin/worker";
-import { Sessions } from "../shared/resources.ts";
+import { Sessions } from "#test-fixtures/full-graph/shared/resources.ts";
 
 export default defineWorker({ Sessions }, ({ Sessions }) => ({
   async fetch(request) {

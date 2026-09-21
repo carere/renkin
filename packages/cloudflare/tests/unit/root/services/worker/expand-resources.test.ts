@@ -1,7 +1,7 @@
 import { expect, it } from "@effect/vitest";
-import { kv } from "../../../../../src/contexts/root/models/kv.ts";
-import { worker } from "../../../../../src/contexts/root/models/worker.ts";
-import { expandResources } from "../../../../../src/contexts/root/services/worker/expand-resources.ts";
+import { kv } from "#src/contexts/root/models/kv.ts";
+import { worker } from "#src/contexts/root/models/worker.ts";
+import { expandResources } from "#src/contexts/root/services/worker/expand-resources.ts";
 
 it("expands shared owned dependencies once and preserves explicit declarations", () => {
   const data = kv("Data");

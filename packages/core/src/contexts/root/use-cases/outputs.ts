@@ -1,7 +1,7 @@
 import { Effect } from "effect";
-import { validateName } from "../models/stack.ts";
-import type { StateRepository } from "../services/state/state-repository.ts";
-import { StateError } from "../services/state/state-repository.ts";
+import { validateName } from "#src/contexts/root/models/stack.ts";
+import type { StateRepository } from "#src/contexts/root/services/state/state-repository.ts";
+import { StateError } from "#src/contexts/root/services/state/state-repository.ts";
 
 export const listEnvironments = (state: StateRepository, stack: string) =>
   Effect.tryPromise({

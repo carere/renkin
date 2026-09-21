@@ -3,8 +3,8 @@ import type { Json, ResourceDefinition } from "@renkin/core/models/stack";
 import type { ResourceState } from "@renkin/core/models/state";
 import type { ResourceService } from "@renkin/core/services/resource/resource-service";
 import { Effect } from "effect";
-import { cloudflareD1MigrationExecutor } from "../migrations/cloudflare-d1-migration-executor.ts";
-import { applyMigrations } from "../migrations/migration-service.ts";
+import { cloudflareD1MigrationExecutor } from "#src/contexts/root/services/migrations/cloudflare-d1-migration-executor.ts";
+import { applyMigrations } from "#src/contexts/root/services/migrations/migration-service.ts";
 import { preparedMigrations } from "./prepare-d1.ts";
 
 const record = (value: Json): Record<string, Json> => {

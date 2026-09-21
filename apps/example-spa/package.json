@@ -4,6 +4,9 @@
   "private": true,
   "description": "TanStack Start with Solid SPA example and validation app.",
   "type": "module",
+  "imports": {
+    "#project/*": "./*"
+  },
   "dependencies": {
     "@tanstack/solid-router": "^1.170.36",
     "@tanstack/solid-start": "^1.168.54",

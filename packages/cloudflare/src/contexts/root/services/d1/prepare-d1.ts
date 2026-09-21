@@ -1,5 +1,8 @@
 import type { ResourceDefinition } from "@renkin/core/models/stack";
-import { type MigrationFile, readMigrationFiles } from "../migrations/migration-files.ts";
+import {
+  type MigrationFile,
+  readMigrationFiles,
+} from "#src/contexts/root/services/migrations/migration-files.ts";
 
 export const prepareD1 = async (resource: ResourceDefinition): Promise<ResourceDefinition> => {
   if (resource.type !== "cloudflare.d1") return resource;

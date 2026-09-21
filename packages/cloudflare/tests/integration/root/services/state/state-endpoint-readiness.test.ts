@@ -3,7 +3,7 @@ import type { AddressInfo } from "node:net";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { vi } from "vitest";
-import { waitForStateEndpoint } from "../../../../../src/contexts/root/services/state/state-endpoint-readiness.ts";
+import { waitForStateEndpoint } from "#src/contexts/root/services/state/state-endpoint-readiness.ts";
 
 const server = (statuses: readonly number[], accountId = "account") =>
   Effect.acquireRelease(

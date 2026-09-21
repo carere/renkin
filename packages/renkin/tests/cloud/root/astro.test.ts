@@ -4,7 +4,7 @@ import {
   astroRead,
   astroUrl,
   createCloudAstroFixture,
-} from "../../support/root/cloud-astro-fixture.ts";
+} from "#test-support/root/cloud-astro-fixture.ts";
 
 const sessionCounts = async (url: string) => {
   let cookie = "";

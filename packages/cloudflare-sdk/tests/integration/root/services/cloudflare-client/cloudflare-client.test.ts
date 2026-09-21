@@ -5,7 +5,7 @@ import { Effect } from "effect";
 import {
   createCloudflareClient,
   type MutationGateway,
-} from "../../../../../src/contexts/root/services/cloudflare-client/cloudflare-client.ts";
+} from "#src/contexts/root/services/cloudflare-client/cloudflare-client.ts";
 
 const serve = (status: number, code: number) =>
   Effect.acquireRelease(

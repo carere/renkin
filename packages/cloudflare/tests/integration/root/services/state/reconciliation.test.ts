@@ -1,7 +1,7 @@
 import { build } from "esbuild";
 import { type Request as EmulatorRequest, Miniflare, Response } from "miniflare";
 import { afterAll, beforeAll, expect, it } from "vitest";
-import type { RecoveryInspection } from "../../../../../src/contexts/root/services/state/reconciliation.ts";
+import type { RecoveryInspection } from "#src/contexts/root/services/state/reconciliation.ts";
 
 let emulator: Miniflare;
 let complete: (() => void) | undefined;

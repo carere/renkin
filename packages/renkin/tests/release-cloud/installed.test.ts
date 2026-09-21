@@ -1,6 +1,6 @@
 import { it } from "@effect/vitest";
-import { type CloudSuite, cloudSuites } from "../support/root/release/cloud/catalog.ts";
-import { runInstalledCloud, scopeKeys } from "../support/root/release/cloud/run.ts";
+import { type CloudSuite, cloudSuites } from "#test-support/root/release/cloud/catalog.ts";
+import { runInstalledCloud, scopeKeys } from "#test-support/root/release/cloud/run.ts";
 
 it("runs maintained cloud acceptance exclusively from an explicitly selected installed consumer", async () => {
   const directory = process.env.RENKIN_INSTALLED_CLOUD_CONSUMER;

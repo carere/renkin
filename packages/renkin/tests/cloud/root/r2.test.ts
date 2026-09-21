@@ -7,7 +7,7 @@ import {
   cloudString,
   createCloudR2Fixture,
   eventuallyR2,
-} from "../../support/root/cloud-r2-fixture.ts";
+} from "#test-support/root/cloud-r2-fixture.ts";
 
 it.effect(
   "isolates named R2 previews, application credentials, CORS and exact cleanup",

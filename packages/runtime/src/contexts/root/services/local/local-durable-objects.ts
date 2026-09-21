@@ -1,5 +1,5 @@
 import type { WorkerOptions } from "miniflare";
-import type { Requirements } from "../../models/binding.ts";
+import type { Requirements } from "#src/contexts/root/models/binding.ts";
 
 export interface LocalDurableObject {
   readonly worker: string;

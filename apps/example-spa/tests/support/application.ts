@@ -7,7 +7,7 @@ import { type Browser, chromium } from "playwright";
 import { defineStack, development, type WorkerBuildResult } from "renkin";
 import { tanstackStart, worker } from "renkin/cloudflare";
 import { buildTanStack } from "renkin/vite";
-import { site } from "../../resources.ts";
+import { site } from "#project/resources.ts";
 
 const inspectBrowser = async (browser: Browser, url: string) => {
   const page = await browser.newPage();

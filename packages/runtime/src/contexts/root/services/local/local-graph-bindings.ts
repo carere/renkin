@@ -1,9 +1,9 @@
 import type { Miniflare } from "miniflare";
-import type { Requirements } from "../../models/binding.ts";
-import { guardD1, type NativeD1 } from "../../models/d1.ts";
-import { localWorkflow } from "../../models/local-workflow.ts";
-import type { NativeR2 } from "../../models/r2.ts";
-import type { NativeWorkflow } from "../../models/workflow-client.ts";
+import type { Requirements } from "#src/contexts/root/models/binding.ts";
+import { guardD1, type NativeD1 } from "#src/contexts/root/models/d1.ts";
+import { localWorkflow } from "#src/contexts/root/models/local-workflow.ts";
+import type { NativeR2 } from "#src/contexts/root/models/r2.ts";
+import type { NativeWorkflow } from "#src/contexts/root/models/workflow-client.ts";
 
 export const graphBindings = (
   runtime: Miniflare,

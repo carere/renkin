@@ -28,7 +28,14 @@ try {
         path,
       ),
   });
-  await writeFile(join(fixture, "package.json"), JSON.stringify({ private: true, type: "module" }));
+  await writeFile(
+    join(fixture, "package.json"),
+    JSON.stringify({
+      private: true,
+      type: "module",
+      imports: { "#test-fixtures/full-graph/*": "./*" },
+    }),
+  );
   await mkdir(join(fixture, "node_modules"));
   for (const dependency of await readdir(dependencyRoot)) {
     if (dependency.startsWith(".")) continue;

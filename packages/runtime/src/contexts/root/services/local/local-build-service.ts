@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { Miniflare, type MiniflareOptions } from "miniflare";
-import type { WorkerBuildResult } from "../../models/build-result.ts";
-import { readBuildResult } from "../bundler/read-build-result.ts";
+import type { WorkerBuildResult } from "#src/contexts/root/models/build-result.ts";
+import { readBuildResult } from "#src/contexts/root/services/bundler/read-build-result.ts";
 import type { LocalWorker } from "./local-worker-service.ts";
 
 export const localAssetOptions = (

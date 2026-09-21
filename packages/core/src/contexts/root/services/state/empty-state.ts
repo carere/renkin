@@ -1,4 +1,4 @@
-import type { EnvironmentState } from "../../models/state.ts";
+import type { EnvironmentState } from "#src/contexts/root/models/state.ts";
 import { StateError } from "./state-repository.ts";
 
 /** Removal is terminal for a lease and never discards unfinished work or owned resources. */

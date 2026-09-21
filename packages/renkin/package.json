@@ -5,6 +5,11 @@
   "description": "Renkin public API and CLI for local and Cloudflare applications.",
   "license": "Apache-2.0",
   "type": "module",
+  "imports": {
+    "#src/*": "./src/*",
+    "#test-support/*": "./tests/support/*",
+    "#test-fixtures/*": "./tests/fixtures/*"
+  },
   "exports": {
     ".": "./src/contexts/root/api.ts",
     "./cloudflare": "./src/contexts/root/cloudflare.ts",

@@ -1,6 +1,13 @@
-import { createRootRoute, HeadContent, Link, Outlet, Scripts } from "@tanstack/solid-router";
+import {
+  createRootRouteWithContext,
+  HeadContent,
+  Link,
+  Outlet,
+  Scripts,
+} from "@tanstack/solid-router";
 import { HydrationScript } from "solid-js/web";
-export const Route = createRootRoute({ component: Root });
+import type { ApplicationContext } from "#src/contexts/shared/context/application-context.ts";
+export const Route = createRootRouteWithContext<ApplicationContext>()({ component: Root });
 function Root() {
   return (
     <html lang="en">

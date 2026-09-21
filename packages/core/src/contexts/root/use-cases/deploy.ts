@@ -1,15 +1,26 @@
 import { randomUUID } from "node:crypto";
 import { Effect } from "effect";
-import { defineStack, type ResourceDefinition, type Stack, validateName } from "../models/stack.ts";
+import {
+  defineStack,
+  type ResourceDefinition,
+  type Stack,
+  validateName,
+} from "#src/contexts/root/models/stack.ts";
 import {
   type Change,
   type EnvironmentState,
   emptyState,
   type PendingOperation,
-} from "../models/state.ts";
-import { ResourceOperationError } from "../services/resource/resource-operation-error.ts";
-import type { ResourceService, ResourceServices } from "../services/resource/resource-service.ts";
-import type { StateLease, StateRepository } from "../services/state/state-repository.ts";
+} from "#src/contexts/root/models/state.ts";
+import { ResourceOperationError } from "#src/contexts/root/services/resource/resource-operation-error.ts";
+import type {
+  ResourceService,
+  ResourceServices,
+} from "#src/contexts/root/services/resource/resource-service.ts";
+import type {
+  StateLease,
+  StateRepository,
+} from "#src/contexts/root/services/state/state-repository.ts";
 import { assertProtection, plan } from "./plan.ts";
 import { renamedState } from "./rename.ts";
 

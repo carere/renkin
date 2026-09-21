@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile, realpath, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { validateRelease } from "../../../../src/contexts/root/services/release/validate.ts";
+import { validateRelease } from "#src/contexts/root/services/release/validate.ts";
 import { execute, type InstalledConsumer } from "./consumer.ts";
 
 export const verifyPackage = async (consumer: InstalledConsumer, archive: string) => {

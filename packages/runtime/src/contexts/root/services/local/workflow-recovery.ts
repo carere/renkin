@@ -1,7 +1,7 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import type { Miniflare, WorkerOptions } from "miniflare";
-import { LocalWorkflowRecoveryError } from "../../models/local-workflow-recovery-error.ts";
-import type { NativeWorkflow } from "../../models/workflow-client.ts";
+import { LocalWorkflowRecoveryError } from "#src/contexts/root/models/local-workflow-recovery-error.ts";
+import type { NativeWorkflow } from "#src/contexts/root/models/workflow-client.ts";
 import type { LocalWorkflow } from "./local-background.ts";
 import type { WorkflowJournal, WorkflowRecoveryRecord } from "./workflow-journal.ts";
 

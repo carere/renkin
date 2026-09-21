@@ -3,7 +3,7 @@ import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { defineStack } from "renkin";
 import { r2 } from "renkin/cloudflare";
-import { createR2Fixture, signedR2 } from "../../support/root/r2-fixture.ts";
+import { createR2Fixture, signedR2 } from "#test-support/root/r2-fixture.ts";
 
 const fixture = Effect.acquireRelease(Effect.promise(createR2Fixture), (test) =>
   Effect.promise(test.close),

@@ -1,11 +1,11 @@
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { createAccessClient } from "../../../../../src/contexts/root/services/cloudflare-client/access-client.ts";
+import { createAccessClient } from "#src/contexts/root/services/cloudflare-client/access-client.ts";
 import type {
   GatewayRequest,
   MutationGateway,
-} from "../../../../../src/contexts/root/services/cloudflare-client/cloudflare-client.ts";
-import { createSiteClient } from "../../../../../src/contexts/root/services/cloudflare-client/site-client.ts";
+} from "#src/contexts/root/services/cloudflare-client/cloudflare-client.ts";
+import { createSiteClient } from "#src/contexts/root/services/cloudflare-client/site-client.ts";
 
 const fixture = (result: unknown) => {
   const requests: GatewayRequest[] = [];

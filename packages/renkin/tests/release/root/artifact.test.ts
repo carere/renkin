@@ -1,13 +1,13 @@
 import { fileURLToPath } from "node:url";
 import { it } from "@effect/vitest";
-import { releaseArchive } from "../../support/root/release/archive.ts";
-import { installConsumer } from "../../support/root/release/consumer.ts";
-import { verifyApplications } from "../../support/root/release/verify-applications.ts";
-import { verifyBuilds } from "../../support/root/release/verify-builds.ts";
-import { verifyGraph } from "../../support/root/release/verify-graph.ts";
-import { verifyPackage } from "../../support/root/release/verify-package.ts";
-import { verifySourceGuard } from "../../support/root/release/verify-source-guard.ts";
-import { verifyTypes } from "../../support/root/release/verify-types.ts";
+import { releaseArchive } from "#test-support/root/release/archive.ts";
+import { installConsumer } from "#test-support/root/release/consumer.ts";
+import { verifyApplications } from "#test-support/root/release/verify-applications.ts";
+import { verifyBuilds } from "#test-support/root/release/verify-builds.ts";
+import { verifyGraph } from "#test-support/root/release/verify-graph.ts";
+import { verifyPackage } from "#test-support/root/release/verify-package.ts";
+import { verifySourceGuard } from "#test-support/root/release/verify-source-guard.ts";
+import { verifyTypes } from "#test-support/root/release/verify-types.ts";
 
 it("packs and installs the public artifact without workspace resolution", async () => {
   const root = fileURLToPath(new URL("../../../../..", import.meta.url));

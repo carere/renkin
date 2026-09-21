@@ -2,7 +2,7 @@ import { type WorkerOptions, type WorkerResource, worker } from "@renkin/cloudfl
 import type { ResourceDefinition } from "@renkin/core/models/stack";
 import type { BindingRequirement, Requirements } from "@renkin/runtime/models/binding";
 import type { WorkerBuildRecipe } from "@renkin/runtime/models/worker-builder";
-import { wrapBuildResult } from "../services/build/wrap-build-result.ts";
+import { wrapBuildResult } from "#src/contexts/root/services/build/wrap-build-result.ts";
 import { frameworkStartup } from "./framework-startup.ts";
 
 export interface FrameworkWorkerOptions

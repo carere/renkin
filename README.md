@@ -72,7 +72,7 @@ suites cover resources, runtime, frameworks, example apps and the full local gra
 credentialed Cloudflare suites run separately. Empty test projects remain strict.
 Standalone artifact validation passed on Linux and macOS, and installed Cloudflare
 acceptance is complete across the documented release candidates. Source CI passed
-227 behavioral tests after the startup and state fixes; see
+231 behavioral tests after the startup and state fixes; see
 [release validation](docs/release-validation.md) for exact provenance and limits.
 
 Each workspace owns its `vitest.config.ts` and its Moon test tasks. Its initial

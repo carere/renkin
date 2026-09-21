@@ -4,7 +4,7 @@ import type { ResourceState } from "@renkin/core/models/state";
 import {
   backgroundProperties as object,
   stringProperty,
-} from "../background/background-properties.ts";
+} from "#src/contexts/root/services/background/background-properties.ts";
 
 type Binding = NonNullable<NonNullable<WorkerUpload["metadata"]>["bindings"]>[number];
 export const backgroundBinding = (

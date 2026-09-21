@@ -2,7 +2,7 @@ import { QueryClientProvider } from "@tanstack/solid-query";
 import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from "@tanstack/solid-router";
 import { onCleanup } from "solid-js";
 import { HydrationScript } from "solid-js/web";
-import type { GraphContext } from "../../../shared/context.ts";
+import type { GraphContext } from "#test-fixtures/full-graph/frontends/shared/context.ts";
 export const Route = createRootRouteWithContext<GraphContext>()({ component: Root });
 function Root() {
   const context = Route.useRouteContext();

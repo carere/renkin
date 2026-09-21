@@ -6,7 +6,7 @@ import { afterAll, vi } from "vitest";
 import {
   ensureCloudflareState,
   findCloudflareState,
-} from "../../../../../src/contexts/root/services/state/bootstrap-cloudflare-state.ts";
+} from "#src/contexts/root/services/state/bootstrap-cloudflare-state.ts";
 
 const originalFetch = globalThis.fetch;
 const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {

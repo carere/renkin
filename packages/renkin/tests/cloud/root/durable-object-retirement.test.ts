@@ -3,7 +3,7 @@ import { Effect } from "effect";
 import {
   createCloudDurableObjectFixture,
   durableObjectUrl,
-} from "../../support/root/cloud-durable-object-fixture.ts";
+} from "#test-support/root/cloud-durable-object-fixture.ts";
 
 it.effect(
   "verified class rename preserves namespace ID and exact authorized retirement keeps its Worker",

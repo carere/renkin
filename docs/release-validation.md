@@ -29,9 +29,9 @@ source manifest remains unchanged. `--ignore-scripts` deliberately bypasses life
 scripts and is not a supported release path. No registry publication command is
 part of these tasks.
 
-## Completed acceptance and final artifact
+## Completed cloud acceptance and accepted artifact
 
-The final Linux-produced tarball has SHA-256
+The accepted Linux-produced cloud-validation tarball has SHA-256
 `21873a56d9bd8af088085d90670e91f1595aceb1bf78d70de0d973682ed2eff4`.
 It records clean PR merge `02ae0d8a52b41a70f3fb1e2a82814c79aa7c4081`
 (parent `593aebc`), Bun 1.4.2 and lock digest
@@ -40,9 +40,9 @@ Its inventory contains 341 files and 522 checked relative references.
 [Release CI](https://github.com/carere/renkin/actions/runs/35656934871) passed
 on Ubuntu 24.04 and macOS 15. The exact Linux bytes also passed the full local
 macOS installed-consumer harness in 39.47 seconds without repacking.
-[Source CI](https://github.com/carere/renkin/actions/runs/35656934762) passed
-227 tests across 14 populated tasks and all static checks. Four offline cloud-harness
-preparation tests passed separately and are now wired into ordinary Checks.
+[Source CI](https://github.com/carere/renkin/actions/runs/35658651597) at `2909af0` passed
+231 tests across 15 populated tasks and all static checks, including four offline
+cloud-harness preparation tests.
 
 | Candidate | Actual Cloudflare evidence |
 | --- | --- |
@@ -72,10 +72,37 @@ guard remains: distribute only the staged standalone artifact. No registry
 publication was performed. Upstream declaration and guarded framework transport
 compatibility limits described below still apply.
 
+## Standards review candidate, September 22, 2026
+
+The five final standards findings are addressed: request-scoped SSR runtime/query
+composition, project-local imports with release rewriting, service-owned entry
+implementations, mirrored test paths and a configurable state-removal test double.
+Local serial source validation passed **236 tests across 90 files and 16 populated
+tasks**, including four offline cloud-harness preparation cases. TypeScript, Biome,
+Knip and manifest sorting passed. The SSR unit task is included in serial source CI.
+
+The first standards candidate, `fc479f2`, failed installed SSR hydration because
+late Query-core discovery invalidated browser dependency hashes. The application
+now explicitly prediscovers that dependency, matching the maintained graph fixtures.
+Three fresh-cache installed SSR repetitions and the strengthened browser assertion
+against failed HTTP responses passed after the fix; no retries or stale-module
+suppression were introduced.
+
+Clean revision `8efb21e1e8720c47dc84b094ab2d993aa332028b` produced macOS archive
+`f8e298da543af484303f251f7e23560eb6822abab64ae67d923125d8dc74799c`, using Bun 1.4.2
+and lock digest `0301d2f7efd280ee3c74b9106be5025079f5257b00ea8fe0fa6a3281e5f7bbd0`.
+Its full installed-consumer harness passed in 35.34 seconds: package and declaration
+checks, all four framework apps, the native full graph, restored builds and Moon/Bun
+build nesting. The artifact retains 341 files, 522 checked relative references and
+the same eight public subpaths. This is local validation of the standards candidate;
+actual Cloudflare acceptance remains the separate multi-candidate record above.
+No provider calls, emails or publication were performed for these review fixes.
+
 ## Maintained installed-consumer checks
 
 The harness installs the actual tarball into a fresh directory outside the
-repository with no workspace aliases or manual dependency symlinks. It inspects
+repository with no private workspace package resolution or manual dependency
+symlinks. It inspects
 archive entries and the installed transitive module/URL closure, verifies all eight
 public declaration subpaths, host imports and shared Effect identity, CLI help and
 read-only inspection, plus the application's negative Effect-requirement type tests.
@@ -222,7 +249,11 @@ certificate packs matched the exact `site-fef366d3`, `astro-e6817058`, or
 tokens were revoked. No independent physical-ID inventory of every other resource
 is claimed.
 
-## Subsequent approved validation and remaining blockers
+## Historical validation and blockers (superseded)
+
+This section records intermediate candidates and failures before the completed
+acceptance above. Its former blockers are resolved; the chronology does not
+change the candidate-specific cloud evidence.
 
 The user subsequently approved the two exact email payloads and destinations.
 Background `renkin-test-jobs-7c6919bf/background` passed and cleaned up. The original
@@ -253,16 +284,17 @@ A temporary diagnostic tail was removed. The canonical backend's code, secrets,
 namespace and ownership state were preserved. These failures alone did not
 establish a provider state-size limit.
 
-Twelve complete installed suites (13 test cases) have passed. Full-graph acceptance
-is incomplete: its native flow passed, but the cron-only deployment return,
+At this intermediate checkpoint, twelve complete installed suites (13 test cases)
+had passed. Full-graph acceptance was incomplete: its native flow passed, but the cron-only deployment return,
 unchanged compilation count of three, changed cron and stable Tracking Worker ID
-still need proof. The failed graph runs are not counted as passing suites. The
-canonical archive remains unchanged; no additional email is needed for these checks.
+still needed proof. The failed graph runs were not counted as passing suites. The
+canonical archive remained unchanged; no additional email was needed for these checks.
 Later source Checks `35640386188` and its single unchanged retry also failed at
 local startup (SSR, then the full graph), despite the earlier 219-test pass and
 successful release-artifact CI. Investigation is separate from the cloud failures.
-Ticket #14 and release acceptance remain open; the publication warning stays in
-place and no registry publication has occurred.
+Ticket #14 and release acceptance were still open at that point, with a publication
+warning in place. The completed acceptance above supersedes that status. No registry
+publication has occurred.
 
 ### Repeated large-checkpoint regression
 

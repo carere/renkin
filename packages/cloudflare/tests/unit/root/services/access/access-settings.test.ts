@@ -3,7 +3,7 @@ import { Effect } from "effect";
 import {
   matchesSupplied,
   mergeApplicationSettings,
-} from "../../../../../src/contexts/root/services/access/access-settings.ts";
+} from "#src/contexts/root/services/access/access-settings.ts";
 
 describe("Access partial desired settings", () => {
   it.effect(

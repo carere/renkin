@@ -1,4 +1,4 @@
-import type { LocalR2S3Options } from "../../models/local-r2-s3.ts";
+import type { LocalR2S3Options } from "#src/contexts/root/models/local-r2-s3.ts";
 import { invalidArgument, S3Error } from "./s3-error.ts";
 
 const encoder = new TextEncoder();

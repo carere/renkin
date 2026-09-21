@@ -8,7 +8,7 @@ import {
   capturedEmails as readCapturedEmails,
   scheduled,
 } from "renkin/testing";
-import { createBackgroundFixture } from "../../support/root/background-fixture.ts";
+import { createBackgroundFixture } from "#test-support/root/background-fixture.ts";
 
 const fixture = Effect.acquireRelease(Effect.promise(createBackgroundFixture), (test) =>
   Effect.promise(test.close),

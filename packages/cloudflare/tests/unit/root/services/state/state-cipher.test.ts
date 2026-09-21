@@ -3,7 +3,7 @@ import {
   decryptState,
   encryptState,
   newStateKey,
-} from "../../../../../src/contexts/root/services/state/state-cipher.ts";
+} from "#src/contexts/root/services/state/state-cipher.ts";
 
 it("reads a version-one envelope produced by the previous binary-string encoder", async () => {
   const envelope =

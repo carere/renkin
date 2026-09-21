@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { expect, it } from "@effect/vitest";
-import { fingerprint } from "../../../../../src/contexts/root/services/build-reuse/fingerprint.ts";
+import { fingerprint } from "#src/contexts/root/services/build-reuse/fingerprint.ts";
 
 it("tracks transitive workspace source, ignored public inputs, lockfiles and added or removed files", async () => {
   const root = await mkdtemp(resolve(tmpdir(), "renkin-workspace-inputs-"));

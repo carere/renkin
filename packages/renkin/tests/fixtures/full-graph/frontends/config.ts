@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { tanstackStart } from "renkin/cloudflare";
 import { workerReference } from "renkin/worker";
-import { Files, UploadToken } from "../shared/resources.ts";
+import { Files, UploadToken } from "#test-fixtures/full-graph/shared/resources.ts";
 
 // Vite imports only build/resource bindings, never the cron-containing infrastructure module.
 export const frontend = (id: string, directory: string, rendering: "spa" | "ssr") =>

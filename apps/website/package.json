@@ -4,6 +4,9 @@
   "private": true,
   "description": "Astro marketing and documentation site.",
   "type": "module",
+  "imports": {
+    "#project/*": "./*"
+  },
   "dependencies": {
     "astro": "^7.3.3",
     "effect": "^4.0.0-rc.115",

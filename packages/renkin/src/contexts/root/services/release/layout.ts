@@ -5,6 +5,7 @@ interface SourceManifest {
   readonly name: string;
   readonly version: string;
   readonly description?: string;
+  readonly imports?: Readonly<Record<string, string>>;
   readonly exports: Readonly<Record<string, string>>;
   readonly bin?: Readonly<Record<string, string>>;
   readonly dependencies?: Readonly<Record<string, string>>;
@@ -59,4 +60,24 @@ export const sourceTarget = (packages: readonly SourcePackage[], specifier: stri
     }
   }
   throw new Error(`Private release import is not exported: ${specifier}`);
+};
+
+/** Resolve project-local source aliases before private projects share one artifact namespace. */
+export const sourceImportTarget = (owner: SourcePackage, specifier: string): string => {
+  for (const [pattern, target] of Object.entries(owner.manifest.imports ?? {})) {
+    const [prefix, suffix] = pattern.split("*");
+    const capture =
+      pattern === specifier
+        ? ""
+        : suffix !== undefined && specifier.startsWith(prefix ?? "") && specifier.endsWith(suffix)
+          ? specifier.slice(prefix?.length ?? 0, suffix ? -suffix.length : undefined)
+          : undefined;
+    if (capture === undefined) continue;
+    const resolved = resolve(owner.directory, target.replace("*", capture));
+    const local = portable(relative(owner.directory, resolved));
+    if (!target.startsWith("./src/") || !local.startsWith("src/"))
+      throw new Error(`Release alias must reference production source: ${specifier}`);
+    return resolved;
+  }
+  throw new Error(`Unknown release alias in ${owner.manifest.name}: ${specifier}`);
 };

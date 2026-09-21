@@ -1,10 +1,10 @@
 import { spawn } from "node:child_process";
 import { readFile, rm } from "node:fs/promises";
 import { relative, resolve } from "node:path";
-import type { BuildCommandOptions } from "../../models/build-command.ts";
-import type { WorkerBuildResult } from "../../models/build-result.ts";
-import type { WorkerBuildRecipe } from "../../models/worker-builder.ts";
-import { createBuildContext } from "../build-reuse/build-context.ts";
+import type { BuildCommandOptions } from "#src/contexts/root/models/build-command.ts";
+import type { WorkerBuildResult } from "#src/contexts/root/models/build-result.ts";
+import type { WorkerBuildRecipe } from "#src/contexts/root/models/worker-builder.ts";
+import { createBuildContext } from "#src/contexts/root/services/build-reuse/build-context.ts";
 
 const execute = (options: BuildCommandOptions, lease: Readonly<Record<string, string>>) =>
   new Promise<void>((done, reject) => {
