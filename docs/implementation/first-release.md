@@ -13,9 +13,9 @@ The specification and issue acceptance criteria remain authoritative.
 | [#8: Process scheduled and durable background jobs](https://github.com/carere/renkin/issues/8) | #5 | Complete; merged and closed |
 | [#9: Run persistent stateful services with Durable Objects](https://github.com/carere/renkin/issues/9) | #5 | Complete; merged and closed |
 | [#10: Serve a protected application on its domain](https://github.com/carere/renkin/issues/10) | #4 | Complete; merged and closed |
-| [#11: Run and deploy TanStack Start Solid applications](https://github.com/carere/renkin/issues/11) | #10, #5 | In progress in isolated worktree |
-| [#12: Run and deploy Astro sites](https://github.com/carere/renkin/issues/12) | #10, #5 | In progress in isolated worktree |
-| [#13: Run the complete application graph with reliable build reuse](https://github.com/carere/renkin/issues/13) | #12, #11, #9, #8, #7, #6 | Pending |
+| [#11: Run and deploy TanStack Start Solid applications](https://github.com/carere/renkin/issues/11) | #10, #5 | Complete; merged and closed |
+| [#12: Run and deploy Astro sites](https://github.com/carere/renkin/issues/12) | #10, #5 | Complete; merged and closed |
+| [#13: Run the complete application graph with reliable build reuse](https://github.com/carere/renkin/issues/13) | #12, #11, #9, #8, #7, #6 | In progress in isolated worktree |
 | [#14: Deliver and validate the first release artifact](https://github.com/carere/renkin/issues/14) | #13 | Pending |
 
 ## Validation
@@ -55,17 +55,28 @@ passed checkpoint `926fc06`: 112 behavioral tests across eight populated suites,
 plus all required static checks. Real Cloudflare connected-Worker and D1 suites
 passed, including explicit cleanup; earlier failed-run application resources
 were also removed. See [connected Worker evidence](../validation/issue-5.md) and
-[D1 behavior and evidence](../d1-migrations.md). Tickets #7 and #8 are active in
-separate worktrees. Ticket #10 is complete and closed after merge `cb4f12a`: all 123 combined
+[D1 behavior and evidence](../d1-migrations.md). Ticket #10 is complete and closed after merge `cb4f12a`: all 123 combined
 behavioral tests and static checks passed locally. Its real Cloudflare protected-site
 suite passed isolation, token recovery, configuration updates and teardown; see
-[site validation](../validation/issue-10.md). Ticket #9 is now active in an isolated
-worktree.
+[site validation](../validation/issue-10.md).
 
 Tickets #7, #8 and #9 are complete after integration `7e35c34`: 175 behavioral
 tests across eight populated suites and all required static checks passed.
 Their separate real Cloudflare suites passed and cleaned their temporary
 application resources; the authorized email recipient also confirmed delivery.
 See [R2 evidence](../validation/issue-7.md), [background jobs](../background-jobs.md)
-and [Durable Objects](../durable-objects.md). TanStack and Astro integration
-are active in separate worktrees; full-graph and release-artifact validation follow.
+and [Durable Objects](../durable-objects.md).
+[Linux CI](https://github.com/carere/renkin/actions/runs/35601234872) passed all
+175 tests and static checks at `33cb89c`.
+
+Tickets #11 and #12 are complete after integration `31cf6b0`: all 193 behavioral
+tests across 13 populated suites and required static checks passed locally.
+Real Cloudflare TanStack SPA/SSR and Astro static/SSR suites passed, including
+native bindings, assets, custom-domain HTTPS and all Astro session transitions.
+Exact temporary application resources and environments were removed. Final
+certificate inventories found no matching packs; temporary inspection tokens
+were revoked. See [TanStack evidence](../tanstack-sites.md) and
+[Astro evidence](../validation/issue-12.md).
+[Linux CI](https://github.com/carere/renkin/actions/runs/35610196784) passed all
+193 tests and static checks on the combined checkpoint. Ticket #13 is active; release packaging and final
+review remain pending.
