@@ -103,6 +103,9 @@ required; see [the fresh-start decision](adr/0002-start-with-fresh-infrastructur
   remain protected. Two deployments cannot change the same environment at once.
   A competing deployment stops with a clear message rather than waiting. A crash
   must not leave a permanent lock; different environments may deploy concurrently.
+  If a coordinator crash leaves a provider mutation's outcome unknowable, require
+  [explicit reconciliation](adr/0007-reconcile-ambiguous-provider-operations-explicitly.md)
+  before allowing later mutations, as accepted for this exceptional case.
   Database migration failures can require user intervention; resource recovery
   is not a promise to reverse or repair partially applied SQL automatically.
 - One command runs the required application graph locally without Cloudflare

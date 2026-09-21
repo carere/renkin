@@ -33,7 +33,8 @@ passed all 55 behavioral tests and static checks on checkpoint `d6a0819`.
 
 Ticket #4 is not yet complete: a cloud coordinator crash during an unobservable
 provider mutation can leave an ambiguous outcome. The implementation stops safely;
-the exceptional recovery policy is awaiting clarification. No other ticket is
+the user accepted explicit reconciliation in ADR 0007, and its operator workflow
+is being implemented. No other ticket is
 claimed complete, and the PR remains a draft.
 
 An isolated local HTTP probe against published `@distilled.cloud/cloudflare`
