@@ -22,6 +22,21 @@ export interface DevelopmentOptions {
   readonly progress?: (message: string) => void;
 }
 
+const migrateDatabases = async (
+  stack: Stack,
+  graph: Awaited<ReturnType<typeof startLocalGraph>>,
+) => {
+  for (const resource of stack.resources) {
+    if (resource.type !== "cloudflare.d1") continue;
+    await Effect.runPromise(
+      applyMigrations(
+        preparedMigrations(resource),
+        nativeD1MigrationExecutor(await graph.database(resource.id)),
+      ),
+    );
+  }
+};
+
 const start = async (input: Stack, options: DevelopmentOptions) => {
   const stack = { ...input, resources: await Promise.all(input.resources.map(prepareD1)) };
   const directory = resolve(options.directory ?? ".renkin");
@@ -52,15 +67,7 @@ const start = async (input: Stack, options: DevelopmentOptions) => {
       onReload: (id) => options.progress?.(`Reloaded ${id}`),
       onError: (message) => options.progress?.(message),
     });
-    for (const resource of stack.resources) {
-      if (resource.type !== "cloudflare.d1") continue;
-      await Effect.runPromise(
-        applyMigrations(
-          preparedMigrations(resource),
-          nativeD1MigrationExecutor(await graph.database(resource.id)),
-        ),
-      );
-    }
+    await migrateDatabases(stack, graph);
     for (const key of Object.keys(state.outputs)) delete state.outputs[key];
     for (const [id, localWorker] of Object.entries(graph.workers)) {
       state.outputs[id] = { value: { url: localWorker.url } };

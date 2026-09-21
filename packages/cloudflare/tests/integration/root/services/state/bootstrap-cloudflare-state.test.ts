@@ -12,6 +12,11 @@ const originalFetch = globalThis.fetch;
 const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
   const request = new Request(input, init);
   if (new URL(request.url).hostname === "renkin-test-state.example-account.workers.dev") {
+    if (new URL(request.url).pathname === "/v1/identity") {
+      expect(request.headers.get("authorization")).toBe(`Bearer ${"a".repeat(64)}`);
+      expect(request.headers.get("cf-workers-preview-token")).toBeNull();
+      return Response.json({ protocol: 1, accountId: "account" });
+    }
     expect(request.headers.get("cf-workers-preview-token")).toBe("preview-token");
     expect(request.headers.get("authorization")).toBeNull();
     return new Response("a".repeat(64));

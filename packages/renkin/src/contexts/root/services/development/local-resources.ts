@@ -6,6 +6,14 @@ import { plan } from "@renkin/core/use-cases/plan";
 import { renamedState } from "@renkin/core/use-cases/rename";
 import { removeLocalR2Objects } from "@renkin/runtime/services/local/local-r2-removal";
 
+const cloudOnlyControls = new Set([
+  "cloudflare.access-service-token",
+  "cloudflare.access-policy",
+  "cloudflare.access-application",
+  "cloudflare.custom-domain",
+  "cloudflare.observability-destination",
+]);
+
 const r2Removals = (changes: Iterable<Change>) =>
   [...changes].flatMap((change) => {
     if (
@@ -71,7 +79,7 @@ export const prepareLocalResources = async (
       r2Tokens[resource.id] = properties.buckets as readonly string[];
     } else if (resource.type === "cloudflare.worker" && "options" in resource)
       workerResources.push(resource as WorkerResource);
-    else throw new Error("Unsupported local resource.");
+    else if (!cloudOnlyControls.has(resource.type)) throw new Error("Unsupported local resource.");
   }
   for (const id of Object.keys(state.resources))
     if (!stack.resources.some((resource) => resource.id === id)) delete state.resources[id];
