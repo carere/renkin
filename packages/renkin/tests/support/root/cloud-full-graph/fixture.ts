@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import type { EnvironmentState } from "@renkin/core/models/state";
 import { Effect } from "effect";
 import { deploy, listEnvironments, removeEnvironment } from "renkin";
+import { removeGraphBackend } from "./backend.ts";
 import { boundRequests } from "./bounded-fetch.ts";
 import { cloudGraph } from "./cloud-stack.ts";
 
@@ -42,6 +43,7 @@ const authorizedGraphScope = () => {
 export const createCloudGraphFixture = async () => {
   authorizedGraphScope();
   const name = `renkin-test-graph-${randomUUID().slice(0, 8)}`;
+  const isolatedState = process.env.RENKIN_CLOUDFLARE_GRAPH_ISOLATED_STATE === "true";
   const directory = resolve(".renkin");
   await mkdir(directory, { recursive: true, mode: 0o700 });
   const ledger = resolve(directory, "cloud-full-graph-ledger.jsonl");
@@ -56,7 +58,7 @@ export const createCloudGraphFixture = async () => {
       authorizedGraphScope(),
     );
   const cloudflare = {
-    stateScriptName: "renkin-test-state-v2",
+    stateScriptName: isolatedState ? `${name}-state` : "renkin-test-state-v2",
     tokenManagementApiToken: process.env.RENKIN_CLOUDFLARE_TOKEN_MANAGEMENT_TOKEN ?? "",
   };
   const options = {
@@ -76,7 +78,7 @@ export const createCloudGraphFixture = async () => {
       : undefined;
     await appendFile(
       ledger,
-      `${JSON.stringify({ at: new Date().toISOString(), name, environment: options.environment, event, resources })}\n`,
+      `${JSON.stringify({ at: new Date().toISOString(), name, environment: options.environment, stateScriptName: cloudflare.stateScriptName, event, resources })}\n`,
       { mode: 0o600 },
     );
   };
@@ -101,6 +103,10 @@ export const createCloudGraphFixture = async () => {
           throw new Error("Cloud graph environment was not removed.");
         await record("cleanup-complete");
         console.info(`Cloud graph exact cleanup complete: ${name}/${options.environment}`);
+        if (isolatedState) {
+          await removeGraphBackend(name);
+          await record("isolated-backend-cleanup-complete");
+        }
       } finally {
         restoreFetch();
       }

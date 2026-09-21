@@ -2,7 +2,7 @@
   "name": "renkin",
   "version": "0.0.0",
   "private": false,
-  "description": "The sole future published package: public API and CLI.",
+  "description": "Renkin public API and CLI for local and Cloudflare applications.",
   "license": "Apache-2.0",
   "type": "module",
   "exports": {
@@ -22,8 +22,7 @@
     "dist"
   ],
   "scripts": {
-    "prepack": "bun -e 'throw new Error(\"Source workspace is not the release artifact. Run bun moon run renkin:pack, then use the generated tarball.\")'",
-    "prepublishOnly": "bun -e 'throw new Error(\"Scaffold only: implement and validate the release build before publishing\")'"
+    "prepack": "bun -e 'throw new Error(\"Source workspace is not the release artifact. Run bun moon run renkin:pack, then use the generated tarball.\")'"
   },
   "dependencies": {
     "@renkin/cloudflare": "workspace:*",

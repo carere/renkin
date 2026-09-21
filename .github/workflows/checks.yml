@@ -63,6 +63,7 @@ jobs:
           # Each integration task can start several workerd/browser/compiler processes.
           # Serialize tasks and ordinary test files; explicit concurrency tests remain enabled.
           bun moon run --concurrency 1 runtime:test-integration renkin:test-unit renkin:test-integration -- --no-file-parallelism
+          bun moon run --concurrency 1 renkin:test-release-preparation -- --no-file-parallelism
           bun moon run --concurrency 1 websites:test-unit websites:test-integration example-spa:test-integration example-ssr:test-integration -- --no-file-parallelism
           bun moon run --concurrency 1 example-static:test-integration website:test-integration -- --no-file-parallelism
 

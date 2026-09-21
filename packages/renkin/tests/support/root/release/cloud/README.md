@@ -88,3 +88,15 @@ values are never written or printed. This uses no private imports or direct priv
 Preparation includes 13 files / 14 test cases; all loaded successfully with bodies skipped and
 OS outbound networking denied after adding the public authorization equivalent.
 No provider tests or cloud mutations were executed while preparing this harness.
+
+For the final no-email graph continuation, call
+`runInstalledCloud(directory, scope, ["full-graph"], undefined, true, true)`.
+The two final options select reuse-only assertions and a fresh isolated state backend.
+The graph still creates its native resources and builds three frontends, verifies both
+cron schedules and unchanged Worker identity, and removes its application environment.
+Only after application cleanup and index absence succeed does it verify and remove
+the generated `<graph-name>-state` Worker and audit all namespace pages. If application
+cleanup fails, that backend and its ownership state are preserved for recovery.
+The ordinary full-graph default remains unchanged. This continuation never invokes
+the application flow or email send assertions; its result must not be reported as a
+fresh run of those previously completed assertions.

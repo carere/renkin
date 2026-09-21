@@ -26,6 +26,7 @@ export const supportFiles = [
   "cloud-full-graph/cloud-stack.ts",
   "cloud-full-graph/assertions.ts",
   "cloud-full-graph/bounded-fetch.ts",
+  "cloud-full-graph/backend.ts",
 ];
 export const consumerConfig = `import { defineConfig } from "vitest/config";
 export default defineConfig({test:{include:["tests/cloud/root/*.test.ts"],fileParallelism:false,
