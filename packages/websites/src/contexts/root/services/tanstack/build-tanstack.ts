@@ -1,10 +1,13 @@
 import { spawn } from "node:child_process";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { WorkerBuildResult } from "@renkin/runtime/models/build-result";
+import type { WorkerBuildContext } from "@renkin/runtime/models/build-reuse";
+import { createBuildContext } from "@renkin/runtime/services/build-reuse/build-context";
 import type { TanStackOptions } from "../../models/tanstack.ts";
+import { buildIdentity } from "../build/reuse-options.ts";
 
 const buildEnvironment = (options: TanStackOptions, directory: string): NodeJS.ProcessEnv => {
   const environment: NodeJS.ProcessEnv = {};
@@ -52,12 +55,12 @@ const runBuild = (options: TanStackOptions, directory: string, manifest: string)
     );
   });
 
-export const buildTanStack = async (options: TanStackOptions): Promise<WorkerBuildResult> => {
+const compileTanStack = async (options: TanStackOptions): Promise<WorkerBuildResult> => {
   await options.beforeBuild?.();
   const directory = await mkdtemp(resolve(tmpdir(), "renkin-tanstack-build-"));
   try {
     const manifest = resolve(directory, "build.json");
-    await runBuild(options, directory, manifest);
+    await runBuild({ ...options, root: await realpath(options.root) }, directory, manifest);
     const artifact = JSON.parse(await readFile(manifest, "utf8")) as WorkerBuildResult;
     const result: WorkerBuildResult = {
       ...artifact,
@@ -85,3 +88,29 @@ export const buildTanStack = async (options: TanStackOptions): Promise<WorkerBui
     await rm(directory, { recursive: true, force: true });
   }
 };
+
+export const buildTanStack = (
+  options: TanStackOptions,
+  context: WorkerBuildContext = createBuildContext(),
+) =>
+  context.resolve({
+    root: options.root,
+    adapter: "renkin-tanstack-v1",
+    ...buildIdentity(
+      {
+        rendering: options.rendering,
+        configFile: options.configFile,
+        serverEntry: options.serverEntry,
+        sourceMap: options.sourceMap,
+        environment: options.buildEnvironment,
+        compatibilityDate: options.compatibilityDate,
+        compatibilityFlags: options.compatibilityFlags,
+        assets: options.assets,
+        beforeBuild: options.beforeBuild,
+        afterBuild: options.afterBuild,
+      },
+      options.reuse,
+    ),
+    ...(options.reuse === undefined ? {} : { reuse: options.reuse }),
+    build: () => compileTanStack(options),
+  });

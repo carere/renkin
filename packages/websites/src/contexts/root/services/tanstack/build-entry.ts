@@ -39,7 +39,12 @@ const run = async (input: BuildInput) => {
     throw new Error("Invalid Worker output path.");
   await writeFile(
     input.manifest,
-    JSON.stringify({ entry, modules, assets: { directory: clientDirectory } }),
+    JSON.stringify({
+      entry,
+      modules,
+      auxiliaryFiles: files.filter((path) => path.endsWith(".map")),
+      assets: { directory: clientDirectory },
+    }),
   );
 };
 

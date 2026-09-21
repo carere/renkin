@@ -47,12 +47,12 @@ export const astro = (id: string, options: AstroOptions): AstroResource => {
     id,
     { ...options, bindings },
     {
-      build: async () => {
+      build: async (context) => {
         const entry = new URL("../services/astro/build-astro.ts", import.meta.url);
         const module = (await import(
           entry.href
         )) as typeof import("../services/astro/build-astro.ts");
-        return module.buildAstro(options);
+        return module.buildAstro(options, {}, context);
       },
       develop: async (context) => {
         const entry = new URL("../services/astro/develop-astro.ts", import.meta.url);

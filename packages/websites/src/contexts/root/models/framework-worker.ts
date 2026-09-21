@@ -40,7 +40,7 @@ export const frameworkWorker = (
     bindings: constants,
     dependencies: [...(options.dependencies ?? []), ...resources],
     builder: {
-      build: async () => wrapBuildResult(await recipe.build(), requirements),
+      build: async (context) => wrapBuildResult(await recipe.build(context), requirements),
       ...(recipe.develop
         ? {
             develop: async (context) => {
