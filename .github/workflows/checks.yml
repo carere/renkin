@@ -56,7 +56,7 @@ jobs:
       - name: Run behavioral tests without provider credentials
         run: |
           bun moon run core:test-unit core:test-integration
-          bun moon run cloudflare-sdk:test-integration cloudflare:test-integration
+          bun moon run cloudflare-sdk:test-integration cloudflare:test-unit cloudflare:test-integration
           bun moon run runtime:test-integration renkin:test-unit renkin:test-integration
 
       - name: Ensure checks leave tracked files unchanged
