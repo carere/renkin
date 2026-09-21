@@ -6,15 +6,19 @@ import {
 } from "../../support/root/cloud-full-graph/assertions.ts";
 import { createCloudGraphFixture } from "../../support/root/cloud-full-graph/fixture.ts";
 
+const reuseOnly = process.env.RENKIN_CLOUDFLARE_GRAPH_REUSE_ONLY === "true";
+
 it.effect(
-  "cloud eight-app graph reuses frontend builds while reconciling native resources and cron",
+  reuseOnly
+    ? "cloud graph reuse-only: three frontend artifacts, cron update and stable Worker identity without application flow"
+    : "cloud eight-app graph reuses frontend builds while reconciling native resources and cron",
   () =>
     Effect.promise(async () => {
       const test = await createCloudGraphFixture();
       try {
         const first = await test.apply();
         expect(test.compilations()).toBe(3);
-        await assertCloudFlow(first);
+        if (!reuseOnly) await assertCloudFlow(first);
         await assertCloudCron(first, "0 0 1 1 *");
         const changed = await test.apply("0 1 1 1 *");
         expect(test.compilations()).toBe(3);

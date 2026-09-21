@@ -23,11 +23,14 @@ const scope = () => {
     );
   return { prefix, domain, zoneId };
 };
-const ready = async (url: string, expected: string) => {
+const ready = async (url: string, expected: string, timeout = 180_000) => {
   let status = "not requested";
-  for (let attempt = 0; attempt < 180; attempt++) {
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
     try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(Math.max(1, Math.min(10_000, deadline - Date.now()))),
+      });
       status = `HTTP ${response.status}`;
       if (response.ok && (await response.text()).includes(expected)) return;
     } catch (error) {
@@ -134,7 +137,8 @@ const run = async () => {
     await ready(output.url, "Renkin Solid");
     await verify(output.url, mode);
     if (mode === "ssr") {
-      await ready(`https://${hostname}`, "Renkin Solid");
+      // Custom-domain certificate issuance can remain pending after Worker readiness.
+      await ready(`https://${hostname}`, "Renkin Solid", 900_000);
       const response = await fetch(`https://${hostname}/api/counter`);
       assert.deepEqual(await response.json(), { value: 1, stage: "cloud-acceptance" });
     }
