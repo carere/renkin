@@ -16,6 +16,7 @@ import { LocalR2RemovalError } from "@renkin/runtime/services/local/local-r2-rem
 import { Effect } from "effect";
 import { frameworkSessions } from "./development/framework-sessions.ts";
 import { prepareLocalResources } from "./development/local-resources.ts";
+import { startupFailure, startupTrace } from "./development/startup-diagnostic.ts";
 
 export interface DevelopmentOptions {
   readonly environment?: string;
@@ -40,11 +41,15 @@ const migrateDatabases = async (
   }
 };
 
-const start = async (input: Stack, options: DevelopmentOptions) => {
+const start = async (
+  input: Stack,
+  options: DevelopmentOptions,
+  trace: ReturnType<typeof startupTrace>,
+) => {
   const directory = resolve(options.directory ?? ".renkin");
   const environment = options.environment ?? "local";
   const repository = new FileStateRepository(directory);
-  const lease = await repository.acquire(input.name, environment);
+  const lease = await trace.run("acquire-state", () => repository.acquire(input.name, environment));
   const frameworks = frameworkSessions();
   let graph: Awaited<ReturnType<typeof startLocalGraph>> | undefined;
   const close = async () => {
@@ -59,37 +64,40 @@ const start = async (input: Stack, options: DevelopmentOptions) => {
     }
   };
   try {
-    const stack = await prepareStack(
-      await frameworks.prepare(
+    const prepared = await trace.run("frameworks", () =>
+      frameworks.prepare(
         input,
         resolve(directory, "frameworks", input.name, environment),
         options.watch ?? true,
       ),
     );
+    const stack = await trace.run("prepare-stack", () => prepareStack(prepared));
     const persist = resolve(directory, "data", stack.name, environment);
-    const { state, ...resources } = await prepareLocalResources(
-      stack,
-      (await lease.read()) ?? emptyState(stack.name, environment),
-      persist,
+    const previous = await trace.run("read-state", () => lease.read());
+    const { state, ...resources } = await trace.run("prepare-resources", () =>
+      prepareLocalResources(stack, previous ?? emptyState(stack.name, environment), persist),
     );
-    await lease.write(state);
-    graph = await startLocalGraph({
-      ...resources,
-      ...(options.r2S3 ? { r2S3: options.r2S3 } : {}),
-      persist,
-      watch: options.watch ?? true,
-      onReload: (id) => options.progress?.(`Reloaded ${id}`),
-      onError: (message) => options.progress?.(message),
-    });
-    await migrateDatabases(stack, graph);
-    await frameworks.connect(graph);
+    await trace.run("write-state", () => lease.write(state));
+    graph = await trace.run("start-runtime", () =>
+      startLocalGraph({
+        ...resources,
+        ...(options.r2S3 ? { r2S3: options.r2S3 } : {}),
+        persist,
+        watch: options.watch ?? true,
+        onReload: (id) => options.progress?.(`Reloaded ${id}`),
+        onError: (message) => options.progress?.(message),
+      }),
+    );
+    const activeGraph = graph;
+    await trace.run("migrations", () => migrateDatabases(stack, activeGraph));
+    await trace.run("connect-frameworks", () => frameworks.connect(activeGraph));
     for (const key of Object.keys(state.outputs)) delete state.outputs[key];
     for (const [id, localWorker] of Object.entries(graph.workers)) {
       state.outputs[id] = { value: { url: localWorker.url } };
       options.progress?.(`${id}: ${localWorker.url}`);
     }
     Object.assign(state.outputs, stack.outputs ?? {});
-    await lease.write(state);
+    await trace.run("write-state", () => lease.write(state));
     return {
       workers: graph.workers,
       database: graph.database,
@@ -99,22 +107,27 @@ const start = async (input: Stack, options: DevelopmentOptions) => {
       close,
     };
   } catch (error) {
-    await close();
+    const failedPhase = trace.phase;
+    await trace.run("cleanup", close);
+    trace.phase = failedPhase;
     throw error;
   }
 };
 
 export const development = (stack: Stack, options: DevelopmentOptions = {}) =>
-  Effect.acquireRelease(
-    Effect.tryPromise({
-      try: () => start(stack, options),
-      catch: (error) =>
-        error instanceof MigrationError ||
-        error instanceof LocalR2RemovalError ||
-        error instanceof LocalWorkflowRecoveryError ||
-        (error instanceof Error && error.message.startsWith("Deletion protection"))
-          ? error
-          : new Error("Local application startup failed."),
-    }),
-    (session) => Effect.promise(() => session.close()),
-  );
+  Effect.suspend(() => {
+    const trace = startupTrace();
+    return Effect.acquireRelease(
+      Effect.tryPromise({
+        try: () => start(stack, options, trace),
+        catch: (error) =>
+          error instanceof MigrationError ||
+          error instanceof LocalR2RemovalError ||
+          error instanceof LocalWorkflowRecoveryError ||
+          (error instanceof Error && error.message.startsWith("Deletion protection"))
+            ? error
+            : startupFailure(trace.phase, error),
+      }),
+      (session) => Effect.promise(() => session.close()),
+    );
+  });
