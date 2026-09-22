@@ -9,9 +9,9 @@ Static output creates no session KV namespace.
 From the workspace root:
 
 ```sh
-bun moon run example-static:dev
-bun moon run example-static:build
-bun moon run example-static:test-integration
+moon run example-static:dev
+moon run example-static:build
+moon run example-static:test-integration
 ```
 
 Run `bun --bun astro build` directly in this directory, or use the Moon build task.

@@ -267,18 +267,21 @@ The following guides cover resource-specific options and operational details:
 
 ## Developing this repository
 
-Use the latest stable Bun, the latest Node.js LTS, and Cocogitto **6.5.0 or newer**.
-`.prototools` selects `bun = "latest"` and `node = "lts"`; Moon inherits both.
-CI uses the same aliases and checks for the newest LTS release. Run `proto install`
-to refresh locally managed runtimes. Runtime aliases can advance across majors.
-Moon and npm tools are development dependencies; invoke them with `bun`.
+Install [Proto](https://moonrepo.dev/docs/proto/install), then run `proto install`
+in the repository. `.prototools` selects `bun = "latest"`, `moon = "latest"` and
+`node = "lts"`. CI uses `moonrepo/setup-toolchain` to install the same toolchain.
+Moon inherits Bun and Node versions from this file. These aliases can advance
+across major versions. Keep Proto's shims on your PATH and invoke `moon` directly;
+other npm tools remain development dependencies invoked through Bun.
+Cocogitto **6.5.0 or newer** is also required for local commit checks.
 
 ```sh
 git clone git@github.com:carere/renkin.git
 cd renkin
+proto install
 bun install --frozen-lockfile
 bun lefthook install
-bun moon sync
+moon sync
 bun tsc --build
 bun biome check .
 bun knip
@@ -286,7 +289,7 @@ bun sort-package-json --check package.json apps/*/package.json packages/*/packag
 ```
 
 `prepare` enables Effect diagnostics in TypeScript. `bun lefthook install` installs
-Git hooks; `bun moon sync` synchronizes workspace configuration. Hooks check staged files
+Git hooks; `moon sync` synchronizes workspace configuration. Hooks check staged files
 and Conventional Commit messages without rewriting or staging additional changes.
 Use `bun biome check --write .` for formatting and import organization, and
 `bun sort-package-json package.json apps/*/package.json packages/*/package.json`
@@ -299,10 +302,10 @@ bun tsc --build                       # Strict TypeScript project references
 bun biome check .                     # Biome formatting, lint and import checks
 bun sort-package-json --check package.json apps/*/package.json packages/*/package.json
 bun knip                              # Unused files and dependencies
-bun moon run core:typecheck core:lint # An individual workspace
-bun moon run :test-unit               # Unit tasks across all workspaces
-bun moon run :test-integration        # Integration tasks across all workspaces
-bun moon run core:test-unit           # One workspace suite
+moon run core:typecheck core:lint     # An individual workspace
+moon run :test-unit                   # Unit tasks across all workspaces
+moon run :test-integration            # Integration tasks across all workspaces
+moon run core:test-unit               # One workspace suite
 cog check --ignore-merge-commits       # Commit history, once commits exist
 ```
 
@@ -324,14 +327,14 @@ contributing.
 
 The Checks workflow first runs a static job: types, formatting/lint, unused code,
 manifest sorting, conventional commits and the PR title. The test job only starts
-if that job passes. Unit tests run together using `bun moon run :test-unit` with
+if that job passes. Unit tests run together using `moon run :test-unit` with
 normal Moon and Vitest parallelism. Integration, preparation and Astro suites
 remain separate serial steps, using `--concurrency 1` for Moon and
 `--no-file-parallelism` for Vitest to keep browser and local Cloudflare processes
 from competing for runner resources. For example:
 
 ```sh
-bun moon run --concurrency 1 :test-integration -- --no-file-parallelism
+moon run --concurrency 1 :test-integration -- --no-file-parallelism
 ```
 
 Renkin's config also owns the `preparation`, `astro`, `release`, `cloud` and
@@ -376,9 +379,8 @@ in LICENSE, NOTICE, SOURCE_PROVENANCE.md and THIRD_PARTY_NOTICES.md.
 ## Remote cache credentials
 
 Set `MOON_REMOTE_CACHE_TOKEN` in the ignored root `.env` file; `.env.example`
-contains the variable name only. The documented `bun moon` and `bun run` commands
-load `.env` automatically. When invoking `moon` directly, export the variable in
-your shell first. Never commit the token.
+contains the variable name only. Direct `moon` commands do not load `.env`:
+export the variable in your shell before running Moon. Never commit the token.
 
 CI reads the GitHub Actions secret `MOON_REMOTE_CACHE_TOKEN`; configure that secret
 for `carere/renkin` to enable authenticated cache access. A local `.env` is not
@@ -412,7 +414,7 @@ below 1.0; choose the first stable release explicitly. Dry runs do not execute
 bump hooks.
 
 Versioning does not publish a package. Build the standalone artifact with
-`bun moon run renkin:pack` and inspect its identity using the commands in
+`moon run renkin:pack` and inspect its identity using the commands in
 [package assembly](docs/agents/packaging.md). Source-workspace packing remains
 guarded; only the staged tarball is an intended distribution artifact. Registry
 publication requires separate authorization and is not part of validation.

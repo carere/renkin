@@ -24,5 +24,5 @@ messages and transport causes may contain request information.
 
 Integration tests exercise real Distilled serialization and error classification
 against a loopback HTTP server and the gateway boundary. They need no Cloudflare
-credentials. Run `bun moon run cloudflare-sdk:test-integration`. No unit suite is
+credentials. Run `moon run cloudflare-sdk:test-integration`. No unit suite is
 defined yet; an empty unit run is not validation.

@@ -105,7 +105,7 @@ bun x --no-install renkin dev --file renkin.ts
 bun x --no-install vitest run --project integration
 ```
 
-From the repository root, `bun moon run websites:test-integration
+From the repository root, `moon run websites:test-integration
 example-spa:test-integration example-ssr:test-integration` runs native bridge and
 browser checks. Install the browser once with `bun x playwright install chromium`.
 The app suites execute the public APIs in Bun and use Chromium to verify hydration,

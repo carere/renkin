@@ -9,8 +9,8 @@ Effect is an external compatible peer and Distilled remains an external dependen
 From a source checkout:
 
 ```sh
-bun moon run renkin:pack
-bun moon run renkin:test-release
+moon run renkin:pack
+moon run renkin:test-release
 ```
 
 The stage is `.renkin/release/package`; the versioned tarball and `artifact.json`

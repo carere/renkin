@@ -13,7 +13,6 @@
     "@biomejs/biome": "^2.5.13",
     "@effect/tsgo": "^0.45.0",
     "@effect/vitest": "^4.0.0-rc.115",
-    "@moonrepo/cli": "^2.5.4",
     "@types/node": "^24.10.1",
     "effect": "^4.0.0-rc.115",
     "knip": "^6.35.1",

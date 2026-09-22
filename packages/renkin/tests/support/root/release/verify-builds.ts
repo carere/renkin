@@ -21,6 +21,7 @@ export const verifyBuilds = async (consumer: InstalledConsumer, root: string) =>
     join(root, "packages/renkin/tests/support/root/build/nesting-probe.ts"),
     join(target, "nesting-probe.ts"),
   );
+  await cp(join(root, ".prototools"), join(consumer.directory, ".prototools"));
   await mkdir(join(consumer.directory, ".moon"));
   await writeFile(
     join(consumer.directory, ".moon/workspace.yml"),

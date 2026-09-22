@@ -27,7 +27,7 @@
     "dist"
   ],
   "scripts": {
-    "prepack": "bun -e 'throw new Error(\"Source workspace is not the release artifact. Run bun moon run renkin:pack, then use the generated tarball.\")'"
+    "prepack": "bun -e 'throw new Error(\"Source workspace is not the release artifact. Run moon run renkin:pack, then use the generated tarball.\")'"
   },
   "dependencies": {
     "@renkin/cloudflare": "workspace:*",

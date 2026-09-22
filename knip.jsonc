@@ -1,5 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  // Moon is installed by Proto, so dependency-based plugin discovery cannot enable it.
+  "moonrepo": true,
   "workspaces": {
     // Runtime-provided cloudflare:workers is a workerd built-in, not the cloudflare npm package.
     "apps/example-spa": { "entry": ["renkin.ts"], "ignoreDependencies": ["cloudflare"] },

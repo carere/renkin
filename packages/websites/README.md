@@ -19,7 +19,7 @@ files. The session-driver implementation is original TypeScript, not copied from
 Unstorage or Alchemy. The verified external package versions are recorded in the
 lockfile and Astro validation documentation.
 
-Run `bun moon run websites:test-integration` for actual workerd build/asset checks
+Run `moon run websites:test-integration` for actual workerd build/asset checks
 and the native platform bridge test. The normal suite requires no cloud credentials.
 This package composes TanStack Start Solid SPA/SSR builds with Renkin Workers and
 native local bindings. Consumers use `renkin/cloudflare`, `renkin/vite`, and the

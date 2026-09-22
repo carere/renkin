@@ -48,7 +48,7 @@ boundary so the provisioned resources match the runtime.
 
 ## Build and development
 
-Run `bun moon run example-static:dev` from this
+Run `moon run example-static:dev` from this
 checkout. These tasks use public `renkin dev`. Programmatic `development(stack)`
 also discovers framework recipes. The Astro development server handles source
 reload; a single Renkin Miniflare 4 graph owns local native storage and persistent
@@ -96,8 +96,8 @@ source reload, base paths, Node fallback, styled components through symlinked
 roots, and concurrent build requests. Run these without credentials:
 
 ```sh
-bun moon run websites:test-integration renkin:test-integration
-bun moon run example-static:test-integration renkin:test-astro
+moon run websites:test-integration renkin:test-integration
+moon run example-static:test-integration renkin:test-astro
 ```
 
 The separately invoked `packages/renkin/tests/cloud/root/astro.test.ts` requires

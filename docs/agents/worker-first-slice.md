@@ -132,9 +132,9 @@ This is resource recovery, not SQL rollback.
 Local suites use no Cloudflare credentials:
 
 ```sh
-bun moon run core:test-unit core:test-integration
-bun moon run cloudflare-sdk:test-integration cloudflare:test-integration
-bun moon run runtime:test-integration renkin:test-unit renkin:test-integration
+moon run core:test-unit core:test-integration
+moon run cloudflare-sdk:test-integration cloudflare:test-integration
+moon run runtime:test-integration renkin:test-unit renkin:test-integration
 ```
 
 The separate `renkin:test-cloud` suite creates only resources under the explicit

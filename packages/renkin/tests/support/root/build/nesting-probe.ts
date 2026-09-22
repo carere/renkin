@@ -15,17 +15,7 @@ const temporary = await mkdtemp(resolve(tmpdir(), "renkin-command-probe-"));
 try {
   const external = withBuildCommand(site, {
     cwd: root,
-    command: [
-      process.execPath,
-      "x",
-      "moon",
-      "run",
-      "example-static:build",
-      "--no-actions",
-      "--force",
-      "--cache",
-      "off",
-    ],
+    command: ["moon", "run", "example-static:build", "--no-actions", "--force", "--cache", "off"],
     manifest: ".renkin/build-result.json",
     environment: {
       PATH: `${dirname(process.execPath)}:${process.env.PATH}`,

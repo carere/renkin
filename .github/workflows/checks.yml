@@ -24,22 +24,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
+      - name: Set up Proto toolchain
+        uses: moonrepo/setup-toolchain@v0
         with:
-          node-version: "lts/*"
-          check-latest: true
-
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: "latest"
+          auto-install: true
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
       - name: Synchronize Moon workspace
-        run: bun moon sync
+        run: moon sync
 
       - name: Check TypeScript types
         run: bun tsc --build
@@ -79,37 +73,31 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
+      - name: Set up Proto toolchain
+        uses: moonrepo/setup-toolchain@v0
         with:
-          node-version: "lts/*"
-          check-latest: true
-
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: "latest"
+          auto-install: true
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
       - name: Synchronize Moon workspace
-        run: bun moon sync
+        run: moon sync
 
       - name: Run unit tests
-        run: bun moon run :test-unit
+        run: moon run :test-unit
 
       - name: Install Chromium for framework browser checks
         run: bun x playwright install --with-deps chromium
 
       - name: Run local integration tests
-        run: bun moon run --concurrency 1 :test-integration -- --no-file-parallelism
+        run: moon run --concurrency 1 :test-integration -- --no-file-parallelism
 
       - name: Check cloud test preparation without provider credentials
-        run: bun moon run --concurrency 1 :test-release-preparation -- --no-file-parallelism
+        run: moon run --concurrency 1 :test-release-preparation -- --no-file-parallelism
 
       - name: Check Astro SSR through its CLI
-        run: bun moon run --concurrency 1 :test-astro -- --no-file-parallelism
+        run: moon run --concurrency 1 :test-astro -- --no-file-parallelism
 
       - name: Ensure checks leave tracked files unchanged
         run: git diff --exit-code

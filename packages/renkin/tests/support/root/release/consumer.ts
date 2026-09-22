@@ -95,7 +95,6 @@ export const installConsumer = async (root: string, archive: string) => {
           },
           devDependencies: {
             typescript: tools.devDependencies.typescript,
-            "@moonrepo/cli": tools.devDependencies["@moonrepo/cli"],
             "@types/node": tools.devDependencies["@types/node"],
           },
         },
