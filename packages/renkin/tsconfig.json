@@ -4,5 +4,26 @@
     "outDir": "../../.moon/cache/types/packages/renkin"
   },
   "files": [],
-  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "*.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "*.ts"],
+  "references": [
+    {
+      "path": "../cloudflare"
+    },
+    {
+      "path": "../cloudflare-sdk"
+    },
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../runtime"
+    },
+    {
+      "path": "../testing"
+    },
+    {
+      "path": "../websites"
+    }
+  ],
+  "exclude": ["tests/fixtures/**/.astro/**", "tests/fixtures/**/dist/**"]
 }

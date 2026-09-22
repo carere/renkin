@@ -10,3 +10,27 @@ tasks:
     command: vitest run --project integration
     options:
       cache: false
+  test-cloud:
+    command: vitest run --mode cloud --project cloud
+    options:
+      cache: false
+  build:
+    command: bun --no-env-file release.ts build
+    options:
+      cache: false
+  pack:
+    command: bun --no-env-file release.ts pack
+    options:
+      cache: false
+  test-release:
+    command: bun --bun vitest run --mode release --project release
+    options:
+      cache: false
+  test-release-preparation:
+    command: vitest run --project preparation
+    options:
+      cache: false
+  test-astro:
+    command: vitest run --project astro
+    options:
+      cache: false

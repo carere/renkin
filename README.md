@@ -1,25 +1,287 @@
 # Renkin
 
-An Effect-based infrastructure toolkit for Cloudflare. This repository currently
-provides a Bun/Moon monorepo foundation; the engine, resources, runtime, SDK and
-framework integrations have not been implemented. See the
-[architecture](docs/architecture.md) for the agreed workspace boundaries and open
-decisions.
+Renkin is an Effect-based infrastructure toolkit for Cloudflare. Declare Workers,
+storage and websites in TypeScript, run the application locally without cloud
+credentials, and deploy named environments from the same definitions.
 
-## Getting started
+It supports Workers and service bindings; D1, KV and R2; queues, Workflows,
+Durable Objects and email; Access, custom domains and assets; TanStack Start with
+Solid (SPA/SSR); and Astro (static/SSR). Use Bun on macOS or Linux. Node.js and
+Windows are not supported Renkin execution environments.
 
-Use the latest stable Bun, the latest Node.js LTS, and Cocogitto **6.5.0 or newer**.
-`.prototools` selects `bun = "latest"` and `node = "lts"`; Moon inherits both.
-CI uses the same aliases and checks for the newest LTS release. Run `proto install`
-to refresh locally managed runtimes. Runtime aliases can advance across majors.
-Moon and npm tools are development dependencies; invoke them with `bun`.
+## Install
+
+Once published, install the single public package and its Effect peer:
+
+```sh
+bun add renkin "effect@^4.0.0-rc.115"
+```
+
+For an unpublished release candidate, replace `renkin` with the path to its staged
+`.tgz` artifact. Internal `@renkin/*` workspaces are not consumer dependencies.
+Framework applications also install their usual Astro or TanStack dependencies.
+
+## Your first Worker
+
+Keep the Worker implementation separate from infrastructure configuration:
+
+```ts
+// worker.ts
+export default {
+  fetch() {
+    return new Response("Hello from Renkin");
+  },
+};
+```
+
+```ts
+// renkin.ts
+import { defineStack } from "renkin";
+import { worker } from "renkin/cloudflare";
+
+export default defineStack({
+  name: "hello",
+  resources: [worker("api", {
+    entry: new URL("./worker.ts", import.meta.url).pathname,
+    compatibilityDate: "2026-07-30",
+    port: 8787,
+  })],
+});
+```
+
+```sh
+bunx --bun renkin dev
+```
+
+The development command starts the local application graph, watches source changes
+and keeps local data between restarts. No Cloudflare credentials are needed.
+Local email is captured rather than sent. Local state lives under `.renkin/`;
+exclude that directory from Git because it can contain secrets.
+
+Effect handlers can use `defineWorker` from `renkin/worker`:
+
+```ts
+import { Effect } from "effect";
+import { defineWorker } from "renkin/worker";
+
+export default defineWorker({
+  fetch: () => Effect.succeed(new Response("Hello from Effect")),
+});
+```
+
+Pass an application layer as the second argument when handlers require services.
+Missing Effect requirements are checked by TypeScript.
+
+## Deploy and inspect environments
+
+Set `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in your environment or an
+ignored `.env` file. Use an API token with permissions for the resources you declare;
+Renkin does not use browser login or saved Cloudflare profiles. The account needs
+a workers.dev subdomain. The first deployment creates its shared encrypted state
+backend automatically; developers and CI must select the same backend.
+
+```sh
+bunx --bun renkin plan --env preview
+bunx --bun renkin deploy --env preview --yes
+bunx --bun renkin list --stack hello
+bunx --bun renkin outputs --stack hello --env preview
+bunx --bun renkin remove --stack hello --env preview --yes
+```
+
+`--file path/to/renkin.ts` selects another stack file. `list` and `outputs` emit
+JSON without loading infrastructure code. Progress goes to stderr. Secret outputs
+are redacted unless you explicitly use `--reveal-secrets`.
+
+Data resources are protected from deletion and replacement by default. Use
+`allowDelete: true` deliberately for disposable resources. Neither `--yes`
+(skip confirmation) nor `--force` (rerun unchanged resources) bypasses protection.
+Nonempty R2 buckets additionally require the explicit empty-and-delete option.
+The shared state backend survives ordinary environment removal.
+
+A competing deployment fails instead of changing an environment concurrently.
+Interrupted deployments normally resume from their checkpoint. If a provider
+operation has an unknowable outcome, `renkin inspect` reports the blocked operation;
+[explicit reconciliation](docs/agents/worker-first-slice.md#reconcile-an-ambiguous-provider-operation)
+is required after establishing its outcome. Resource recovery is not SQL rollback.
+
+## Bind resources to application code
+
+Declare resources once and use them in the Worker implementation. Renkin derives
+binding requirements and deployment dependencies from that use:
+
+```ts
+// worker.ts
+import { Effect } from "effect";
+import { d1 } from "renkin/cloudflare";
+import { defineWorker } from "renkin/worker";
+
+export const database = d1("Database", { migrations: "./migrations" });
+export default defineWorker({ DB: database }, ({ DB }) => ({
+  fetch: () => Effect.gen(function* () {
+    const row = yield* DB.first<{ count: number }>("SELECT COUNT(*) AS count FROM users");
+    return Response.json(row);
+  }),
+}));
+```
+
+Include `database` and the Worker in the stack’s resources, using the Worker file
+as `worker(..., { entry })`. Typed resource clients
+also expose native handles, such as `DB.native`, for platform APIs and Drizzle.
+D1 accepts plain SQL files or the supported Drizzle `meta/_journal.json` layout;
+applied migration names are skipped. Do not edit an applied migration expecting it
+to rerun—add a new migration instead.
+
+## Astro: use the normal build command
+
+Declare the site and install Renkin's integration in ordinary Astro configuration:
+
+```ts
+// renkin.ts
+import { defineStack } from "renkin";
+import { astro } from "renkin/cloudflare";
+
+export const site = astro("site", {
+  root: import.meta.dirname,
+  output: "static", // use "server" for SSR
+  compatibilityDate: "2026-07-30",
+});
+export default defineStack({ name: "my-site", resources: [site] });
+```
+
+```ts
+// astro.config.ts
+import { defineConfig } from "astro/config";
+import { renkin } from "renkin/astro";
+import { site } from "./renkin.ts";
+
+export default defineConfig({
+  integrations: [renkin(site)],
+});
+```
+
+```sh
+bunx --bun renkin dev
+bunx --bun astro build
+bunx --bun renkin deploy --env preview --yes
+```
+
+No `build.ts` is needed. Astro builds the site; the integration configures its
+official Cloudflare adapter and writes `.renkin/build-result.json` for Renkin's
+Worker/asset deployment pipeline. Keep your normal Astro routing, integrations,
+styles and output settings in `astro.config.ts`. Do not also configure another
+adapter. The integration's build setup does not provision cloud resources.
+
+Deployment can build automatically; `buildAstro(site)` remains available from
+`renkin/astro` for programmatic builds. To make deployment call your CLI/Moon task,
+wrap the original site with `withBuildCommand` and point it at the generated manifest:
+
+```ts
+const deployedSite = withBuildCommand(site, {
+  cwd: import.meta.dirname,
+  command: ["bun", "--bun", "astro", "build"],
+  manifest: ".renkin/build-result.json",
+});
+```
+
+Import `withBuildCommand` from `renkin` and put `deployedSite` in the deployment
+stack. The Astro config must continue to import the original `site`.
+
+SSR gets a protected session KV namespace by default. Supply native resources via
+`bindings`, choose an existing session binding with `sessionKVBindingName`, or set
+it to `false` to disable sessions. Static output creates no session namespace.
+High-level D1/R2/KV resources are attached after production page generation; use
+SSR routes for resource access. See [the static example](apps/example-static) and
+[Astro compatibility details](docs/agents/astro-sites.md).
+
+## TanStack Start with Solid
+
+Declare a site with `tanstackStart` from `renkin/cloudflare`, then use the public
+Vite plugin:
+
+```ts
+// resources.ts
+import { kv, tanstackStart } from "renkin/cloudflare";
+export const site = tanstackStart("app", {
+  root: import.meta.dirname,
+  rendering: "ssr", // or "spa"
+  compatibilityDate: "2026-07-30",
+  bindings: { DATA: kv("data") },
+});
+```
+
+```ts
+// vite.config.ts
+import { defineConfig } from "vite";
+import { renkin } from "renkin/vite";
+import { site } from "./resources.ts";
+export default defineConfig({ plugins: [renkin(site)] });
+```
+
+Include `site` in your stack and run `renkin dev`. The [SPA](apps/example-spa) and
+[SSR](apps/example-ssr) examples show routing, hydration and native bindings.
+Renkin skips unchanged framework builds when captured inputs and artifacts still
+match. Declare external inputs through `reuse.inputs`; missing build artifacts
+cause a rebuild. [Build reuse](docs/agents/build-reuse.md) documents external commands
+and cache boundaries.
+
+For native server bindings, infer the environment from your site instead of
+repeating resource types in a handwritten interface:
+
+```ts
+// src/types/cloudflare.d.ts
+// Keep this file ambient: use type import expressions, not top-level imports.
+declare module "cloudflare:workers" {
+  const env: import("renkin/cloudflare").SiteEnvironment<typeof import("../../resources.ts").site>;
+  export { env };
+}
+```
+
+Server code still imports `env` from `cloudflare:workers`. These type-only imports
+add no infrastructure code to the application bundle. `SiteEnvironment` supports
+TanStack and Astro declarations, including enabled Astro session KV bindings.
+It describes native handles, preserves queue/workflow payload and service types,
+and types string configuration as `string`. Infer from the original declaration
+before widening it to a general resource type. Never access server bindings in
+browser code.
+
+## APIs, testing and further details
+
+The root package exposes Effect operations including `development`, `deploy`,
+`planDeployment`, `removeEnvironment`, `listEnvironments` and `readOutputs`.
+Use `Effect.scoped(development(stack))` to manage a local session's lifetime.
+Public helpers in `renkin/testing` exercise real local Workers, bindings, events,
+restart persistence and captured email. Local emulation does not prove cloud-only
+features such as custom domains, Access policies or production R2 CORS.
+
+The README is the primary usage guide; no documentation website is maintained.
+The following guides cover resource-specific options and operational details:
+
+- [Connected Workers and KV](docs/agents/connected-workers.md)
+- [D1 and migrations](docs/agents/d1-migrations.md)
+- [R2 and preview environments](docs/agents/r2-and-previews.md)
+- [Queues, Workflows and email](docs/agents/background-jobs.md)
+- [Durable Objects](docs/agents/durable-objects.md)
+- [Custom domains, Access and assets](docs/agents/sites-and-access.md)
+- [Astro](docs/agents/astro-sites.md) and [TanStack](docs/agents/tanstack-sites.md)
+- [Package assembly and checks](docs/agents/packaging.md)
+
+## Developing this repository
+
+Install [Proto](https://moonrepo.dev/docs/proto/install), then run `proto install`
+in the repository. `.prototools` selects `bun = "latest"`, `moon = "latest"` and
+`node = "lts"`. CI uses `moonrepo/setup-toolchain` to install the same toolchain.
+Moon inherits Bun and Node versions from this file. These aliases can advance
+across major versions. Keep Proto's shims on your PATH and invoke `moon` directly;
+other npm tools remain development dependencies invoked through Bun.
+Cocogitto **6.5.0 or newer** is also required for local commit checks.
 
 ```sh
 git clone git@github.com:carere/renkin.git
 cd renkin
+proto install
 bun install --frozen-lockfile
 bun lefthook install
-bun moon sync
+moon sync
 bun tsc --build
 bun biome check .
 bun knip
@@ -27,7 +289,7 @@ bun sort-package-json --check package.json apps/*/package.json packages/*/packag
 ```
 
 `prepare` enables Effect diagnostics in TypeScript. `bun lefthook install` installs
-Git hooks; `bun moon sync` synchronizes workspace configuration. Hooks check staged files
+Git hooks; `moon sync` synchronizes workspace configuration. Hooks check staged files
 and Conventional Commit messages without rewriting or staging additional changes.
 Use `bun biome check --write .` for formatting and import organization, and
 `bun sort-package-json package.json apps/*/package.json packages/*/package.json`
@@ -40,21 +302,21 @@ bun tsc --build                       # Strict TypeScript project references
 bun biome check .                     # Biome formatting, lint and import checks
 bun sort-package-json --check package.json apps/*/package.json packages/*/package.json
 bun knip                              # Unused files and dependencies
-bun moon run core:typecheck core:lint # An individual workspace
-bun moon run :test-unit               # Unit tasks across all workspaces
-bun moon run :test-integration        # Integration tasks across all workspaces
-bun moon run core:test-unit           # One workspace suite
+moon run core:typecheck core:lint     # An individual workspace
+moon run :test-unit                   # Unit tasks across all workspaces
+moon run :test-integration            # Integration tasks across all workspaces
+moon run core:test-unit               # One workspace suite
 cog check --ignore-merge-commits       # Commit history, once commits exist
 ```
 
 Foundation validation runs Biome, TypeScript, Knip and manifest sorting directly.
-TypeScript checks the workspace-owned tool configurations. No behavior is
-implemented, and there are currently **zero tests**. Test tasks are strict: they
-fail for empty suites and are not yet included in CI. Add the
-relevant test tasks to CI as behavioral suites land. No application build,
-resource tests, deployment or release validation exists yet.
+TypeScript checks the workspace-owned tool configurations. Populated behavioral
+suites cover resources, runtime, frameworks, example apps and the full local graph;
+credentialed Cloudflare suites run separately. Workspaces only define Moon test
+tasks for populated suites; running an empty Vitest project still fails.
+See [package assembly](docs/agents/packaging.md) for standalone artifact checks.
 
-Each workspace owns its `vitest.config.ts` and its Moon test tasks. Its initial
+Each workspace owns one `vitest.config.ts` and its Moon test tasks. Its named
 unit and integration projects discover local `tests/unit/**/*.test.ts` and
 `tests/integration/**/*.test.ts`; the owner can change discovery, environments
 and setup independently. Moon aggregates matching tasks with `:test-unit`,
@@ -62,6 +324,26 @@ and setup independently. Moon aggregates matching tasks with `:test-unit`,
 needed. Use `@effect/vitest` for Effect behavior and add browser tooling when real
 application flows exist. Read [CODING_STANDARD.md](CODING_STANDARD.md) before
 contributing.
+
+The Checks workflow first runs a static job: types, formatting/lint, unused code,
+manifest sorting, conventional commits and the PR title. The test job only starts
+if that job passes. Unit tests run together using `moon run :test-unit` with
+normal Moon and Vitest parallelism. Integration, preparation and Astro suites
+remain separate serial steps, using `--concurrency 1` for Moon and
+`--no-file-parallelism` for Vitest to keep browser and local Cloudflare processes
+from competing for runner resources. For example:
+
+```sh
+moon run --concurrency 1 :test-integration -- --no-file-parallelism
+```
+
+Renkin's config also owns the `preparation`, `astro`, `release`, `cloud` and
+`installed-cloud` projects. Ordinary runs only discover local suites. Select
+`--mode release --project release` for installed-package checks, or
+`--mode cloud --project cloud` for credentialed provider tests. The installed
+cloud suite uses `--mode cloud --project installed-cloud` and requires its
+explicit consumer and resource-scope configuration. Moon tasks supply these
+selectors for their corresponding suites.
 
 ## Workspace tooling
 
@@ -73,7 +355,8 @@ root Moon project. Moon uses local caching
 and the shared Remoshu HTTP cache at `https://remoshu.carere.workers.dev`, with
 Renkin artifacts isolated under `carere/renkin`. Cache integrity verification is enabled.
 Repository checks run directly, outside Moon caching.
-Add cache inputs, outputs and dependency ordering with future build tasks.
+Configure application build inputs and external command ordering through the
+[build reuse API](docs/agents/build-reuse.md); workspace Moon task definitions remain explicit.
 
 Dependencies use caret (`^`) ranges. `bun.lock` records the exact resolved versions;
 `bun install --frozen-lockfile` keeps CI reproducible. Run `bun update` to select
@@ -90,15 +373,14 @@ synchronization of that field is disabled.
 GitHub Actions runs the same checks, verifies Conventional Commits and PR titles,
 and checks for configuration drift. It needs no Cloudflare credentials. Review
 [AGENTS.md](AGENTS.md) and the individual `.agents/skills/*/SKILL.md` files for
-agent workflows. Apache 2.0 is the chosen project license; prepare its license
-file and applicable third-party notices before importing source or publishing.
+agent workflows. Apache 2.0 licensing, source provenance and external dependency notices are present
+in LICENSE, NOTICE, SOURCE_PROVENANCE.md and THIRD_PARTY_NOTICES.md.
 
 ## Remote cache credentials
 
 Set `MOON_REMOTE_CACHE_TOKEN` in the ignored root `.env` file; `.env.example`
-contains the variable name only. The documented `bun moon` and `bun run` commands
-load `.env` automatically. When invoking `moon` directly, export the variable in
-your shell first. Never commit the token.
+contains the variable name only. Direct `moon` commands do not load `.env`:
+export the variable in your shell before running Moon. Never commit the token.
 
 CI reads the GitHub Actions secret `MOON_REMOTE_CACHE_TOKEN`; configure that secret
 for `carere/renkin` to enable authenticated cache access. A local `.env` is not
@@ -131,10 +413,11 @@ are accepted and omitted from release notes. Before 1.0, automatic bumps stay
 below 1.0; choose the first stable release explicitly. Dry runs do not execute
 bump hooks.
 
-Versioning configuration does not complete the release build. Before publishing,
-implement and validate the build and isolated consumer checks described in
-[the architecture](docs/architecture.md), then replace the scaffold publish guard
-with the actual release checks and add deployment automation.
+Versioning does not publish a package. Build the standalone artifact with
+`moon run renkin:pack` and inspect its identity using the commands in
+[package assembly](docs/agents/packaging.md). Source-workspace packing remains
+guarded; only the staged tarball is an intended distribution artifact. Registry
+publication requires separate authorization and is not part of validation.
 
 References: [Cocogitto configuration](https://docs.cocogitto.io/reference/config.html)
 [automatic versioning and hooks](https://docs.cocogitto.io/guide/bump.html),

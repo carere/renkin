@@ -1,6 +1,6 @@
 # runtime
 
-Worker execution, native bindings, bundling and local emulation.
+Worker implementation wrappers, esbuild bundling and real Miniflare/workerd execution. Local Workers support source watching and owner-selected persistence roots without Cloudflare credentials. The integration suite exercises actual HTTP and hot reload.
 
-Scaffold only; no implementation or runnable application yet. See the
-[architecture](../../docs/architecture.md) for ownership and constraints.
+See [Worker usage and validation](../../docs/agents/worker-first-slice.md) and
+[architecture](../../docs/agents/architecture.md) for interfaces, ownership and limitations.

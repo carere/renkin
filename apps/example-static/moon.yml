@@ -2,11 +2,22 @@ $schema: ../../.moon/cache/schemas/project.json
 language: typescript
 stack: frontend
 tasks:
-  test-unit:
-    command: vitest run --project unit
-    options:
-      cache: false
   test-integration:
     command: vitest run --project integration
     options:
       cache: false
+  dev:
+    command: renkin dev
+    options:
+      cache: false
+      persistent: true
+  build:
+    command: bun --bun astro build
+    inputs:
+      - src/**/*
+      - public/**/*
+      - astro.config.ts
+      - renkin.ts
+    outputs:
+      - dist
+      - .renkin/build-result.json

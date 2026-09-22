@@ -1,2 +1,7 @@
 bun = "latest"
+moon = "latest"
 node = "lts"
+
+[settings]
+auto-install = true
+detect-strategy = "only-prototools"

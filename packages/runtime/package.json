@@ -4,7 +4,24 @@
   "private": true,
   "description": "Worker execution, native bindings, bundling and local emulation.",
   "type": "module",
+  "imports": {
+    "#src/*": "./src/*",
+    "#test-support/*": "./tests/support/*"
+  },
+  "exports": {
+    "./*": "./src/contexts/root/*.ts"
+  },
+  "dependencies": {
+    "@cloudflare/workers-types": "^5.20260921.1",
+    "effect": "^4.0.0-rc.115",
+    "esbuild": "^0.28.2",
+    "ignore": "^7.0.9",
+    "miniflare": "^4.20260730.0"
+  },
   "devDependencies": {
+    "@effect/vitest": "^4.0.0-rc.115",
+    "aws4fetch": "^1.0.20",
+    "drizzle-orm": "^0.45.3",
     "vitest": "^5.0.0"
   }
 }

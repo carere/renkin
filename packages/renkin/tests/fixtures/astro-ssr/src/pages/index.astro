@@ -1,0 +1,9 @@
+---
+import { env } from "cloudflare:workers";
+// biome-ignore lint/correctness/noUnusedImports: Used by the Astro template outside frontmatter.
+import Shell from "../contexts/root/components/shell.astro";
+
+const _greeting = env.GREETING;
+const _name = Astro.url.searchParams.get("name") ?? "developer";
+---
+<Shell title="Renkin · Astro SSR"><p>RENKIN / ASTRO SSR</p><h1>Hello, {_name}.</h1><p>{_greeting}</p><p>This response is rendered for your request. Native bindings and sessions use the same resource graph locally and in Cloudflare.</p><nav><a href="/session">Session counter</a><a href="/api/content">Native KV response</a><a href="/generated">Prerendered page</a></nav></Shell>

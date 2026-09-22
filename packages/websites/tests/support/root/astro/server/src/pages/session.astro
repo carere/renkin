@@ -1,0 +1,6 @@
+---
+if (!Astro.session) throw new Error("Sessions are disabled.");
+const _count = ((await Astro.session.get("count")) ?? 0) as number;
+Astro.session.set("count", _count + 1);
+---
+<html lang="en"><head><title>Session</title></head><body><p data-count={_count + 1}>Session visit {_count + 1}</p></body></html>

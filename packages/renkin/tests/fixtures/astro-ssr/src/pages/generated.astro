@@ -1,0 +1,9 @@
+---
+import { env } from "cloudflare:workers";
+// biome-ignore lint/correctness/noUnusedImports: Used by the Astro template outside frontmatter.
+import Shell from "../contexts/root/components/shell.astro";
+export const prerender = true;
+const _runtime = typeof (globalThis as { WebSocketPair?: unknown }).WebSocketPair;
+const _content = typeof env.CONTENT;
+---
+<Shell title="Page generation · Renkin"><h1>Generated during the build</h1><p data-runtime={_runtime}>Runtime: {_runtime}</p><p data-content={_content}>CONTENT binding during generation: {_content}</p><p>Production page generation does not gain access to D1, R2 or KV from high-level resource declarations.</p></Shell>

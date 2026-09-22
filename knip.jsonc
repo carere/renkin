@@ -1,6 +1,28 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  // Moon is installed by Proto, so dependency-based plugin discovery cannot enable it.
+  "moonrepo": true,
   "workspaces": {
+    // Runtime-provided cloudflare:workers is a workerd built-in, not the cloudflare npm package.
+    "apps/example-spa": { "entry": ["renkin.ts"], "ignoreDependencies": ["cloudflare"] },
+    "apps/example-ssr": { "entry": ["renkin.ts"], "ignoreDependencies": ["cloudflare"] },
+    "packages/runtime": { "ignoreDependencies": ["cloudflare"] },
+    "packages/websites": {
+      "entry": ["tests/support/**/*.astro", "tests/support/**/src/pages/**/*.ts"],
+      // The scoped build bridge resolves these from the official plugin's own dependency tree.
+      "ignoreDependencies": ["cloudflare", "miniflare", "undici", "wrangler"]
+    },
+    "apps/example-static": { "entry": ["renkin.ts"] },
+    "packages/renkin": {
+      "ignore": ["tests/fixtures/**/.astro/**"],
+      "entry": [
+        "tests/fixtures/**/*.ts",
+        "tests/fixtures/**/*.astro",
+        "tests/fixtures/**/vite.config.mts",
+        "release.ts"
+      ],
+      "ignoreDependencies": ["cloudflare"]
+    },
     ".": {
       "entry": [],
       "project": [],

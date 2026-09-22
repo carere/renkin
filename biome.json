@@ -12,7 +12,8 @@
       "!!**/.moon/cache",
       "!!**/dist",
       "!!**/coverage",
-      "!!.agents"
+      "!!.agents",
+      "!!**/routeTree.gen.ts"
     ],
     "ignoreUnknown": true
   },

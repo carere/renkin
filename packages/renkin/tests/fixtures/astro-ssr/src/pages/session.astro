@@ -1,0 +1,9 @@
+---
+// biome-ignore lint/correctness/noUnusedImports: Used by the Astro template outside frontmatter.
+import Shell from "../contexts/root/components/shell.astro";
+
+if (!Astro.session) throw new Error("Sessions are disabled.");
+const _count = ((await Astro.session.get("count")) ?? 0) as number;
+Astro.session.set("count", _count + 1);
+---
+<Shell title="Session · Renkin"><h1>Your session visits</h1><p data-count={_count + 1}>This session has visited {_count + 1} times.</p><p>Session data lives in the protected native KV namespace declared automatically by the Astro resource.</p><a href="/session">Visit again</a></Shell>

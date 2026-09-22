@@ -4,5 +4,10 @@
     "outDir": "../../.moon/cache/types/packages/testing"
   },
   "files": [],
-  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "*.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "*.ts"],
+  "references": [
+    {
+      "path": "../runtime"
+    }
+  ]
 }

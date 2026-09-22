@@ -14,7 +14,7 @@
   Add concept folders such as `models`, `services`, `use-cases`, `guards`, `types`, `utils`, `components`,
   `hooks`, etc as needed.
 - Keep bounded contexts inside projects. Do not create a package for each bounded context.
-  Use the names and ownership defined in the [context map](docs/context/map.md).
+  Use the names and ownership defined in the [domain context](docs/context/root.md).
 - Use the lexical contained in the files inside `docs/context/<bounded-context>.md`.
 - Every application has a `src/contexts/shared/` folder for elements used by several
   bounded contexts, organized by concept. For example, reusable UI primitives belong

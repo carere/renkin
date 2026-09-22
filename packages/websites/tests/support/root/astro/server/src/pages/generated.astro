@@ -1,0 +1,7 @@
+---
+import { env } from "cloudflare:workers";
+export const prerender = true;
+const _runtime = typeof WebSocketPair;
+const _binding = typeof env.DATA;
+---
+<html lang="en"><head><title>Generated</title></head><body><p data-runtime={_runtime}>Workerd page generation</p><p data-binding={_binding}>Production resource declarations do not grant page-generation access.</p></body></html>

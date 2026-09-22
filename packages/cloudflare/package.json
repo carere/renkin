@@ -4,7 +4,24 @@
   "private": true,
   "description": "Selected Cloudflare resources and capabilities implemented through the SDK.",
   "type": "module",
+  "imports": {
+    "#src/*": "./src/*",
+    "#test-support/*": "./tests/support/*"
+  },
+  "exports": {
+    "./*": "./src/contexts/root/*.ts"
+  },
+  "dependencies": {
+    "@renkin/cloudflare-sdk": "workspace:*",
+    "@renkin/core": "workspace:*",
+    "@renkin/runtime": "workspace:*",
+    "effect": "^4.0.0-rc.115",
+    "mime": "^4.1.0"
+  },
   "devDependencies": {
+    "@effect/vitest": "^4.0.0-rc.115",
+    "esbuild": "^0.28.2",
+    "miniflare": "^4.20260730.0",
     "vitest": "^5.0.0"
   }
 }

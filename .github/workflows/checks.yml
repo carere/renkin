@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  checks:
+  static:
     runs-on: ubuntu-24.04
     env:
       MOON_REMOTE_CACHE_TOKEN: ${{ secrets.MOON_REMOTE_CACHE_TOKEN }}
@@ -24,22 +24,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
+      - name: Set up Proto toolchain
+        uses: moonrepo/setup-toolchain@v0
         with:
-          node-version: "lts/*"
-          check-latest: true
-
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: "latest"
+          auto-install: true
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
       - name: Synchronize Moon workspace
-        run: bun moon sync
+        run: moon sync
 
       - name: Check TypeScript types
         run: bun tsc --build
@@ -53,9 +47,6 @@ jobs:
       - name: Check package manifest sorting
         run: bun sort-package-json --check package.json apps/*/package.json packages/*/package.json
 
-      - name: Ensure checks leave tracked files unchanged
-        run: git diff --exit-code
-
       - name: Check conventional commits
         uses: cocogitto/cocogitto-action@v4
         with:
@@ -67,3 +58,46 @@ jobs:
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: cog verify "$PR_TITLE"
+
+      - name: Ensure static checks leave tracked files unchanged
+        run: git diff --exit-code
+
+  regular:
+    needs: static
+    runs-on: ubuntu-24.04
+    env:
+      MOON_REMOTE_CACHE_TOKEN: ${{ secrets.MOON_REMOTE_CACHE_TOKEN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Proto toolchain
+        uses: moonrepo/setup-toolchain@v0
+        with:
+          auto-install: true
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Synchronize Moon workspace
+        run: moon sync
+
+      - name: Run unit tests
+        run: moon run :test-unit
+
+      - name: Install Chromium for framework browser checks
+        run: bun x playwright install --with-deps chromium
+
+      - name: Run local integration tests
+        run: moon run --concurrency 1 :test-integration -- --no-file-parallelism
+
+      - name: Check cloud test preparation without provider credentials
+        run: moon run --concurrency 1 :test-release-preparation -- --no-file-parallelism
+
+      - name: Check Astro SSR through its CLI
+        run: moon run --concurrency 1 :test-astro -- --no-file-parallelism
+
+      - name: Ensure checks leave tracked files unchanged
+        run: git diff --exit-code

@@ -4,7 +4,20 @@
   "private": true,
   "description": "TanStack Start with Solid SPA example and validation app.",
   "type": "module",
+  "imports": {
+    "#project/*": "./*"
+  },
+  "dependencies": {
+    "@tanstack/solid-router": "^1.170.36",
+    "@tanstack/solid-start": "^1.168.54",
+    "effect": "^4.0.0-rc.115",
+    "renkin": "workspace:*",
+    "solid-js": "^1.9.15"
+  },
   "devDependencies": {
+    "@effect/vitest": "^4.0.0-rc.115",
+    "playwright": "^1.63.0",
+    "vite": "^8.3.0",
     "vitest": "^5.0.0"
   }
 }

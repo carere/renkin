@@ -1,8 +1,0 @@
-{
-  "extends": "../../tsconfig.options.json",
-  "compilerOptions": {
-    "outDir": "../../.moon/cache/types/apps/website"
-  },
-  "files": [],
-  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "*.ts"]
-}

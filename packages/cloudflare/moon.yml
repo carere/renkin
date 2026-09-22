@@ -10,3 +10,7 @@ tasks:
     command: vitest run --project integration
     options:
       cache: false
+  test-cloud-authorization:
+    command: vitest run --mode cloud --project cloud
+    options:
+      cache: false

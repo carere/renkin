@@ -1,0 +1,13 @@
+---
+// biome-ignore lint/correctness/noUnusedImports: Used by the Astro template outside frontmatter.
+import Shell from "../contexts/root/components/shell.astro";
+
+const _runtime = typeof (globalThis as { WebSocketPair?: unknown }).WebSocketPair;
+---
+<Shell title="Renkin · Astro static">
+  <p>RENKIN / ASTRO STATIC</p>
+  <h1>Pages built once.<br />Served at the edge.</h1>
+  <p>This site uses Renkin's public Astro resource. Its HTML is generated in workerd, then served as Cloudflare assets.</p>
+  <p data-runtime={_runtime}>Page-generation runtime: <code>{_runtime === "function" ? "workerd" : "Node"}</code></p>
+  <p><a href={`${import.meta.env.BASE_URL}about/`}>See the second route →</a></p>
+</Shell>

@@ -1,0 +1,6 @@
+---
+const _name = Astro.url.searchParams.get("name") ?? "visitor";
+---
+<html lang="en"><head><title>Renkin Astro SSR</title></head><body><h1>Hello {_name}</h1><p>Rendered per request</p></body></html>
+
+<style>h1 { color: rebeccapurple; }</style>
