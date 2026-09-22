@@ -15,30 +15,33 @@ const crashAfterRename = (disk: FileStateRepository): StateRepository => {
   const state: StateRepository = {
     read: (stack, env) => disk.read(stack, env),
     list: (stack) => disk.list(stack),
-    acquire: async (stack, env) => {
-      const lease = await disk.acquire(stack, env);
-      return {
-        ...lease,
-        write: async (value) => {
-          await lease.write(value);
-          if (crash && value.resources.renamed) {
-            crash = false;
-            throw new Error("Crash after atomic write");
-          }
-        },
-      };
-    },
+    acquire: (stack, env) =>
+      Effect.gen(function* () {
+        const lease = yield* disk.acquire(stack, env);
+        return {
+          ...lease,
+          write: (value) =>
+            Effect.gen(function* () {
+              yield* lease.write(value);
+              if (crash && value.resources.renamed) {
+                crash = false;
+                return yield* Effect.die(new Error("Crash after atomic write"));
+              }
+            }),
+        };
+      }),
   };
   return state;
 };
-
 const noMutation = {
-  apply: async () => {
-    throw new Error("Unexpected provider change");
-  },
-  remove: async () => {
-    throw new Error("Unexpected removal");
-  },
+  apply: () =>
+    Effect.gen(function* () {
+      return yield* Effect.fail(new Error("Unexpected provider change"));
+    }),
+  remove: () =>
+    Effect.gen(function* () {
+      return yield* Effect.fail(new Error("Unexpected removal"));
+    }),
 };
 it.effect(
   "recovers a crash after the atomic rename checkpoint without changing data identity or references",
@@ -70,9 +73,9 @@ it.effect(
         physicalId: "worker",
         outputs: null,
       };
-      const lease = await disk.acquire("app", "dev");
-      await lease.write(before);
-      await lease.release();
+      const lease = await Effect.runPromise(disk.acquire("app", "dev"));
+      await Effect.runPromise(lease.write(before));
+      await Effect.runPromise(lease.release());
       const state = crashAfterRename(disk);
       const desired: Stack = {
         name: "app",

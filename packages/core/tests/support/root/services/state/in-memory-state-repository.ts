@@ -1,32 +1,41 @@
+import { Effect } from "effect";
 import type { EnvironmentState } from "#src/contexts/root/models/state.ts";
-import type {
-  StateLease,
-  StateRepository,
+import {
+  StateError,
+  type StateLease,
+  type StateRepository,
 } from "#src/contexts/root/services/state/state-repository.ts";
-
 export class InMemoryStateRepository implements StateRepository {
   value: EnvironmentState | undefined;
   written: EnvironmentState | undefined;
   removeEmptyCalls = 0;
+  releaseCalls = 0;
   removeEmptyError: Error | undefined;
-  async read() {
-    return this.value;
+  read() {
+    return Effect.sync(() => this.value);
   }
-  async list() {
-    return this.value ? [this.value.environment] : [];
+  list() {
+    return Effect.sync(() => (this.value ? [this.value.environment] : []));
   }
-  async acquire(): Promise<StateLease> {
-    return {
+  acquire(): Effect.Effect<StateLease> {
+    return Effect.sync(() => ({
       token: "test",
       read: () => this.read(),
-      write: async (state) => {
-        this.written = structuredClone(state);
-      },
-      removeEmpty: async () => {
-        this.removeEmptyCalls++;
-        if (this.removeEmptyError) throw this.removeEmptyError;
-      },
-      release: async () => {},
-    };
+      write: (state) =>
+        Effect.sync(() => {
+          this.written = structuredClone(state);
+        }),
+      removeEmpty: () =>
+        Effect.suspend(() => {
+          this.removeEmptyCalls++;
+          return this.removeEmptyError
+            ? Effect.fail(new StateError("unreadable", this.removeEmptyError.message))
+            : Effect.void;
+        }),
+      release: () =>
+        Effect.sync(() => {
+          this.releaseCalls++;
+        }),
+    }));
   }
 }

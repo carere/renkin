@@ -1,5 +1,6 @@
 import { expect, it } from "@effect/vitest";
 import type { ResourceState } from "@renkin/core/models/state";
+import { Effect } from "effect";
 import { vi } from "vitest";
 import { cloudEnvironment } from "#src/contexts/root/services/cloud-environment.ts";
 
@@ -60,11 +61,13 @@ const wire = () => {
 it("public cloud composition publishes Worker schedules through the fenced SDK client", async () => {
   const test = wire();
   try {
-    const environment = await cloudEnvironment("composition", "test", {
-      accountId: "account",
-      apiToken: "test-token",
-    });
-    const lease = await environment.state.acquire("composition", "test");
+    const environment = await Effect.runPromise(
+      cloudEnvironment("composition", "test", {
+        accountId: "account",
+        apiToken: "test-token",
+      }),
+    );
+    const lease = await Effect.runPromise(environment.state.acquire("composition", "test"));
     try {
       const resource: ResourceState = {
         definition: {
@@ -81,14 +84,17 @@ it("public cloud composition publishes Worker schedules through the fenced SDK c
         physicalId: "app",
         outputs: { managedCrons: true },
       };
-      await environment.services(lease)["cloudflare.worker"]?.bind?.(resource, { App: resource });
+      await Effect.runPromise(
+        environment.services(lease)["cloudflare.worker"]?.bind?.(resource, { App: resource }) ??
+          Effect.void,
+      );
       const schedule = test.writes.find((request) => request.path.endsWith("/app/schedules"));
       expect(schedule).toBeDefined();
       expect(JSON.parse(Buffer.from(schedule?.bodyBase64 ?? "", "base64").toString())).toEqual([
         { cron: "0 0 * * *" },
       ]);
     } finally {
-      await lease.release();
+      await Effect.runPromise(lease.release());
     }
   } finally {
     test.close();

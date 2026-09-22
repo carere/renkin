@@ -65,7 +65,6 @@ const credentialBinding = (
     text: JSON.stringify({ accessKeyId, secretAccessKey, endpoint, region, buckets }),
   };
 };
-
 const bindings = (
   definition: ResourceDefinition,
   resources: Readonly<Record<string, ResourceState>>,
@@ -152,7 +151,6 @@ const stub = (definition: ResourceDefinition) => {
     throw new Error("Invalid named entrypoints.");
   return `import {WorkerEntrypoint} from "cloudflare:workers"; ${(Array.isArray(names) ? names : []).map((name) => `export class ${name} extends WorkerEntrypoint {}`).join("\n")}\nexport default {fetch(){return new Response("Deployment is not ready",{status:503})}};`;
 };
-
 interface WorkerServiceOptions {
   readonly client: ReturnType<typeof createCloudflareClient>;
   readonly backgroundClient?: ReturnType<typeof createBackgroundClient>;
@@ -164,7 +162,6 @@ interface WorkerServiceOptions {
   readonly environment: string;
   readonly subdomain: string;
 }
-
 const configurationHash = (
   definition: ResourceDefinition,
   resolved: NonNullable<Metadata["bindings"]>,
@@ -173,25 +170,28 @@ const configurationHash = (
     .update(canonical(definition.properties))
     .update(JSON.stringify(resolved))
     .digest("hex");
-
-const publishWorker = async (
+const publishWorker = (
   options: WorkerServiceOptions,
   resource: ResourceState,
   resources: Readonly<Record<string, ResourceState>>,
   marker: string,
   tags: readonly string[],
   force = false,
-) => {
-  const resolved = bindings(resource.definition, resources);
-  const hash = configurationHash(resource.definition, resolved);
-  if (force || !tags.includes(`renkin-config:${hash}`)) {
-    const publication = await prepareWorkerPublication(resource, options.siteClient, options.token);
-    const classes = await observedDurableObjectClasses(
-      resource.physicalId,
-      options.durableObjectClient,
-    );
-    await Effect.runPromise(
-      options.client.putWorker(
+) =>
+  Effect.gen(function* () {
+    const resolved = bindings(resource.definition, resources);
+    const hash = configurationHash(resource.definition, resolved);
+    if (force || !tags.includes(`renkin-config:${hash}`)) {
+      const publication = yield* prepareWorkerPublication(
+        resource,
+        options.siteClient,
+        options.token,
+      );
+      const classes = yield* observedDurableObjectClasses(
+        resource.physicalId,
+        options.durableObjectClient,
+      );
+      yield* options.client.putWorker(
         {
           scriptName: resource.physicalId,
           metadata: {
@@ -204,12 +204,10 @@ const publishWorker = async (
           files: publication.files,
         },
         options.token,
-      ),
-    );
-  }
-};
-
-const detachCallers = async (
+      );
+    }
+  });
+const detachCallers = (
   target: ResourceState,
   resources: Readonly<Record<string, ResourceState>>,
   options: WorkerServiceOptions,
@@ -217,44 +215,48 @@ const detachCallers = async (
   verifyOwner: (
     name: string,
     ownershipId: string,
-  ) => Promise<Awaited<ReturnType<typeof observeWorker>>>,
-): Promise<void> => {
-  for (const caller of Object.values(resources)) {
-    if (caller.definition.type !== "cloudflare.worker") continue;
-    const observed = await verifyOwner(
-      caller.physicalId,
-      caller.ownershipId ?? caller.definition.id,
-    );
-    if (
-      !observed?.bindings?.some(
-        (binding) => binding.type === "service" && binding.service === target.physicalId,
-      )
-    )
-      continue;
-    const expected = bindings(caller.definition, resources, true);
-    const candidate = expected.map((binding) => {
-      if (binding.type !== "service") return binding;
-      const current = observed.bindings?.find((item) => item.name === binding.name);
-      return current?.type === "service" && current.service === target.physicalId
-        ? { ...binding, service: target.physicalId }
-        : binding;
-    });
-    if (
-      !observed.tags?.includes(`renkin-config:${configurationHash(caller.definition, candidate)}`)
-    )
-      throw new Error(
-        "Owned caller configuration changed; reconcile it before removing its target.",
+  ) => Effect.Effect<Effect.Success<ReturnType<typeof observeWorker>>, Error>,
+) =>
+  Effect.gen(function* () {
+    for (const caller of Object.values(resources)) {
+      if (caller.definition.type !== "cloudflare.worker") continue;
+      const observed = yield* verifyOwner(
+        caller.physicalId,
+        caller.ownershipId ?? caller.definition.id,
       );
-    const publication = await prepareWorkerPublication(caller, options.siteClient, options.token);
-    const classes = await observedDurableObjectClasses(
-      caller.physicalId,
-      options.durableObjectClient,
-    );
-    const resolved = expected.filter(
-      (binding) => binding.type !== "service" || binding.service !== target.physicalId,
-    );
-    await Effect.runPromise(
-      options.client.putWorker(
+      if (
+        !observed?.bindings?.some(
+          (binding) => binding.type === "service" && binding.service === target.physicalId,
+        )
+      )
+        continue;
+      const expected = bindings(caller.definition, resources, true);
+      const candidate = expected.map((binding) => {
+        if (binding.type !== "service") return binding;
+        const current = observed.bindings?.find((item) => item.name === binding.name);
+        return current?.type === "service" && current.service === target.physicalId
+          ? { ...binding, service: target.physicalId }
+          : binding;
+      });
+      if (
+        !observed.tags?.includes(`renkin-config:${configurationHash(caller.definition, candidate)}`)
+      )
+        return yield* Effect.fail(
+          new Error("Owned caller configuration changed; reconcile it before removing its target."),
+        );
+      const publication = yield* prepareWorkerPublication(
+        caller,
+        options.siteClient,
+        options.token,
+      );
+      const classes = yield* observedDurableObjectClasses(
+        caller.physicalId,
+        options.durableObjectClient,
+      );
+      const resolved = expected.filter(
+        (binding) => binding.type !== "service" || binding.service !== target.physicalId,
+      );
+      yield* options.client.putWorker(
         {
           scriptName: caller.physicalId,
           metadata: {
@@ -271,44 +273,42 @@ const detachCallers = async (
           files: publication.files,
         },
         options.token,
-      ),
-    );
-  }
-};
+      );
+    }
+  });
 const observeWorker = (options: WorkerServiceOptions, name: string) =>
-  Effect.runPromise(
-    options.client
-      .getWorker(name)
-      .pipe(Effect.catchTag("WorkerNotFound", () => Effect.succeed(undefined))),
-  );
-
-const workerOutputs = async (
+  options.client
+    .getWorker(name)
+    .pipe(Effect.catchTag("WorkerNotFound", () => Effect.succeed(undefined)));
+const workerOutputs = (
   options: WorkerServiceOptions,
   definition: ResourceDefinition,
   physicalId: string,
   previous: ResourceState | undefined,
   resources: Readonly<Record<string, ResourceState>>,
-) => ({
-  url: `https://${physicalId}.${options.subdomain}.workers.dev`,
-  name: physicalId,
-  ...backgroundOutputs(definition, physicalId, previous, resources),
-  ...(await prepareDurableObjectLedger(
-    definition,
-    previous,
-    resources,
-    options.desired ?? [],
-    options.durableObjectClient,
-  )),
-});
-
-const precreateWorker = async (
+) =>
+  Effect.gen(function* () {
+    return {
+      url: `https://${physicalId}.${options.subdomain}.workers.dev`,
+      name: physicalId,
+      ...backgroundOutputs(definition, physicalId, previous, resources),
+      ...(yield* prepareDurableObjectLedger(
+        definition,
+        previous,
+        resources,
+        options.desired ?? [],
+        options.durableObjectClient,
+      )),
+    };
+  });
+const precreateWorker = (
   options: WorkerServiceOptions,
   definition: ResourceDefinition,
   physicalId: string,
   ownershipMarker: string,
-) => {
-  await Effect.runPromise(
-    options.client.putWorker(
+) =>
+  Effect.gen(function* () {
+    yield* options.client.putWorker(
       {
         scriptName: physicalId,
         metadata: { ...input(definition), tags: [ownershipMarker] },
@@ -317,77 +317,78 @@ const precreateWorker = async (
         ],
       },
       options.token,
-    ),
-  );
-};
-
+    );
+  });
 const workerOwnership =
   (options: WorkerServiceOptions, marker: (id: string) => string) =>
-  async (name: string, ownershipId: string) => {
-    const existing = await observeWorker(options, name);
-    if (
-      existing &&
-      !existing.tags?.some((tag) => tag === marker(name) || tag === marker(ownershipId))
-    )
-      throw new Error("Worker ownership does not match this environment.");
-    return existing;
-  };
-
+  (name: string, ownershipId: string) =>
+    Effect.gen(function* () {
+      const existing = yield* observeWorker(options, name);
+      if (
+        existing &&
+        !existing.tags?.some((tag) => tag === marker(name) || tag === marker(ownershipId))
+      )
+        return yield* Effect.fail(new Error("Worker ownership does not match this environment."));
+      return existing;
+    });
 export const cloudflareWorkerService = (options: WorkerServiceOptions): ResourceService => {
   const marker = (id: string) => `renkin:${options.stack}:${options.environment}:${id}`;
   const verifyOwner = workerOwnership(options, marker);
   return {
     deferredBindings: true,
     refresh: true,
-    apply: async (definition, physicalId, previous, resources = {}) => {
-      const existing = await verifyOwner(
-        physicalId,
-        previous?.ownershipId ?? previous?.definition.id ?? definition.id,
-      );
-      if (!existing) await precreateWorker(options, definition, physicalId, marker(physicalId));
-      return workerOutputs(options, definition, physicalId, previous, resources);
-    },
-    bind: async (resource, resources, _desired, operation) => {
-      const current = await verifyOwner(
-        resource.physicalId,
-        resource.ownershipId ?? resource.definition.id,
-      );
-      await publishWorker(
-        options,
-        resource,
-        resources,
-        marker(resource.physicalId),
-        current?.tags ?? [],
-        operation?.force,
-      );
-      await finalizeWorkerPublication(resource, options.siteClient, options.token);
-      await reconcileWorkerBackground(
-        resource,
-        resources,
-        options.backgroundClient,
-        options.token,
-        (name) => verifyOwner(name, resource.ownershipId ?? resource.definition.id),
-      );
-    },
-    remove: async (resource, resources = {}) => {
-      if (!(await verifyOwner(resource.physicalId, resource.ownershipId ?? resource.definition.id)))
-        return;
-      await assertNoDurableObjects(resource.physicalId, options.durableObjectClient);
-      await assertNoOwnedWorkflows(resource, options.backgroundClient);
-      await reconcileWorkerBackground(
-        resource,
-        resources,
-        options.backgroundClient,
-        options.token,
-        (name) => verifyOwner(name, resource.ownershipId ?? resource.definition.id),
-        true,
-      );
-      await detachCallers(resource, resources, options, marker, verifyOwner);
-      await Effect.runPromise(
-        options.client
+    apply: (definition, physicalId, previous, resources = {}) =>
+      Effect.gen(function* () {
+        const existing = yield* verifyOwner(
+          physicalId,
+          previous?.ownershipId ?? previous?.definition.id ?? definition.id,
+        );
+        if (!existing) yield* precreateWorker(options, definition, physicalId, marker(physicalId));
+        return yield* workerOutputs(options, definition, physicalId, previous, resources);
+      }),
+    bind: (resource, resources, _desired, operation) =>
+      Effect.gen(function* () {
+        const current = yield* verifyOwner(
+          resource.physicalId,
+          resource.ownershipId ?? resource.definition.id,
+        );
+        yield* publishWorker(
+          options,
+          resource,
+          resources,
+          marker(resource.physicalId),
+          current?.tags ?? [],
+          operation?.force,
+        );
+        yield* finalizeWorkerPublication(resource, options.siteClient, options.token);
+        yield* reconcileWorkerBackground(
+          resource,
+          resources,
+          options.backgroundClient,
+          options.token,
+          (name) => verifyOwner(name, resource.ownershipId ?? resource.definition.id),
+        );
+      }),
+    remove: (resource, resources = {}) =>
+      Effect.gen(function* () {
+        if (
+          !(yield* verifyOwner(resource.physicalId, resource.ownershipId ?? resource.definition.id))
+        )
+          return;
+        yield* assertNoDurableObjects(resource.physicalId, options.durableObjectClient);
+        yield* assertNoOwnedWorkflows(resource, options.backgroundClient);
+        yield* reconcileWorkerBackground(
+          resource,
+          resources,
+          options.backgroundClient,
+          options.token,
+          (name) => verifyOwner(name, resource.ownershipId ?? resource.definition.id),
+          true,
+        );
+        yield* detachCallers(resource, resources, options, marker, verifyOwner);
+        yield* options.client
           .deleteWorker(resource.physicalId, options.token)
-          .pipe(Effect.catchTag("WorkerNotFound", () => Effect.void)),
-      );
-    },
+          .pipe(Effect.catchTag("WorkerNotFound", () => Effect.void));
+      }),
   };
 };

@@ -33,6 +33,26 @@ These are intended directions, not dependencies to add before implementation
 needs them. Keep the graph acyclic and record concrete interface decisions as
 they are made.
 
+## Effect composition
+
+Resource lifecycle operations, state repositories, migrations and Renkin's
+deployment/development orchestration return Effects. Callers compose them with
+`yield*`; they do not start a new runtime for each internal operation. Acquiring
+an environment lease and releasing it belong to the same managed lifetime.
+Deployment mutations and their state checkpoints finish before interruption
+releases that lease, so cancellation cannot expose partially recorded work to
+another deployment. Cloud lease renewal runs until the lease is released.
+
+Pure transformations, declarations and validation helpers remain ordinary
+TypeScript. Native file, HTTP, bundler, framework and Cloudflare handler APIs
+still use their platform signatures; adapters wrap asynchronous calls at those
+boundaries. `Effect.runPromise` belongs at a CLI, test or native callback boundary.
+Build/pack tooling and local runtime internals also retain native Promise APIs.
+
+The private SDK package owns transport and authentication; the private Cloudflare
+package owns resource lifecycle and ownership rules. Keeping those responsibilities
+separate does not require multiple published packages or Promise-based ports.
+
 ## One published package
 
 The first release targets Bun on macOS and Linux. Node.js and Windows support

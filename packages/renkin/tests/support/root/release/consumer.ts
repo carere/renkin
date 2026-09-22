@@ -67,6 +67,10 @@ const copyApplications = async (root: string, directory: string) => {
     ).version;
     await writeFile(join(destination, "package.json"), JSON.stringify(manifest, null, 2));
   }
+  await writeFile(
+    join(directory, "packages/renkin/tests/fixtures/astro-ssr/vitest.config.ts"),
+    'import { defineConfig } from "vitest/config"; export default defineConfig({test:{projects:[{test:{name:"integration",include:["tests/integration/**/*.test.ts"]}}]}});\n',
+  );
 };
 
 export const installConsumer = async (root: string, archive: string) => {

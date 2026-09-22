@@ -64,7 +64,7 @@ it.effect(
           executor,
         ),
       ).toEqual(["0002_renamed.sql"]);
-      expect(yield* Effect.promise(() => executor.appliedNames())).toEqual([
+      expect(yield* executor.appliedNames()).toEqual([
         "0000_init.sql",
         "0001_more.sql",
         "0002_renamed.sql",
@@ -94,7 +94,7 @@ it.effect(
       const later = migration("0002_later.sql", "INSERT INTO data VALUES ('later')");
       const error = yield* applyMigrations([initial, failed, later], executor).pipe(Effect.flip);
       expect(error.migration).toBe(failed.name);
-      expect(yield* Effect.promise(() => executor.appliedNames())).toEqual([initial.name]);
+      expect(yield* executor.appliedNames()).toEqual([initial.name]);
       expect(
         yield* Effect.promise(() => db.prepare("SELECT COUNT(*) FROM data").first("COUNT(*)")),
       ).toBe(0);
@@ -109,11 +109,7 @@ it.effect(
         `INSERT INTO data VALUES ('unrecorded'); DROP TABLE ${migrationHistoryTable};`,
       );
       yield* applyMigrations([bookkeepingFailure], executor).pipe(Effect.flip);
-      expect(yield* Effect.promise(() => executor.appliedNames())).toEqual([
-        initial.name,
-        failed.name,
-        later.name,
-      ]);
+      expect(yield* executor.appliedNames()).toEqual([initial.name, failed.name, later.name]);
       expect(
         yield* Effect.promise(() => db.prepare("SELECT COUNT(*) FROM data").first("COUNT(*)")),
       ).toBe(2);

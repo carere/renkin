@@ -103,9 +103,9 @@ for (const rejectClosure of [false, true]) {
     () =>
       Effect.gen(function* () {
         const { service, requests } = yield* fixture(rejectClosure);
-        const outcome = yield* Effect.tryPromise(
-          () => service.bind?.(resource, { site: resource }) ?? Promise.resolve(),
-        ).pipe(Effect.exit);
+        const outcome = yield* (service.bind?.(resource, { site: resource }) ?? Effect.void).pipe(
+          Effect.exit,
+        );
         expect(outcome._tag).toBe(rejectClosure ? "Failure" : "Success");
         expect(requests.slice(0, 3).map((request) => request.method)).toEqual([
           "GET",

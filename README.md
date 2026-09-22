@@ -289,10 +289,11 @@ cog check --ignore-merge-commits       # Commit history, once commits exist
 Foundation validation runs Biome, TypeScript, Knip and manifest sorting directly.
 TypeScript checks the workspace-owned tool configurations. Populated behavioral
 suites cover resources, runtime, frameworks, example apps and the full local graph;
-credentialed Cloudflare suites run separately. Empty test projects remain strict.
+credentialed Cloudflare suites run separately. Workspaces only define Moon test
+tasks for populated suites; running an empty Vitest project still fails.
 See [package assembly](docs/agents/packaging.md) for standalone artifact checks.
 
-Each workspace owns its `vitest.config.ts` and its Moon test tasks. Its initial
+Each workspace owns one `vitest.config.ts` and its Moon test tasks. Its named
 unit and integration projects discover local `tests/unit/**/*.test.ts` and
 `tests/integration/**/*.test.ts`; the owner can change discovery, environments
 and setup independently. Moon aggregates matching tasks with `:test-unit`,
@@ -300,6 +301,22 @@ and setup independently. Moon aggregates matching tasks with `:test-unit`,
 needed. Use `@effect/vitest` for Effect behavior and add browser tooling when real
 application flows exist. Read [CODING_STANDARD.md](CODING_STANDARD.md) before
 contributing.
+
+CI runs each category in a separate step. It uses `--concurrency 1` for Moon and
+`--no-file-parallelism` for Vitest to keep browser and local Cloudflare processes
+from competing for runner resources. For example:
+
+```sh
+bun moon run --concurrency 1 :test-integration -- --no-file-parallelism
+```
+
+Renkin's config also owns the `preparation`, `astro`, `release`, `cloud` and
+`installed-cloud` projects. Ordinary runs only discover local suites. Select
+`--mode release --project release` for installed-package checks, or
+`--mode cloud --project cloud` for credentialed provider tests. The installed
+cloud suite uses `--mode cloud --project installed-cloud` and requires its
+explicit consumer and resource-scope configuration. Moon tasks supply these
+selectors for their corresponding suites.
 
 ## Workspace tooling
 

@@ -11,17 +11,13 @@
       "ignoreDependencies": ["cloudflare", "miniflare", "undici", "wrangler"]
     },
     "apps/example-static": { "entry": ["renkin.ts"] },
-    "packages/cloudflare": { "entry": ["vitest.cloud.config.ts"] },
     "packages/renkin": {
       "ignore": ["tests/fixtures/**/.astro/**"],
       "entry": [
         "tests/fixtures/**/*.ts",
         "tests/fixtures/**/*.astro",
         "tests/fixtures/**/vite.config.mts",
-        "vitest.cloud.config.ts",
-        "release.ts",
-        "vitest.release.config.ts",
-        "vitest.release-cloud.config.ts"
+        "release.ts"
       ],
       "ignoreDependencies": ["cloudflare"]
     },

@@ -1,5 +1,5 @@
 import { expect, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Deferred, Effect, Fiber } from "effect";
 import { defineStack, output, type ResourceDefinition } from "#src/contexts/root/models/stack.ts";
 import { emptyState } from "#src/contexts/root/models/state.ts";
 import { deploy } from "#src/contexts/root/use-cases/deploy.ts";
@@ -18,7 +18,6 @@ const stack = defineStack({
   resources: [resource()],
   outputs: { password: output("secret-value", { secret: true }) },
 });
-
 it.effect("persists ownership before apply and hides secret outputs", () =>
   Effect.gen(function* () {
     const state = new InMemoryStateRepository();
@@ -28,11 +27,12 @@ it.effect("persists ownership before apply and hides secret outputs", () =>
       yes: true,
       services: () => ({
         worker: {
-          apply: async (_, physicalId) => {
-            expect(state.written?.pending?.physicalId).toBe(physicalId);
-            return { url: "https://example.test" };
-          },
-          remove: async () => {},
+          apply: (_, physicalId) =>
+            Effect.sync(() => {
+              expect(state.written?.pending?.physicalId).toBe(physicalId);
+              return { url: "https://example.test" };
+            }),
+          remove: () => Effect.sync(() => {}),
         },
       }),
     });
@@ -41,7 +41,6 @@ it.effect("persists ownership before apply and hides secret outputs", () =>
     expect(yield* readOutputs(state, "app", "dev")).toMatchObject({ password: "[REDACTED]" });
   }),
 );
-
 it.effect("requires confirmation and force means update, not permission to delete", () =>
   Effect.gen(function* () {
     const state = new InMemoryStateRepository();
@@ -63,7 +62,6 @@ it.effect("requires confirmation and force means update, not permission to delet
     expect(() => plan({ ...stack, resources: [] }, existing, true)).toThrow("Deletion protection");
   }),
 );
-
 for (const failingPhase of ["apply", "bindings", "remove"] as const) {
   it.effect(`recovers interruption during ${failingPhase}`, () =>
     Effect.gen(function* () {
@@ -75,16 +73,22 @@ for (const failingPhase of ["apply", "bindings", "remove"] as const) {
         yes: true,
         services: () => ({
           worker: {
-            apply: async () => {
-              if (fail && failingPhase === "apply") throw new Error("sensitive-detail");
-              return null;
-            },
-            bind: async () => {
-              if (fail && failingPhase === "bindings") throw new Error("sensitive-detail");
-            },
-            remove: async () => {
-              if (fail && failingPhase === "remove") throw new Error("sensitive-detail");
-            },
+            apply: () =>
+              Effect.gen(function* () {
+                if (fail && failingPhase === "apply")
+                  return yield* Effect.fail(new Error("sensitive-detail"));
+                return null;
+              }),
+            bind: () =>
+              Effect.gen(function* () {
+                if (fail && failingPhase === "bindings")
+                  return yield* Effect.fail(new Error("sensitive-detail"));
+              }),
+            remove: () =>
+              Effect.gen(function* () {
+                if (fail && failingPhase === "remove")
+                  return yield* Effect.fail(new Error("sensitive-detail"));
+              }),
           },
         }),
       };
@@ -107,12 +111,10 @@ for (const failingPhase of ["apply", "bindings", "remove"] as const) {
     }),
   );
 }
-
 it("treats prototype-like logical IDs as ordinary new resource identities", () => {
   const desired = defineStack({ name: "app", resources: [{ ...resource(), id: "constructor" }] });
   expect(plan(desired, emptyState("app", "dev"))[0]?.kind).toBe("create");
 });
-
 it.effect("rechecks current protection before resuming an earlier destructive operation", () =>
   Effect.gen(function* () {
     const state = new InMemoryStateRepository();
@@ -141,13 +143,15 @@ it.effect("rechecks current protection before resuming an earlier destructive op
         yes: true,
         services: () => ({
           worker: {
-            apply: async () => {
-              mutated = true;
-              return null;
-            },
-            remove: async () => {
-              mutated = true;
-            },
+            apply: () =>
+              Effect.sync(() => {
+                mutated = true;
+                return null;
+              }),
+            remove: () =>
+              Effect.sync(() => {
+                mutated = true;
+              }),
           },
         }),
       }),
@@ -157,7 +161,6 @@ it.effect("rechecks current protection before resuming an earlier destructive op
     expect(state.written).toBeUndefined();
   }),
 );
-
 it.effect(
   "removal recovery supplies only identity-preserving explicit permissions and still honors protection",
   () =>
@@ -183,14 +186,14 @@ it.effect(
         force: true,
         services: () => ({
           worker: {
-            apply: async () => null,
-            remove: async (
-              _resource: unknown,
-              _resources: unknown,
-              current?: ResourceDefinition,
-            ) => {
-              received = current;
-            },
+            apply: () =>
+              Effect.sync(() => {
+                return null;
+              }),
+            remove: (_resource: unknown, _resources: unknown, current?: ResourceDefinition) =>
+              Effect.sync(() => {
+                received = current;
+              }),
           },
         }),
       };
@@ -216,7 +219,6 @@ it.effect(
       expect(received).toBeUndefined();
     }),
 );
-
 it.effect("requests empty environment removal and propagates configured repository failures", () =>
   Effect.gen(function* () {
     const state = new InMemoryStateRepository();
@@ -236,4 +238,42 @@ it.effect("requests empty environment removal and propagates configured reposito
     );
     expect(state.removeEmptyCalls).toBe(2);
   }),
+);
+
+it.effect(
+  "defers execution and finishes a mutation checkpoint before releasing an interrupted deployment",
+  () =>
+    Effect.gen(function* () {
+      const state = new InMemoryStateRepository();
+      const started = yield* Deferred.make<void>();
+      const proceed = yield* Deferred.make<void>();
+      const operation = deploy(stack, {
+        environment: "dev",
+        state,
+        yes: true,
+        services: () => ({
+          worker: {
+            apply: () =>
+              Effect.gen(function* () {
+                yield* Deferred.succeed(started, undefined);
+                yield* Deferred.await(proceed);
+                return { created: true };
+              }),
+            remove: () => Effect.void,
+          },
+        }),
+      });
+      expect(state.written).toBeUndefined();
+      const deploying = yield* Effect.forkChild(operation);
+      yield* Deferred.await(started);
+      const interrupting = yield* Effect.forkChild(Fiber.interrupt(deploying));
+      yield* Effect.yieldNow;
+      expect(state.releaseCalls).toBe(0);
+      expect(state.written?.pending?.phase).toBe("apply");
+      yield* Deferred.succeed(proceed, undefined);
+      yield* Fiber.join(interrupting);
+      expect(state.releaseCalls).toBe(1);
+      expect(state.written?.pending).toBeUndefined();
+      expect(state.written?.resources.api?.outputs).toEqual({ created: true });
+    }),
 );

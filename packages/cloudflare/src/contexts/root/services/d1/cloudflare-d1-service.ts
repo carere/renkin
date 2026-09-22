@@ -26,68 +26,68 @@ const propertiesOf = (definition: ResourceDefinition) => {
       : {}),
   };
 };
-
 export const cloudflareD1Service = (
   client: ReturnType<typeof createD1Client>,
   token: string,
 ): ResourceService => {
   const observe = (id: string) =>
-    Effect.runPromise(
-      client.get(id).pipe(Effect.catchTag("DatabaseNotFound", () => Effect.succeed(undefined))),
-    );
-  const owned = async (resource: ResourceState) => {
-    const observed = await observe(resource.physicalId);
-    if (observed && observed.name !== record(resource.outputs).name)
-      throw new Error("D1 ownership does not match the recorded resource.");
-    return observed;
-  };
+    client.get(id).pipe(Effect.catchTag("DatabaseNotFound", () => Effect.succeed(undefined)));
+  const owned = (resource: ResourceState) =>
+    Effect.gen(function* () {
+      const observed = yield* observe(resource.physicalId);
+      if (observed && observed.name !== record(resource.outputs).name)
+        return yield* Effect.fail(new Error("D1 ownership does not match the recorded resource."));
+      return observed;
+    });
   return {
     refresh: true,
-    apply: async (definition, allocationId, previous) => {
-      const properties = propertiesOf(definition);
-      if (previous && allocationId === previous.physicalId) {
-        const current = await owned(previous);
-        if (!current)
-          throw new Error(
-            "Managed D1 database is missing; refusing to replace stored data implicitly.",
-          );
-        if (current.readReplication?.mode !== properties.readReplication.mode)
-          await Effect.runPromise(
-            client.update(
+    apply: (definition, allocationId, previous) =>
+      Effect.gen(function* () {
+        const properties = propertiesOf(definition);
+        if (previous && allocationId === previous.physicalId) {
+          const current = yield* owned(previous);
+          if (!current)
+            return yield* Effect.fail(
+              new Error(
+                "Managed D1 database is missing; refusing to replace stored data implicitly.",
+              ),
+            );
+          if (current.readReplication?.mode !== properties.readReplication.mode)
+            yield* client.update(
               { databaseId: previous.physicalId, readReplication: properties.readReplication },
               token,
-            ),
-          );
-        return { id: previous.physicalId, name: current.name ?? null };
-      }
-      const matching = (await Effect.runPromise(client.list(allocationId))).filter(
-        (database) => database.name === allocationId,
-      );
-      if (matching.length > 1) throw new Error("Ambiguous D1 ownership marker.");
-      const created =
-        matching[0] ??
-        (await Effect.runPromise(client.create({ name: allocationId, ...properties }, token)));
-      if (!created.uuid || created.name !== allocationId)
-        throw new Error("D1 provider returned an invalid identity.");
-      return { id: created.uuid, name: created.name };
-    },
+            );
+          return { id: previous.physicalId, name: current.name ?? null };
+        }
+        const matching = (yield* client.list(allocationId)).filter(
+          (database) => database.name === allocationId,
+        );
+        if (matching.length > 1)
+          return yield* Effect.fail(new Error("Ambiguous D1 ownership marker."));
+        const created =
+          matching[0] ?? (yield* client.create({ name: allocationId, ...properties }, token));
+        if (!created.uuid || created.name !== allocationId)
+          return yield* Effect.fail(new Error("D1 provider returned an invalid identity."));
+        return { id: created.uuid, name: created.name };
+      }),
     resolvePhysicalId: (_definition, _allocation, outputs) => {
       const id = record(outputs).id;
       if (typeof id !== "string" || !id) throw new Error("D1 provider returned no identity.");
       return id;
     },
-    bind: async (resource, _resources, currentDesired) => {
-      if (!(await owned(resource))) throw new Error("Managed D1 database is missing.");
-      await Effect.runPromise(
-        applyMigrations(
+    bind: (resource, _resources, currentDesired) =>
+      Effect.gen(function* () {
+        if (!(yield* owned(resource)))
+          return yield* Effect.fail(new Error("Managed D1 database is missing."));
+        yield* applyMigrations(
           preparedMigrations(currentDesired ?? resource.definition),
           cloudflareD1MigrationExecutor(client, resource.physicalId, token),
-        ),
-      );
-    },
-    remove: async (resource) => {
-      if (!(await owned(resource))) return;
-      await Effect.runPromise(client.remove(resource.physicalId, token));
-    },
+        );
+      }),
+    remove: (resource) =>
+      Effect.gen(function* () {
+        if (!(yield* owned(resource))) return;
+        yield* client.remove(resource.physicalId, token);
+      }),
   };
 };

@@ -11,7 +11,7 @@ tasks:
     options:
       cache: false
   test-cloud:
-    command: vitest run --config vitest.cloud.config.ts
+    command: vitest run --mode cloud --project cloud
     options:
       cache: false
   build:
@@ -23,14 +23,14 @@ tasks:
     options:
       cache: false
   test-release:
-    command: bun --bun vitest run --config vitest.release.config.ts
+    command: bun --bun vitest run --mode release --project release
     options:
       cache: false
   test-release-preparation:
-    command: vitest run --config vitest.release-cloud.config.ts --project preparation
+    command: vitest run --project preparation
     options:
       cache: false
   test-astro:
-    command: vitest run --root tests/fixtures/astro-ssr --project integration
+    command: vitest run --project astro
     options:
       cache: false

@@ -19,9 +19,9 @@ const seedNamespace = async (state: FileStateRepository) => {
     physicalId: "old-provider-id",
     outputs: { id: "old-provider-id", title: "original-allocation" },
   };
-  const lease = await state.acquire("app", "preview");
-  await lease.write(initial);
-  await lease.release();
+  const lease = await Effect.runPromise(state.acquire("app", "preview"));
+  await Effect.runPromise(lease.write(initial));
+  await Effect.runPromise(lease.release());
 };
 
 it.effect(
@@ -81,9 +81,9 @@ it.effect(
           ),
         );
         expect(result.resources.Cache?.physicalId).toBe("new-provider-id");
-        expect((await state.read("app", "preview"))?.resources.Cache?.physicalId).toBe(
-          "new-provider-id",
-        );
+        expect(
+          (await Effect.runPromise(state.read("app", "preview")))?.resources.Cache?.physicalId,
+        ).toBe("new-provider-id");
         expect(
           requests.filter((request) => request.method === "DELETE").map((request) => request.path),
         ).toEqual(["/accounts/account/storage/kv/namespaces/old-provider-id"]);

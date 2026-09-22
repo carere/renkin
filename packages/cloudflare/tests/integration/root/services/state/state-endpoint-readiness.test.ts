@@ -45,7 +45,7 @@ const server = (statuses: readonly number[], accountId = "account") =>
 it.live("waits through route propagation using only authenticated identity reads", () =>
   Effect.gen(function* () {
     const boundary = yield* server([404, 404, 200]);
-    yield* Effect.promise(() => waitForStateEndpoint(boundary.input));
+    yield* waitForStateEndpoint(boundary.input);
     expect(boundary.requests).toEqual(
       Array.from({ length: 3 }, () => ({
         path: "/v1/identity",
@@ -60,7 +60,9 @@ for (const status of [401, 403, 500, 302]) {
   it.live(`does not retry status ${status} or follow a redirect`, () =>
     Effect.gen(function* () {
       const boundary = yield* server([status]);
-      yield* Effect.promise(() => expect(waitForStateEndpoint(boundary.input)).rejects.toThrow());
+      yield* Effect.promise(() =>
+        expect(Effect.runPromise(waitForStateEndpoint(boundary.input))).rejects.toThrow(),
+      );
       expect(boundary.requests).toHaveLength(1);
     }).pipe(Effect.scoped),
   );
@@ -70,10 +72,12 @@ it.live("rejects a different account and bounds persistent missing-route respons
   Effect.gen(function* () {
     const foreign = yield* server([200], "foreign");
     yield* Effect.promise(() =>
-      expect(waitForStateEndpoint(foreign.input)).rejects.toThrow("identity"),
+      expect(Effect.runPromise(waitForStateEndpoint(foreign.input))).rejects.toThrow("identity"),
     );
     const missing = yield* server([404]);
-    yield* Effect.promise(() => expect(waitForStateEndpoint(missing.input, 50)).rejects.toThrow());
+    yield* Effect.promise(() =>
+      expect(Effect.runPromise(waitForStateEndpoint(missing.input, 50))).rejects.toThrow(),
+    );
     expect(missing.requests.length).toBeLessThanOrEqual(1);
   }).pipe(Effect.scoped),
 );
@@ -93,7 +97,9 @@ it.live("does not schedule another probe when the final deadline sleep wakes ear
       );
     try {
       yield* Effect.promise(() =>
-        expect(waitForStateEndpoint(missing.input, 400)).rejects.toThrow("deadline"),
+        expect(Effect.runPromise(waitForStateEndpoint(missing.input, 400))).rejects.toThrow(
+          "deadline",
+        ),
       );
       expect(missing.requests).toHaveLength(1);
       expect(

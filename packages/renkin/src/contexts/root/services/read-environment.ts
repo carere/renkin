@@ -9,14 +9,20 @@ export interface ReadOptions {
 }
 
 const repository = (options: ReadOptions) =>
-  Effect.tryPromise({
-    try: async () =>
-      options.localDirectory
-        ? new FileStateRepository(options.localDirectory)
-        : await readCloudState(options.cloudflare),
-    catch: () =>
-      new Error("Environment state is unavailable. Check account credentials and state service."),
-  });
+  Effect.gen(function* () {
+    if (options.localDirectory) return new FileStateRepository(options.localDirectory);
+    return yield* readCloudState(options.cloudflare);
+  }).pipe(
+    Effect.mapError(
+      () =>
+        new Error("Environment state is unavailable. Check account credentials and state service."),
+    ),
+    Effect.catchDefect(() =>
+      Effect.fail(
+        new Error("Environment state is unavailable. Check account credentials and state service."),
+      ),
+    ),
+  );
 
 export const listEnvironments = (stack: string, options: ReadOptions = {}) =>
   Effect.gen(function* () {

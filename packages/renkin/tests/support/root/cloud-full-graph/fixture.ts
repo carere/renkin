@@ -39,7 +39,6 @@ const authorizedGraphScope = () => {
       .replace(/\.\d{3}Z$/, "Z"),
   };
 };
-
 export const createCloudGraphFixture = async () => {
   authorizedGraphScope();
   const name = `renkin-test-graph-${randomUUID().slice(0, 8)}`;
@@ -89,11 +88,13 @@ export const createCloudGraphFixture = async () => {
     options,
     stack,
     compilations: () => compilations,
-    async apply(cron?: string) {
-      authorizedGraphScope();
-      const state = await Effect.runPromise(deploy(stack(cron), options));
-      await record("deployed", state);
-      return state;
+    apply(cron?: string) {
+      return Effect.gen(function* () {
+        authorizedGraphScope();
+        const state = yield* deploy(stack(cron), options);
+        yield* Effect.tryPromise(() => record("deployed", state));
+        return state;
+      });
     },
     async close() {
       try {

@@ -13,14 +13,14 @@ it.effect("reads JSON in another process without evaluating the infrastructure f
     const directory = await mkdtemp(join(tmpdir(), "renkin-cli-"));
     const stateDirectory = join(directory, ".renkin");
     const repository = new FileStateRepository(stateDirectory);
-    const lease = await repository.acquire("app", "dev");
+    const lease = await Effect.runPromise(repository.acquire("app", "dev"));
     try {
       const state = emptyState("app", "dev");
       state.outputs.message = { value: "hello" };
       state.outputs.password = { value: "do-not-print", secret: true };
-      await lease.write(state);
+      await Effect.runPromise(lease.write(state));
     } finally {
-      await lease.release();
+      await Effect.runPromise(lease.release());
     }
     await writeFile(
       join(directory, "renkin.ts"),

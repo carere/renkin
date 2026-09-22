@@ -115,7 +115,7 @@ PUT/GET requests and rejection of modified signatures.
 
 The separate authorized cloud suite is
 `packages/renkin/tests/cloud/root/tanstack.test.ts`, run with that package's
-`vitest.cloud.config.ts`. It requires the existing cloud test authorization flags,
+the `cloud` project in `vitest.config.ts`. It requires the existing cloud test authorization flags,
 expiry, prefix, account, domain and zone environment values. It deploys temporary
 SPA/SSR Workers and KV, checks assets/native calls/SSR/custom-domain routing, then
 removes the exact environments. Normal CI does not run it.

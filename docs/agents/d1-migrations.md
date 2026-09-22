@@ -83,7 +83,7 @@ provider outcomes also follow the explicit coordinator reconciliation policy.
 Run credential-free checks with `bun vitest run --project integration` in
 `packages/cloudflare`, `packages/runtime`, and `packages/renkin`. Run the separate
 public real-D1 suite from `packages/renkin` with
-`bun vitest run --config vitest.cloud.config.ts tests/cloud/root/d1.test.ts`
+`bun vitest run --mode cloud --project cloud tests/cloud/root/d1.test.ts`
 only after configuring the explicit account, prefix, product and expiry test
 authorization variables. The suite logs its owned environment and performs
 explicit protected-resource cleanup. Cloud tests are not part of default local

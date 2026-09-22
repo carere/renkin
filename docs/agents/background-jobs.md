@@ -196,7 +196,7 @@ email authorization:
 
 ```sh
 bun --env-file=/secure/path/cloud.env node_modules/vitest/vitest.mjs run \
-  --config vitest.cloud.config.ts tests/cloud/root/background.test.ts
+  --mode cloud --project cloud tests/cloud/root/background.test.ts
 # Run from packages/renkin. Normal test projects exclude tests/cloud.
 ```
 

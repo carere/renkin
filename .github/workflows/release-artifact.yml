@@ -39,7 +39,7 @@ jobs:
         run: bun x playwright install --with-deps chromium
       - name: Pack and validate an isolated installed consumer
         working-directory: packages/renkin
-        run: bun --bun vitest run --config vitest.release.config.ts
+        run: bun --bun vitest run --mode release --project release
       - name: Preserve exact artifact identity
         if: always()
         uses: actions/upload-artifact@v4

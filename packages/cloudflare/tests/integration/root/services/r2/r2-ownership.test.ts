@@ -61,10 +61,12 @@ it.effect(
       for (const options of [{ jurisdiction: "eu" as const }, { locationHint: "weur" as const }])
         yield* Effect.promise(async () =>
           expect(
-            test.service.apply(
-              r2("Files", { identity: "pinned", ...options }),
-              previous.physicalId,
-              previous,
+            Effect.runPromise(
+              test.service.apply(
+                r2("Files", { identity: "pinned", ...options }),
+                previous.physicalId,
+                previous,
+              ),
             ),
           ).rejects.toThrow("require explicit resource replacement"),
         );
@@ -76,11 +78,11 @@ it.effect("refuses a bucket reincarnated under the same name for both refresh an
     const test = yield* fixture;
     yield* Effect.promise(async () =>
       expect(
-        test.service.apply(previous.definition, previous.physicalId, previous),
+        Effect.runPromise(test.service.apply(previous.definition, previous.physicalId, previous)),
       ).rejects.toThrow("ownership differs"),
     );
     yield* Effect.promise(async () =>
-      expect(test.service.remove(previous)).rejects.toThrow("ownership differs"),
+      expect(Effect.runPromise(test.service.remove(previous))).rejects.toThrow("ownership differs"),
     );
     expect(test.counts()).toEqual({ reads: 2, writes: 0 });
   }),

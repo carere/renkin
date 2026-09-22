@@ -22,18 +22,31 @@ export interface DeploymentOptions
 
 const apply = (stack: Stack, options: DeploymentOptions, removeEmpty = false) =>
   Effect.gen(function* () {
-    const prepared = yield* Effect.tryPromise({
-      try: async () => stackDefinition(await prepareStack(stack)),
-      catch: () => new DeploymentError("Worker build failed."),
-    });
-    const environment = yield* Effect.tryPromise({
-      try: () =>
-        cloudEnvironment(stack.name, options.environment, options.cloudflare, prepared.resources),
-      catch: () =>
-        new DeploymentError(
-          "Cloud state initialization failed. Check account ID, token permissions and the state Worker.",
+    const prepared = yield* prepareStack(stack).pipe(
+      Effect.map(stackDefinition),
+      Effect.mapError(() => new DeploymentError("Worker build failed.")),
+      Effect.catchDefect(() => Effect.fail(new DeploymentError("Worker build failed."))),
+    );
+    const environment = yield* cloudEnvironment(
+      stack.name,
+      options.environment,
+      options.cloudflare,
+      prepared.resources,
+    ).pipe(
+      Effect.mapError(
+        () =>
+          new DeploymentError(
+            "Cloud state initialization failed. Check account ID, token permissions and the state Worker.",
+          ),
+      ),
+      Effect.catchDefect(() =>
+        Effect.fail(
+          new DeploymentError(
+            "Cloud state initialization failed. Check account ID, token permissions and the state Worker.",
+          ),
         ),
-    });
+      ),
+    );
     return yield* reconcile(prepared, { ...options, ...environment, removeEmpty });
   });
 
@@ -48,19 +61,27 @@ export const planDeployment = (
   stack: Stack,
   options: Pick<DeploymentOptions, "environment" | "force" | "cloudflare">,
 ) =>
-  Effect.tryPromise({
-    try: async () => {
-      defineStack(stack);
-      validateName(options.environment);
-      const prepared = stackDefinition(await prepareStack(stack));
-      const repository = await readCloudState(options.cloudflare);
-      const current =
-        (await repository?.read(stack.name, options.environment)) ??
-        emptyState(stack.name, options.environment);
-      return resourcePlan(prepared, current, options.force).map(({ id, kind }) => ({ id, kind }));
-    },
-    catch: () =>
-      new DeploymentError(
-        "Plan could not be read. Check configuration, state access and deletion protection.",
+  Effect.gen(function* () {
+    defineStack(stack);
+    validateName(options.environment);
+    const prepared = stackDefinition(yield* prepareStack(stack));
+    const repository = yield* readCloudState(options.cloudflare);
+    const current =
+      (repository ? yield* repository.read(stack.name, options.environment) : undefined) ??
+      emptyState(stack.name, options.environment);
+    return resourcePlan(prepared, current, options.force).map(({ id, kind }) => ({ id, kind }));
+  }).pipe(
+    Effect.mapError(
+      () =>
+        new DeploymentError(
+          "Plan could not be read. Check configuration, state access and deletion protection.",
+        ),
+    ),
+    Effect.catchDefect(() =>
+      Effect.fail(
+        new DeploymentError(
+          "Plan could not be read. Check configuration, state access and deletion protection.",
+        ),
       ),
-  });
+    ),
+  );

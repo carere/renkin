@@ -89,9 +89,9 @@ it.effect(
   () =>
     Effect.gen(function* () {
       const test = yield* fixture();
-      const outputs = yield* Effect.promise(() =>
-        test.service.apply(definition, "allocation", undefined, { Files: bucket }),
-      );
+      const outputs = yield* test.service.apply(definition, "allocation", undefined, {
+        Files: bucket,
+      });
       expect(outputs).toMatchObject({
         accessKeyId: "provider-id",
         secretAccessKey: createHash("sha256").update("one-time-value").digest("hex"),
@@ -124,7 +124,9 @@ it.effect(
       const test = yield* fixture(true);
       yield* Effect.promise(async () =>
         expect(
-          test.service.apply(definition, "allocation", undefined, { Files: bucket }),
+          Effect.runPromise(
+            test.service.apply(definition, "allocation", undefined, { Files: bucket }),
+          ),
         ).rejects.toThrow("one-time secret is unavailable"),
       );
       expect(test.writes).toHaveLength(1);
@@ -136,7 +138,9 @@ it.effect("does not retry a non-idempotent account token creation", () =>
     const test = yield* fixture(false, true);
     yield* Effect.promise(async () =>
       expect(
-        test.service.apply(definition, "allocation", undefined, { Files: bucket }),
+        Effect.runPromise(
+          test.service.apply(definition, "allocation", undefined, { Files: bucket }),
+        ),
       ).rejects.toThrow(),
     );
     expect(test.writes.filter((item) => !item.receiptOnly)).toHaveLength(1);
@@ -151,15 +155,13 @@ it.effect("revokes only the recorded account token and refuses ownership mismatc
       outputs: { id: "provider-id", name: "different-name" },
     };
     yield* Effect.promise(async () =>
-      expect(test.service.remove(resource)).rejects.toThrow("ownership differs"),
+      expect(Effect.runPromise(test.service.remove(resource))).rejects.toThrow("ownership differs"),
     );
     expect(test.writes).toHaveLength(0);
-    yield* Effect.promise(() =>
-      test.service.remove({
-        ...resource,
-        outputs: { id: "provider-id", name: "allocation" },
-      }),
-    );
+    yield* test.service.remove({
+      ...resource,
+      outputs: { id: "provider-id", name: "allocation" },
+    });
     expect(test.writes[0]?.path).toBe("/accounts/account/tokens/provider-id");
     expect(test.writes[0]?.method).toBe("DELETE");
   }),

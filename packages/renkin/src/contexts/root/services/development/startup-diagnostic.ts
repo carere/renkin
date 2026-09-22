@@ -1,3 +1,4 @@
+import { Effect } from "effect";
 export type StartupPhase =
   | "acquire-state"
   | "frameworks"
@@ -131,8 +132,10 @@ export const startupFailure = (phase: StartupPhase, error: unknown): Error => {
 
 export const startupTrace = () => ({
   phase: "acquire-state" as StartupPhase,
-  async run<T>(phase: StartupPhase, action: () => Promise<T>): Promise<T> {
-    this.phase = phase;
-    return action();
+  run<T, E, R>(phase: StartupPhase, action: Effect.Effect<T, E, R>): Effect.Effect<T, E, R> {
+    return Effect.suspend(() => {
+      this.phase = phase;
+      return action;
+    });
   },
 });

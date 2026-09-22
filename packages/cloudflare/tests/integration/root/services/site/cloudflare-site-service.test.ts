@@ -49,9 +49,9 @@ it.live("moves an owned domain to its replacement Worker and observes the result
           { definition: desired, physicalId: "domain-id", outputs: { ...observed } },
           { site: { definition: site, physicalId: "replacement-worker", outputs: {} } },
         );
-      const outputs = await apply();
+      const outputs = await Effect.runPromise(apply());
       expect(requests.map((request) => request.method)).toEqual(["GET", "PUT", "GET"]);
-      await apply();
+      await Effect.runPromise(apply());
       expect(requests.map((request) => request.method)).toEqual([
         "GET",
         "PUT",

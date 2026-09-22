@@ -112,7 +112,7 @@ it.live(
         desired.type
       ];
       if (!service) throw new Error("missing service");
-      const result = yield* Effect.promise(() => service.apply(desired, "app", previous));
+      const result = yield* service.apply(desired, "app", previous);
       expect(fixture.requests[2]?.body).toMatchObject({
         session_duration: "8h",
         eager_redirect_cookie_setting: false,
@@ -140,14 +140,14 @@ it.live("rejects a foreign resource before a mutation", () =>
       desired.type
     ];
     if (!service) throw new Error("missing service");
-    const error = yield* Effect.tryPromise(() =>
-      service.apply(desired, "app", {
+    const error = yield* service
+      .apply(desired, "app", {
         definition: desired,
         physicalId: "app",
         outputs: { ownershipName: "ours" },
-      }),
-    ).pipe(Effect.flip);
-    expect(String(error.cause)).toContain("ownership");
+      })
+      .pipe(Effect.flip);
+    expect(String(error)).toContain("ownership");
     expect(fixture.requests).toHaveLength(1);
   }).pipe(Effect.scoped),
 );
@@ -162,10 +162,8 @@ it.live("does not create or rotate a token when its one-time secret receipt is m
       desired.type
     ];
     if (!service) throw new Error("missing service");
-    const error = yield* Effect.tryPromise(() =>
-      service.apply(desired, "allocation", undefined),
-    ).pipe(Effect.flip);
-    expect(String(error.cause)).toContain("one-time");
+    const error = yield* service.apply(desired, "allocation", undefined).pipe(Effect.flip);
+    expect(String(error)).toContain("one-time");
     expect(fixture.requests.map((request) => request.method)).toEqual(["GET"]);
   }).pipe(Effect.scoped),
 );

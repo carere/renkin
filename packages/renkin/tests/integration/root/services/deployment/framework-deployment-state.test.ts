@@ -18,7 +18,24 @@ const verifyDefinition = (definition: ReturnType<typeof stackDefinition>) => {
     protection: { allowDelete: true },
   });
 };
-
+const services = (calls: { apply: number; bind: number; remove: number }) => () => ({
+  "cloudflare.worker": {
+    deferredBindings: true,
+    apply: () =>
+      Effect.sync(() => {
+        calls.apply++;
+        return { published: true };
+      }),
+    bind: () =>
+      Effect.sync(() => {
+        calls.bind++;
+      }),
+    remove: () =>
+      Effect.sync(() => {
+        calls.remove++;
+      }),
+  },
+});
 it("keeps build recipes and hooks outside state across deploy, repeat and removal", async () => {
   const directory = await mkdtemp(join(tmpdir(), "renkin-framework-state-"));
   const entry = join(directory, "entry.mjs");
@@ -58,24 +75,10 @@ it("keeps build recipes and hooks outside state across deploy, repeat and remova
     environment: "local",
     yes: true,
     state,
-    services: () => ({
-      "cloudflare.worker": {
-        deferredBindings: true,
-        apply: async () => {
-          calls.apply++;
-          return { published: true };
-        },
-        bind: async () => {
-          calls.bind++;
-        },
-        remove: async () => {
-          calls.remove++;
-        },
-      },
-    }),
+    services: services(calls),
   };
   try {
-    const prepared = await prepareStack(stack);
+    const prepared = await Effect.runPromise(prepareStack(stack));
     expect((prepared.resources[0] as typeof resource).options.builder?.build).toBeTypeOf(
       "function",
     );
@@ -85,11 +88,11 @@ it("keeps build recipes and hooks outside state across deploy, repeat and remova
     expect(() => structuredClone(first)).not.toThrow();
     expect(first.outputs.constant?.value).toBe("kept");
     const repeated = await Effect.runPromise(
-      deploy(stackDefinition(await prepareStack(stack)), options),
+      deploy(stackDefinition(await Effect.runPromise(prepareStack(stack))), options),
     );
     expect(repeated.resources.Site?.physicalId).toBe(first.resources.Site?.physicalId);
     await Effect.runPromise(deploy({ name: stack.name, resources: [] }, options));
-    expect((await state.read(stack.name, "local"))?.resources).toEqual({});
+    expect((await Effect.runPromise(state.read(stack.name, "local")))?.resources).toEqual({});
     expect(calls).toEqual({ build: 2, before: 2, after: 2, apply: 1, bind: 1, remove: 1 });
   } finally {
     await rm(directory, { recursive: true, force: true });

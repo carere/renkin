@@ -12,7 +12,6 @@ const definition = (id: string): ResourceDefinition => ({
   identity: "stable",
   properties: {},
 });
-
 it.effect(
   "redirects every caller before deleting a replaced mutual target and recovers deletion",
   () =>
@@ -40,15 +39,21 @@ it.effect(
           worker: {
             deferredBindings: true,
             refresh: true,
-            apply: async () => null,
-            bind: async (resource: { definition: ResourceDefinition }) => {
-              events.push(`bind:${resource.definition.id}`);
-            },
-            remove: async () => {
-              events.push("delete:old-b");
-              expect(events).toContain("bind:a");
-              if (fail) throw new Error("interrupted after callers were redirected");
-            },
+            apply: () =>
+              Effect.sync(() => {
+                return null;
+              }),
+            bind: (resource: { definition: ResourceDefinition }) =>
+              Effect.sync(() => {
+                events.push(`bind:${resource.definition.id}`);
+              }),
+            remove: () =>
+              Effect.gen(function* () {
+                events.push("delete:old-b");
+                expect(events).toContain("bind:a");
+                if (fail)
+                  return yield* Effect.fail(new Error("interrupted after callers were redirected"));
+              }),
           },
         }),
       };
@@ -63,7 +68,6 @@ it.effect(
       expect(result.pending).toBeUndefined();
     }),
 );
-
 it.effect("finishes interrupted bindings before removing graph targets", () =>
   Effect.gen(function* () {
     const state = new InMemoryStateRepository();
@@ -89,14 +93,19 @@ it.effect("finishes interrupted bindings before removing graph targets", () =>
         services: () => ({
           worker: {
             deferredBindings: true,
-            apply: async () => null,
-            bind: async (_resource, resources) => {
-              expect(resources.target).toBeDefined();
-              events.push("bind");
-            },
-            remove: async () => {
-              events.push("remove");
-            },
+            apply: () =>
+              Effect.sync(() => {
+                return null;
+              }),
+            bind: (_resource, resources) =>
+              Effect.sync(() => {
+                expect(resources.target).toBeDefined();
+                events.push("bind");
+              }),
+            remove: () =>
+              Effect.sync(() => {
+                events.push("remove");
+              }),
           },
         }),
       },
@@ -104,7 +113,6 @@ it.effect("finishes interrupted bindings before removing graph targets", () =>
     expect(events).toEqual(["bind", "remove", "remove"]);
   }),
 );
-
 it.effect("provisions mutual call targets before binding and recovers binding interruption", () =>
   Effect.gen(function* () {
     const state = new InMemoryStateRepository();
@@ -123,12 +131,16 @@ it.effect("provisions mutual call targets before binding and recovers binding in
       services: () => ({
         worker: {
           deferredBindings: true,
-          apply: async () => null,
-          bind: async (_: unknown, resources: Readonly<Record<string, unknown>>) => {
-            expect(Object.keys(resources).sort()).toEqual(["a", "b"]);
-            if (fail) throw new Error("interrupted binding");
-          },
-          remove: async () => {},
+          apply: () =>
+            Effect.sync(() => {
+              return null;
+            }),
+          bind: (_: unknown, resources: Readonly<Record<string, unknown>>) =>
+            Effect.gen(function* () {
+              expect(Object.keys(resources).sort()).toEqual(["a", "b"]);
+              if (fail) return yield* Effect.fail(new Error("interrupted binding"));
+            }),
+          remove: () => Effect.sync(() => {}),
         },
       }),
     };
@@ -142,7 +154,6 @@ it.effect("provisions mutual call targets before binding and recovers binding in
     expect(recovered.bindings).toBeUndefined();
   }),
 );
-
 it.effect("checkpoints server-assigned identity before binding", () =>
   Effect.gen(function* () {
     const state = new InMemoryStateRepository();
@@ -154,12 +165,16 @@ it.effect("checkpoints server-assigned identity before binding", () =>
         yes: true,
         services: () => ({
           worker: {
-            apply: async () => ({ id: "provider-id" }),
+            apply: () =>
+              Effect.sync(() => {
+                return { id: "provider-id" };
+              }),
             resolvePhysicalId: () => "provider-id",
-            bind: async () => {
-              expect(state.written?.pending?.physicalId).toBe("provider-id");
-            },
-            remove: async () => {},
+            bind: () =>
+              Effect.sync(() => {
+                expect(state.written?.pending?.physicalId).toBe("provider-id");
+              }),
+            remove: () => Effect.sync(() => {}),
           },
         }),
       },
@@ -167,7 +182,6 @@ it.effect("checkpoints server-assigned identity before binding", () =>
     expect(result.resources.kv?.physicalId).toBe("provider-id");
   }),
 );
-
 it.effect("renames protected resources without provider changes and preserves ownership", () =>
   Effect.gen(function* () {
     const state = new InMemoryStateRepository();
@@ -188,12 +202,14 @@ it.effect("renames protected resources without provider changes and preserves ow
       yes: true,
       services: () => ({
         worker: {
-          apply: async () => {
-            throw new Error("unexpected mutation");
-          },
-          remove: async () => {
-            throw new Error("unexpected mutation");
-          },
+          apply: () =>
+            Effect.gen(function* () {
+              return yield* Effect.fail(new Error("unexpected mutation"));
+            }),
+          remove: () =>
+            Effect.gen(function* () {
+              return yield* Effect.fail(new Error("unexpected mutation"));
+            }),
         },
       }),
     };
@@ -209,7 +225,6 @@ it.effect("renames protected resources without provider changes and preserves ow
     expect(() => plan({ ...stack, resources: [] }, result)).toThrow();
   }),
 );
-
 it.effect("rejects a protected mixed plan before any mutations even with yes and force", () =>
   Effect.gen(function* () {
     const state = new InMemoryStateRepository();
@@ -230,13 +245,15 @@ it.effect("rejects a protected mixed plan before any mutations even with yes and
           force: true,
           services: () => ({
             worker: {
-              apply: async () => {
-                mutations++;
-                return null;
-              },
-              remove: async () => {
-                mutations++;
-              },
+              apply: () =>
+                Effect.sync(() => {
+                  mutations++;
+                  return null;
+                }),
+              remove: () =>
+                Effect.sync(() => {
+                  mutations++;
+                }),
             },
           }),
         },
@@ -247,7 +264,6 @@ it.effect("rejects a protected mixed plan before any mutations even with yes and
     expect(state.written).toBeUndefined();
   }),
 );
-
 it.effect(
   "persists force across a lost binding response without granting deletion permission",
   () =>
@@ -258,17 +274,23 @@ it.effect(
       const stack = { name: "app", resources: [definition("api")] };
       const services = () => ({
         worker: {
-          apply: async () => null,
-          bind: async (
+          apply: () =>
+            Effect.sync(() => {
+              return null;
+            }),
+          bind: (
             _resource: unknown,
             _resources: unknown,
             _desired: unknown,
-            options?: { readonly force?: boolean },
-          ) => {
-            observed.push(options?.force ?? false);
-            if (fail) throw new Error("lost response");
-          },
-          remove: async () => {},
+            options?: {
+              readonly force?: boolean;
+            },
+          ) =>
+            Effect.gen(function* () {
+              observed.push(options?.force ?? false);
+              if (fail) return yield* Effect.fail(new Error("lost response"));
+            }),
+          remove: () => Effect.sync(() => {}),
         },
       });
       expect(
@@ -282,7 +304,6 @@ it.effect(
       expect(observed).toEqual([true, true]);
     }),
 );
-
 it.effect("supplies corrected same-identity configuration while recovering a binding", () =>
   Effect.gen(function* () {
     const state = new InMemoryStateRepository();
@@ -305,11 +326,15 @@ it.effect("supplies corrected same-identity configuration while recovering a bin
         yes: true,
         services: () => ({
           worker: {
-            apply: async () => null,
-            bind: async (_resource, _resources, current) => {
-              observed.push(current?.properties);
-            },
-            remove: async () => {},
+            apply: () =>
+              Effect.sync(() => {
+                return null;
+              }),
+            bind: (_resource, _resources, current) =>
+              Effect.sync(() => {
+                observed.push(current?.properties);
+              }),
+            remove: () => Effect.sync(() => {}),
           },
         }),
       },
@@ -318,7 +343,6 @@ it.effect("supplies corrected same-identity configuration while recovering a bin
     expect(state.written?.resources.data?.definition).toEqual(desired);
   }),
 );
-
 it.effect(
   "retention keeps the provider object while explicitly dropping its ownership record",
   () =>
@@ -343,10 +367,14 @@ it.effect(
           yes: true,
           services: () => ({
             worker: {
-              apply: async () => null,
-              remove: async () => {
-                removed = true;
-              },
+              apply: () =>
+                Effect.sync(() => {
+                  return null;
+                }),
+              remove: () =>
+                Effect.sync(() => {
+                  removed = true;
+                }),
             },
           }),
         },

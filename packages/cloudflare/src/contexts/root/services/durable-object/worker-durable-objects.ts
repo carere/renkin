@@ -40,7 +40,6 @@ const authorizedRetirements = (
       },
     ];
   });
-
 export const durableObjectLedger = (
   definition: ResourceDefinition,
   previous?: ResourceState,
@@ -122,41 +121,46 @@ export const durableObjectMetadata = (
   }
   return { exports };
 };
-
-export const observedDurableObjectClasses = async (
+export const observedDurableObjectClasses = (
   scriptName: string,
   client: ReturnType<typeof createDurableObjectClient> | undefined,
-): Promise<Record<string, string>> => {
-  const result: Record<string, string> = {};
-  if (!client) return result;
-  for (const item of await Effect.runPromise(client.list())) {
-    if (item.script !== scriptName) continue;
-    if (!item.class || !item.id || result[item.class])
-      throw new Error("Durable Object namespace inventory is incomplete or ambiguous.");
-    result[item.class] = item.id;
-  }
-  return result;
-};
-
-export const prepareDurableObjectLedger = async (
+) =>
+  Effect.gen(function* () {
+    const result: Record<string, string> = {};
+    if (!client) return result;
+    for (const item of yield* client.list()) {
+      if (item.script !== scriptName) continue;
+      if (!item.class || !item.id || result[item.class])
+        return yield* Effect.fail(
+          new Error("Durable Object namespace inventory is incomplete or ambiguous."),
+        );
+      result[item.class] = item.id;
+    }
+    return result;
+  });
+export const prepareDurableObjectLedger = (
   definition: ResourceDefinition,
   previous: ResourceState | undefined,
   resources: Readonly<Record<string, ResourceState>>,
   desired: readonly ResourceDefinition[],
   client: ReturnType<typeof createDurableObjectClient> | undefined,
 ) =>
-  durableObjectLedger(
-    definition,
-    previous,
-    resources,
-    desired,
-    previous ? await observedDurableObjectClasses(previous.physicalId, client) : {},
-  );
-
-export const assertNoDurableObjects = async (
+  Effect.gen(function* () {
+    return durableObjectLedger(
+      definition,
+      previous,
+      resources,
+      desired,
+      previous ? yield* observedDurableObjectClasses(previous.physicalId, client) : {},
+    );
+  });
+export const assertNoDurableObjects = (
   scriptName: string,
   client: ReturnType<typeof createDurableObjectClient> | undefined,
-) => {
-  if (client && (await Effect.runPromise(client.list())).some((item) => item.script === scriptName))
-    throw new Error("Owning Worker cannot be removed while Durable Object namespaces remain.");
-};
+) =>
+  Effect.gen(function* () {
+    if (client && (yield* client.list()).some((item) => item.script === scriptName))
+      return yield* Effect.fail(
+        new Error("Owning Worker cannot be removed while Durable Object namespaces remain."),
+      );
+  });

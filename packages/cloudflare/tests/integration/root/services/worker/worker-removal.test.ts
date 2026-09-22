@@ -118,8 +118,10 @@ it.effect(
         targetSettings,
       ]);
       try {
-        await expect(test.service.remove(target, { a: caller, b: target })).rejects.toThrow();
-        await test.service.remove(target, { a: caller, b: target });
+        await expect(
+          Effect.runPromise(test.service.remove(target, { a: caller, b: target })),
+        ).rejects.toThrow();
+        await Effect.runPromise(test.service.remove(target, { a: caller, b: target }));
         const writes = test.requests.filter((request) => request.method !== "GET");
         expect(writes.map(({ method, path }) => `${method} ${path}`)).toEqual([
           "PUT /accounts/account/workers/scripts/owned-a",
@@ -144,7 +146,9 @@ it.effect(
       ]) {
         const test = await fixture([targetSettings, observed]);
         try {
-          await expect(test.service.remove(target, { a: caller, b: target })).rejects.toThrow();
+          await expect(
+            Effect.runPromise(test.service.remove(target, { a: caller, b: target })),
+          ).rejects.toThrow();
           expect(test.requests.every((request) => request.method === "GET")).toBe(true);
         } finally {
           await test.close();

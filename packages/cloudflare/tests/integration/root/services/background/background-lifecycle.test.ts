@@ -56,13 +56,17 @@ it.effect(
       ]);
       try {
         const service = cloudflareQueueService(test.client, "lease");
-        const outputs = await service.apply(job.definition, "new-allocation", job);
+        const outputs = await Effect.runPromise(
+          service.apply(job.definition, "new-allocation", job),
+        );
         expect(outputs).toEqual({ id: "new-id", name: "new-allocation" });
         expect(service.resolvePhysicalId?.(job.definition, "new-allocation", outputs)).toBe(
           "new-id",
         );
-        expect(await service.apply(job.definition, "new-allocation", job)).toEqual(outputs);
-        await service.remove(job);
+        expect(
+          await Effect.runPromise(service.apply(job.definition, "new-allocation", job)),
+        ).toEqual(outputs);
+        await Effect.runPromise(service.remove(job));
         expect(test.calls.filter((call) => call.method === "POST")).toHaveLength(1);
         expect(
           test.calls.filter((call) => call.method === "DELETE").map((call) => call.path),
@@ -83,7 +87,9 @@ it.effect(
       ]) {
         const test = await backgroundHttp([current]);
         try {
-          await expect(cloudflareQueueService(test.client, "lease").remove(job)).rejects.toThrow();
+          await expect(
+            Effect.runPromise(cloudflareQueueService(test.client, "lease").remove(job)),
+          ).rejects.toThrow();
           expect(test.calls.every((call) => call.method === "GET")).toBe(true);
         } finally {
           await test.close();
@@ -94,16 +100,18 @@ it.effect(
       ]);
       try {
         await expect(
-          cloudflareWorkflowService(test.client, "lease").remove({
-            definition: {
-              id: "Flow",
-              type: "cloudflare.workflow",
-              identity: "flow",
-              properties: {},
-            },
-            physicalId: "flow",
-            outputs: { scriptName: "owned", className: "Job" },
-          }),
+          Effect.runPromise(
+            cloudflareWorkflowService(test.client, "lease").remove({
+              definition: {
+                id: "Flow",
+                type: "cloudflare.workflow",
+                identity: "flow",
+                properties: {},
+              },
+              physicalId: "flow",
+              outputs: { scriptName: "owned", className: "Job" },
+            }),
+          ),
         ).rejects.toThrow("ownership");
         expect(test.calls.every((call) => call.method === "GET")).toBe(true);
       } finally {
@@ -131,24 +139,30 @@ it.effect(
       ]);
       const owners: string[] = [];
       try {
-        await reconcileWorkerBackground(worker, { Jobs: job }, test.client, "lease", async (name) =>
-          owners.push(name),
+        await Effect.runPromise(
+          reconcileWorkerBackground(worker, { Jobs: job }, test.client, "lease", (name) =>
+            Effect.sync(() => owners.push(name)),
+          ),
         );
-        await reconcileWorkerBackground(
-          worker,
-          {},
-          test.client,
-          "lease",
-          async (name) => owners.push(name),
-          true,
+        await Effect.runPromise(
+          reconcileWorkerBackground(
+            worker,
+            {},
+            test.client,
+            "lease",
+            (name) => Effect.sync(() => owners.push(name)),
+            true,
+          ),
         );
-        await reconcileWorkerBackground(
-          worker,
-          {},
-          test.client,
-          "lease",
-          async (name) => owners.push(name),
-          true,
+        await Effect.runPromise(
+          reconcileWorkerBackground(
+            worker,
+            {},
+            test.client,
+            "lease",
+            (name) => Effect.sync(() => owners.push(name)),
+            true,
+          ),
         );
         expect(owners).toEqual(["old-worker", "new-worker"]);
         expect(
@@ -172,9 +186,11 @@ it.effect("foreign consumers and retained empty Workflows block destructive Work
     ]);
     try {
       await expect(
-        reconcileWorkerBackground(worker, {}, test.client, "lease", async () => {}, true),
+        Effect.runPromise(
+          reconcileWorkerBackground(worker, {}, test.client, "lease", () => Effect.void, true),
+        ),
       ).rejects.toThrow("another Worker");
-      await expect(assertNoOwnedWorkflows(worker, test.client)).rejects.toThrow(
+      await expect(Effect.runPromise(assertNoOwnedWorkflows(worker, test.client))).rejects.toThrow(
         "still owns a Workflow",
       );
       expect(test.calls.every((call) => call.method === "GET")).toBe(true);

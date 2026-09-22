@@ -49,19 +49,20 @@ const trustedExchange = (value: string, subdomain: string) => {
   return url;
 };
 
-const readToken = async (response: Response) => {
-  if (!response.ok) throw new Error("Preview exchange rejected");
-  const body: unknown = await response.json();
-  if (
-    typeof body !== "object" ||
-    body === null ||
-    !("token" in body) ||
-    typeof body.token !== "string" ||
-    !body.token
-  )
-    throw new Error("Invalid preview token");
-  return body.token;
-};
+const readToken = (response: Response) =>
+  Effect.gen(function* () {
+    if (!response.ok) return yield* Effect.fail(new Error("Preview exchange rejected"));
+    const body: unknown = yield* Effect.tryPromise(() => response.json());
+    if (
+      typeof body !== "object" ||
+      body === null ||
+      !("token" in body) ||
+      typeof body.token !== "string" ||
+      !body.token
+    )
+      return yield* Effect.fail(new Error("Invalid preview token"));
+    return body.token;
+  });
 
 // Matches Cloudflare workers-sdk dev/create-worker-preview.ts: exchange is optional.
 // Validate its destination before the fallback so unsafe URLs still fail closed.
@@ -70,15 +71,20 @@ const exchangeToken = (
   subdomain: string,
   fetch: typeof globalThis.fetch,
 ) =>
-  Effect.promise(async (signal) => {
+  Effect.gen(function* () {
     if (!session.exchangeUrl) return session.token;
     const url = trustedExchange(session.exchangeUrl, subdomain);
-    try {
-      return await readToken(await fetch(url, { signal }));
-    } catch (error) {
-      if (signal.aborted || (error instanceof Error && error.name === "AbortError")) throw error;
-      return session.token;
-    }
+    return yield* Effect.tryPromise({
+      try: (signal) => fetch(url, { signal }),
+      catch: (error) => error,
+    }).pipe(
+      Effect.flatMap(readToken),
+      Effect.catch((error) =>
+        error instanceof Error && error.name === "AbortError"
+          ? Effect.fail(error)
+          : Effect.succeed(session.token),
+      ),
+    );
   });
 
 /** Recovers the inherited secret in an authenticated preview; never deploys probe code. */
@@ -100,7 +106,13 @@ export const readStateAuth = (config: CloudflareConfig, input: StatePreviewInput
       Effect.provideService(FetchHttpClient.Fetch, safeFetch),
     );
   }).pipe(
-    Effect.catchCause(() =>
+    Effect.mapError(
+      () =>
+        new StatePreviewError({
+          message: "Unable to authorize state access through Cloudflare Worker preview",
+        }),
+    ),
+    Effect.catchDefect(() =>
       Effect.fail(
         new StatePreviewError({
           message: "Unable to authorize state access through Cloudflare Worker preview",
@@ -134,13 +146,15 @@ const recover = (
       },
       files: new File([input.probeSource], "probe.js", { type: "application/javascript+module" }),
     });
-    return yield* Effect.promise(async () => {
-      const response = await fetch(endpoint, {
+    const response = yield* Effect.tryPromise((signal) =>
+      fetch(endpoint, {
+        signal,
         headers: { "cf-workers-preview-token": preview.previewToken },
-      });
-      if (!response.ok) throw new Error("Preview rejected");
-      const secret = await response.text();
-      if (!/^[a-f0-9]{64}$/.test(secret)) throw new Error("Invalid state authorization secret");
-      return secret;
-    });
+      }),
+    );
+    if (!response.ok) return yield* Effect.fail(new Error("Preview rejected"));
+    const secret = yield* Effect.tryPromise(() => response.text());
+    if (!/^[a-f0-9]{64}$/.test(secret))
+      return yield* Effect.fail(new Error("Invalid state authorization secret"));
+    return secret;
   });

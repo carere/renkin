@@ -18,28 +18,32 @@ it.effect("recovers create success before checkpoint and interrupted update and 
     const interrupted: StateRepository = {
       read: (stack, env) => disk.read(stack, env),
       list: (stack) => disk.list(stack),
-      acquire: async (stack, env) => {
-        const lease = await disk.acquire(stack, env);
-        return {
-          ...lease,
-          write: async (state) => {
-            if (failWrite && state.pending?.phase === "bindings")
-              throw new Error("Simulated crash after provider success");
-            await lease.write(state);
-          },
-        };
-      },
+      acquire: (stack, env) =>
+        Effect.gen(function* () {
+          const lease = yield* disk.acquire(stack, env);
+          return {
+            ...lease,
+            write: (state) =>
+              Effect.gen(function* () {
+                if (failWrite && state.pending?.phase === "bindings")
+                  return yield* Effect.die(new Error("Simulated crash after provider success"));
+                yield* lease.write(state);
+              }),
+          };
+        }),
     };
     const services = () => ({
       worker: {
-        apply: async (_: unknown, id: string) => {
-          seenId = id;
-          if (failOperation) throw new Error("interrupted");
-          return { version: 1 };
-        },
-        remove: async () => {
-          if (failOperation) throw new Error("interrupted");
-        },
+        apply: (_: unknown, id: string) =>
+          Effect.gen(function* () {
+            seenId = id;
+            if (failOperation) return yield* Effect.fail(new Error("interrupted"));
+            return { version: 1 };
+          }),
+        remove: () =>
+          Effect.gen(function* () {
+            if (failOperation) return yield* Effect.fail(new Error("interrupted"));
+          }),
       },
     });
     const stack: Stack = {
@@ -65,7 +69,9 @@ it.effect("recovers create success before checkpoint and interrupted update and 
       expect((await run(updated)).resources.api?.physicalId).toBe(createdId);
       failOperation = true;
       await expect(run({ ...stack, resources: [] })).rejects.toThrow("Deployment failed");
-      expect((await disk.read("app", "dev"))?.resources.api?.physicalId).toBe(createdId);
+      expect((await Effect.runPromise(disk.read("app", "dev")))?.resources.api?.physicalId).toBe(
+        createdId,
+      );
       failOperation = false;
       expect((await run({ ...stack, resources: [] })).resources).toEqual({});
     } finally {

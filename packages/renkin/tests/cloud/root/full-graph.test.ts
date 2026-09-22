@@ -16,11 +16,11 @@ it.effect(
     Effect.promise(async () => {
       const test = await createCloudGraphFixture();
       try {
-        const first = await test.apply();
+        const first = await Effect.runPromise(test.apply());
         expect(test.compilations()).toBe(3);
         if (!reuseOnly) await assertCloudFlow(first);
         await assertCloudCron(first, "0 0 1 1 *");
-        const changed = await test.apply("0 1 1 1 *");
+        const changed = await Effect.runPromise(test.apply("0 1 1 1 *"));
         expect(test.compilations()).toBe(3);
         await assertCloudCron(changed, "0 1 1 1 *");
         expect(changed.resources.Tracking?.physicalId).toBe(first.resources.Tracking?.physicalId);

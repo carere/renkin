@@ -13,22 +13,23 @@ export const cloudflareD1MigrationExecutor = (
   databaseId: string,
   token: string,
 ): MigrationExecutor => ({
-  initialize: async () => {
-    await Effect.runPromise(client.raw({ databaseId, sql: migrationHistoryCreate }, token));
-  },
-  appliedNames: async () => {
-    const response = await Effect.runPromise(
-      client.query({ databaseId, sql: migrationHistoryRead }, token),
-    );
-    return response.result
-      .flatMap((result) => result.results ?? [])
-      .map((row) => {
-        if (!row || typeof row !== "object" || !("name" in row) || typeof row.name !== "string")
-          throw new Error("Invalid migration history response.");
-        return row.name;
-      });
-  },
-  apply: async (migration) => {
-    await Effect.runPromise(client.raw({ databaseId, sql: migrationSql(migration) }, token));
-  },
+  initialize: () =>
+    Effect.gen(function* () {
+      yield* client.raw({ databaseId, sql: migrationHistoryCreate }, token);
+    }),
+  appliedNames: () =>
+    Effect.gen(function* () {
+      const response = yield* client.query({ databaseId, sql: migrationHistoryRead }, token);
+      return response.result
+        .flatMap((result) => result.results ?? [])
+        .map((row) => {
+          if (!row || typeof row !== "object" || !("name" in row) || typeof row.name !== "string")
+            throw new Error("Invalid migration history response.");
+          return row.name;
+        });
+    }),
+  apply: (migration) =>
+    Effect.gen(function* () {
+      yield* client.raw({ databaseId, sql: migrationSql(migration) }, token);
+    }),
 });

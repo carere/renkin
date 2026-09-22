@@ -11,6 +11,6 @@ tasks:
     options:
       cache: false
   test-cloud-authorization:
-    command: vitest run --config vitest.cloud.config.ts
+    command: vitest run --mode cloud --project cloud
     options:
       cache: false

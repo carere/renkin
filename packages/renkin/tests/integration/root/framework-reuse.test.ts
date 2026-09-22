@@ -2,14 +2,17 @@ import { readdir, readFile, rm } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { expect, it } from "@effect/vitest";
 import { prepareStack } from "@renkin/cloudflare/services/worker/prepare-stack";
+import { Effect } from "effect";
 import { defineStack } from "renkin";
 import { appendInput, type Mode, reuseFixture } from "#test-support/root/build/reuse-fixture.ts";
 
 type Fixture = Awaited<ReturnType<typeof reuseFixture>>;
 
 const verifyCoalescing = async (fixture: Fixture) => {
-  const result = await prepareStack(
-    defineStack({ name: "reuse", resources: [fixture.site("first"), fixture.site("second")] }),
+  const result = await Effect.runPromise(
+    prepareStack(
+      defineStack({ name: "reuse", resources: [fixture.site("first"), fixture.site("second")] }),
+    ),
   );
   expect(fixture.compilations()).toBe(1);
   expect(result.resources.find((resource) => resource.id === "first")?.properties).toMatchObject({

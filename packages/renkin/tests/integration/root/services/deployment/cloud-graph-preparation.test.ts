@@ -2,6 +2,7 @@ import { expect, it } from "@effect/vitest";
 import { prepareStack } from "@renkin/cloudflare/services/worker/prepare-stack";
 import { emptyState } from "@renkin/core/models/state";
 import { plan } from "@renkin/core/use-cases/plan";
+import { Effect } from "effect";
 import { stackDefinition } from "#src/contexts/root/services/deployment/stack-definition.ts";
 import { cloudGraph } from "#test-support/root/cloud-full-graph/cloud-stack.ts";
 
@@ -11,7 +12,7 @@ it("prepares the disposable cloud graph without reintroducing protected authorin
     to: "recipient@example.com",
     expiresAt: "2026-09-22T21:59:59Z",
   });
-  const prepared = stackDefinition(await prepareStack(graph));
+  const prepared = stackDefinition(await Effect.runPromise(prepareStack(graph)));
   expect(prepared.resources).toHaveLength(17);
   for (const resource of prepared.resources) {
     expect(resource.protection?.allowDelete, resource.id).toBe(true);

@@ -96,7 +96,7 @@ const provider = (observation: unknown, failure?: { status: number; code: number
 it.live("reuses owned state without replacing the Worker or keys", () =>
   Effect.gen(function* () {
     const boundary = yield* provider(owned);
-    const result = yield* Effect.promise(() => ensureCloudflareState(boundary.config));
+    const result = yield* ensureCloudflareState(boundary.config);
     expect(result.endpoint).toBe("https://renkin-test-state.example-account.workers.dev");
     expect(boundary.uploads).toEqual([]);
     expect(boundary.mutations).toEqual([]);
@@ -113,7 +113,9 @@ for (const observation of [
     Effect.gen(function* () {
       const boundary = yield* provider(observation);
       yield* Effect.promise(() =>
-        expect(ensureCloudflareState(boundary.config)).rejects.toThrow("already occupied"),
+        expect(Effect.runPromise(ensureCloudflareState(boundary.config))).rejects.toThrow(
+          "already occupied",
+        ),
       );
       expect(boundary.mutations).toEqual([]);
     }).pipe(Effect.scoped),
@@ -124,7 +126,9 @@ it.live("does not interpret account authentication failure as missing state", ()
   Effect.gen(function* () {
     const boundary = yield* provider(null, { status: 403, code: 10000 });
     yield* Effect.promise(() =>
-      expect(ensureCloudflareState(boundary.config)).rejects.toThrow("credentials and permissions"),
+      expect(Effect.runPromise(ensureCloudflareState(boundary.config))).rejects.toThrow(
+        "credentials and permissions",
+      ),
     );
     expect(boundary.mutations).toEqual([]);
   }).pipe(Effect.scoped),
@@ -133,7 +137,7 @@ it.live("does not interpret account authentication failure as missing state", ()
 it.live("provisions a missing coordinator with a SQLite class and no stored account token", () =>
   Effect.gen(function* () {
     const boundary = yield* provider(null, { status: 404, code: 10007 });
-    const result = yield* Effect.promise(() => ensureCloudflareState(boundary.config));
+    const result = yield* ensureCloudflareState(boundary.config);
     expect(result.scriptName).toBe("renkin-test-state");
     expect(boundary.uploads).toHaveLength(1);
     expect(boundary.uploads[0]).toContain('"new_sqlite_classes":["StateCoordinator"]');
@@ -145,7 +149,7 @@ it.live("provisions a missing coordinator with a SQLite class and no stored acco
 it.live("discovers existing state without mutations", () =>
   Effect.gen(function* () {
     const boundary = yield* provider(owned);
-    const result = yield* Effect.promise(() => findCloudflareState(boundary.config));
+    const result = yield* findCloudflareState(boundary.config);
     expect(result?.endpoint).toBe("https://renkin-test-state.example-account.workers.dev");
     expect(boundary.mutations).toEqual([]);
   }).pipe(Effect.scoped),
@@ -154,7 +158,7 @@ it.live("discovers existing state without mutations", () =>
 it.live("returns absent state without provisioning it", () =>
   Effect.gen(function* () {
     const boundary = yield* provider(null, { status: 404, code: 10007 });
-    const result = yield* Effect.promise(() => findCloudflareState(boundary.config));
+    const result = yield* findCloudflareState(boundary.config);
     expect(result).toBeUndefined();
     expect(boundary.mutations).toEqual([]);
   }).pipe(Effect.scoped),

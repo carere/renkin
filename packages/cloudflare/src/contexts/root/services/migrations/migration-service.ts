@@ -4,9 +4,9 @@ import type { MigrationFile } from "./migration-files.ts";
 
 /** Adapters execute each migration and its history insert at their real database boundary. */
 export interface MigrationExecutor {
-  initialize(): Promise<void>;
-  appliedNames(): Promise<readonly string[]>;
-  apply(migration: MigrationFile): Promise<void>;
+  initialize(): Effect.Effect<void, Error>;
+  appliedNames(): Effect.Effect<readonly string[], Error>;
+  apply(migration: MigrationFile): Effect.Effect<void, Error>;
 }
 
 export class MigrationError extends ResourceOperationError {
@@ -25,30 +25,25 @@ export const applyMigrations = (
   migrations: readonly MigrationFile[],
   executor: MigrationExecutor,
 ) =>
-  Effect.tryPromise({
-    try: async () => {
-      if (!migrations.length) return [] as string[];
-      let applied: ReadonlySet<string>;
-      try {
-        await executor.initialize();
-        applied = new Set(await executor.appliedNames());
-      } catch {
-        throw new MigrationError(undefined);
-      }
-      const completed: string[] = [];
-      for (const migration of migrations) {
-        if (applied.has(migration.name)) continue;
-        try {
-          await executor.apply(migration);
-        } catch {
-          throw new MigrationError(migration.name);
-        }
-        completed.push(migration.name);
-      }
-      return completed;
-    },
-    catch: (error) => (error instanceof MigrationError ? error : new MigrationError(undefined)),
-  });
+  Effect.gen(function* () {
+    if (!migrations.length) return [] as string[];
+    const applied = yield* executor.initialize().pipe(
+      Effect.andThen(() => executor.appliedNames()),
+      Effect.map((names) => new Set(names)),
+      Effect.mapError(() => new MigrationError(undefined)),
+      Effect.catchDefect(() => Effect.fail(new MigrationError(undefined))),
+    );
+    const completed: string[] = [];
+    for (const migration of migrations) {
+      if (applied.has(migration.name)) continue;
+      yield* executor.apply(migration).pipe(
+        Effect.mapError(() => new MigrationError(migration.name)),
+        Effect.catchDefect(() => Effect.fail(new MigrationError(migration.name))),
+      );
+      completed.push(migration.name);
+    }
+    return completed;
+  }).pipe(Effect.uninterruptible);
 
 export const migrationHistoryTable = "__renkin_migrations";
 export const migrationHistoryCreate = `CREATE TABLE IF NOT EXISTS ${migrationHistoryTable} (name TEXT PRIMARY KEY NOT NULL, applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`;

@@ -1,26 +1,28 @@
 import type { ResourceDefinition } from "@renkin/core/models/stack";
+import { Effect } from "effect";
 import {
   type MigrationFile,
   readMigrationFiles,
 } from "#src/contexts/root/services/migrations/migration-files.ts";
-
-export const prepareD1 = async (resource: ResourceDefinition): Promise<ResourceDefinition> => {
-  if (resource.type !== "cloudflare.d1") return resource;
-  const properties = resource.properties;
-  if (!properties || typeof properties !== "object" || Array.isArray(properties))
-    throw new Error("Invalid D1 properties.");
-  const path = "migrations" in properties ? properties.migrations : null;
-  if (path !== null && typeof path !== "string") throw new Error("Invalid migration directory.");
-  const migrations = path === null ? [] : await readMigrationFiles(path);
-  return {
-    ...resource,
-    properties: {
-      ...properties,
-      migrationFiles: migrations.map(({ name, sql, hash }) => ({ name, sql, hash })),
-    },
-  };
-};
-
+export const prepareD1 = (resource: ResourceDefinition) =>
+  Effect.gen(function* () {
+    if (resource.type !== "cloudflare.d1") return resource;
+    const properties = resource.properties;
+    if (!properties || typeof properties !== "object" || Array.isArray(properties))
+      return yield* Effect.fail(new Error("Invalid D1 properties."));
+    const path = "migrations" in properties ? properties.migrations : null;
+    if (path !== null && typeof path !== "string")
+      return yield* Effect.fail(new Error("Invalid migration directory."));
+    const migrations =
+      path === null ? [] : yield* Effect.tryPromise(() => readMigrationFiles(path));
+    return {
+      ...resource,
+      properties: {
+        ...properties,
+        migrationFiles: migrations.map(({ name, sql, hash }) => ({ name, sql, hash })),
+      },
+    };
+  });
 export const preparedMigrations = (resource: ResourceDefinition): readonly MigrationFile[] => {
   const properties = resource.properties;
   if (

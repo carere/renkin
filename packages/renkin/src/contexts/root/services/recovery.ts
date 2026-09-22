@@ -8,25 +8,37 @@ const recovery = <A>(
   stack: string,
   environment: string,
   options: CloudflareOptions | undefined,
-  action: (state: NonNullable<Awaited<ReturnType<typeof readCloudState>>>) => Promise<A>,
+  action: (
+    state: NonNullable<Effect.Success<ReturnType<typeof readCloudState>>>,
+  ) => Effect.Effect<A, StateError>,
 ) =>
-  Effect.tryPromise({
-    try: async () => {
-      validateName(stack);
-      validateName(environment);
-      const state = await readCloudState(options);
-      if (!state)
-        throw new StateError("invalid", "No cloud state service exists for this account.");
-      return action(state);
-    },
-    catch: (error) =>
+  Effect.gen(function* () {
+    validateName(stack);
+    validateName(environment);
+    const state = yield* readCloudState(options);
+    if (!state)
+      return yield* Effect.fail(
+        new StateError("invalid", "No cloud state service exists for this account."),
+      );
+    return yield* action(state);
+  }).pipe(
+    Effect.mapError((error) =>
       error instanceof StateError
         ? error
         : new StateError(
             "unreadable",
             "Recovery state is unavailable. Check account credentials and state service.",
           ),
-  });
+    ),
+    Effect.catchDefect(() =>
+      Effect.fail(
+        new StateError(
+          "unreadable",
+          "Recovery state is unavailable. Check account credentials and state service.",
+        ),
+      ),
+    ),
+  );
 
 /** Read-only inspection does not evaluate infrastructure or provision a state service. */
 export const inspectRecovery = (stack: string, environment: string, options?: CloudflareOptions) =>

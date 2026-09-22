@@ -80,11 +80,13 @@ const assertTokenActive = async (accountId: string, token: string, workerRead: b
 it.effect("rejects account-read and Worker-read credentials at the shared-state boundary", () =>
   Effect.promise(async () => {
     const authorized = scope();
-    const state = await ensureCloudflareState({
-      accountId: authorized.accountId,
-      apiToken: authorized.apiToken,
-      stateScriptName: `${authorized.prefix}-state-v2`,
-    });
+    const state = await Effect.runPromise(
+      ensureCloudflareState({
+        accountId: authorized.accountId,
+        apiToken: authorized.apiToken,
+        stateScriptName: `${authorized.prefix}-state-v2`,
+      }),
+    );
     const probe = await bundleWorker(
       fileURLToPath(
         new URL(

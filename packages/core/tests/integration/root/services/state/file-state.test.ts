@@ -14,26 +14,34 @@ it.effect(
       const directory = await mkdtemp(join(tmpdir(), "renkin-state-"));
       const repository = new FileStateRepository(directory);
       try {
-        const lease = await repository.acquire("app", "dev");
+        const lease = await Effect.runPromise(repository.acquire("app", "dev"));
         try {
-          await lease.write(emptyState("app", "dev"));
+          await Effect.runPromise(lease.write(emptyState("app", "dev")));
           expect((await stat(join(directory, "app/dev.json"))).mode & 0o777).toBe(0o600);
-          expect(await new FileStateRepository(directory).list("app")).toEqual(["dev"]);
-          await expect(repository.acquire("app", "dev")).rejects.toThrow("already being changed");
-          const independent = await repository.acquire("app", "other");
-          await independent.release();
+          expect(await Effect.runPromise(new FileStateRepository(directory).list("app"))).toEqual([
+            "dev",
+          ]);
+          await expect(Effect.runPromise(repository.acquire("app", "dev"))).rejects.toThrow(
+            "already being changed",
+          );
+          const independent = await Effect.runPromise(repository.acquire("app", "other"));
+          await Effect.runPromise(independent.release());
         } finally {
-          await lease.release();
+          await Effect.runPromise(lease.release());
         }
-        const next = await repository.acquire("app", "dev");
-        await next.release();
+        const next = await Effect.runPromise(repository.acquire("app", "dev"));
+        await Effect.runPromise(next.release());
         expect(
           JSON.parse(await readFile(join(directory, "app/dev.json"), "utf8")).environment,
         ).toBe("dev");
-        expect(await repository.read("app", "missing")).toBeUndefined();
+        expect(await Effect.runPromise(repository.read("app", "missing"))).toBeUndefined();
         await writeFile(join(directory, "app/dev.json"), "corrupted");
-        await expect(repository.read("app", "dev")).rejects.toThrow("could not be read");
-        await expect(repository.list("app")).rejects.toThrow("could not be listed");
+        await expect(Effect.runPromise(repository.read("app", "dev"))).rejects.toThrow(
+          "could not be read",
+        );
+        await expect(Effect.runPromise(repository.list("app"))).rejects.toThrow(
+          "could not be listed",
+        );
       } finally {
         await rm(directory, { recursive: true, force: true });
       }
@@ -48,7 +56,7 @@ it.effect("a killed process releases its lock without waiting for a stale timeou
       "../../../../../src/contexts/root/services/state/file-state-repository.ts",
       import.meta.url,
     ).href;
-    const script = `import {FileStateRepository} from ${JSON.stringify(modulePath)}; const lease=await new FileStateRepository(${JSON.stringify(directory)}).acquire("app","dev");console.log("locked");setInterval(()=>void lease.read(),1000);`;
+    const script = `import {Effect} from "effect"; import {FileStateRepository} from ${JSON.stringify(modulePath)}; const lease=await Effect.runPromise(new FileStateRepository(${JSON.stringify(directory)}).acquire("app","dev"));console.log("locked");setInterval(()=>void Effect.runPromise(lease.read()),1000);`;
     const child = spawn(
       process.execPath,
       [
@@ -69,12 +77,14 @@ it.effect("a killed process releases its lock without waiting for a stale timeou
         }),
       ]);
       const repository = new FileStateRepository(directory);
-      await expect(repository.acquire("app", "dev")).rejects.toThrow("already being changed");
+      await expect(Effect.runPromise(repository.acquire("app", "dev"))).rejects.toThrow(
+        "already being changed",
+      );
       const closed = once(child, "close");
       child.kill("SIGKILL");
       await closed;
-      const lease = await repository.acquire("app", "dev");
-      await lease.release();
+      const lease = await Effect.runPromise(repository.acquire("app", "dev"));
+      await Effect.runPromise(lease.release());
     } finally {
       child.kill("SIGKILL");
       await rm(directory, { recursive: true, force: true });
@@ -89,28 +99,36 @@ it.effect(
       const directory = await mkdtemp(join(tmpdir(), "renkin-remove-"));
       const repository = new FileStateRepository(directory);
       try {
-        const other = await repository.acquire("app", "preview-other");
-        await other.write(emptyState("app", "preview-other"));
-        await other.release();
-        const lease = await repository.acquire("app", "preview");
+        const other = await Effect.runPromise(repository.acquire("app", "preview-other"));
+        await Effect.runPromise(other.write(emptyState("app", "preview-other")));
+        await Effect.runPromise(other.release());
+        const lease = await Effect.runPromise(repository.acquire("app", "preview"));
         const value = emptyState("app", "preview");
         value.outputs.keep = { value: "not-empty" };
-        await lease.write(value);
-        await expect(lease.removeEmpty()).rejects.toThrow("still has");
-        expect(await repository.list("app")).toEqual(["preview", "preview-other"]);
+        await Effect.runPromise(lease.write(value));
+        await expect(Effect.runPromise(lease.removeEmpty())).rejects.toThrow("still has");
+        expect(await Effect.runPromise(repository.list("app"))).toEqual([
+          "preview",
+          "preview-other",
+        ]);
         delete value.outputs.keep;
-        const write = lease.write(value);
-        const removal = lease.removeEmpty();
-        const release = lease.release();
-        await expect(repository.acquire("app", "preview")).rejects.toThrow("already being changed");
+        const write = Effect.runPromise(lease.write(value));
+        const removal = Effect.runPromise(lease.removeEmpty());
+        const release = Effect.runPromise(lease.release());
+        await expect(Effect.runPromise(repository.acquire("app", "preview"))).rejects.toThrow(
+          "already being changed",
+        );
         await Promise.all([write, removal, release]);
-        expect(await repository.read("app", "preview")).toBeUndefined();
-        expect(await repository.list("app")).toEqual(["preview-other"]);
-        await expect(lease.write(value)).rejects.toThrow("lease has ended");
-        const next = await repository.acquire("app", "preview");
-        await next.write(value);
-        await next.release();
-        expect(await repository.list("app")).toEqual(["preview", "preview-other"]);
+        expect(await Effect.runPromise(repository.read("app", "preview"))).toBeUndefined();
+        expect(await Effect.runPromise(repository.list("app"))).toEqual(["preview-other"]);
+        await expect(Effect.runPromise(lease.write(value))).rejects.toThrow("lease has ended");
+        const next = await Effect.runPromise(repository.acquire("app", "preview"));
+        await Effect.runPromise(next.write(value));
+        await Effect.runPromise(next.release());
+        expect(await Effect.runPromise(repository.list("app"))).toEqual([
+          "preview",
+          "preview-other",
+        ]);
       } finally {
         await rm(directory, { recursive: true, force: true });
       }

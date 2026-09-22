@@ -73,11 +73,13 @@ it.effect("a recreated provider namespace cannot inherit the old namespace's own
     );
     yield* Effect.promise(async () => {
       await expect(
-        test.service.apply(object.definition, object.physicalId, object, { Api: owner }),
+        Effect.runPromise(
+          test.service.apply(object.definition, object.physicalId, object, { Api: owner }),
+        ),
       ).rejects.toThrow("identity changed");
-      await expect(test.service.remove(object, { Api: owner, Counters: object })).rejects.toThrow(
-        "replaced namespace",
-      );
+      await expect(
+        Effect.runPromise(test.service.remove(object, { Api: owner, Counters: object })),
+      ).rejects.toThrow("replaced namespace");
       expect(test.paths.every((path) => path.startsWith("GET "))).toBe(true);
     });
   }),
@@ -96,11 +98,13 @@ it.effect("refuses namespace adoption and retirement of a foreign class on an ow
     );
     yield* Effect.promise(async () => {
       await expect(
-        test.service.apply(object.definition, "new-allocation", undefined, { Api: owner }),
+        Effect.runPromise(
+          test.service.apply(object.definition, "new-allocation", undefined, { Api: owner }),
+        ),
       ).rejects.toThrow("Cannot adopt");
-      await expect(test.service.remove(object, { Api: owner, Counters: object })).rejects.toThrow(
-        "unowned or protected",
-      );
+      await expect(
+        Effect.runPromise(test.service.remove(object, { Api: owner, Counters: object })),
+      ).rejects.toThrow("unowned or protected");
       expect(test.paths.every((path) => path.startsWith("GET "))).toBe(true);
     });
   }),
@@ -116,9 +120,11 @@ it.effect(
         (test) => Effect.promise(test.close),
       );
       yield* Effect.promise(async () => {
-        await expect(test.service.bind?.(object, { Api: owner, Counters: object })).rejects.toThrow(
-          "verified as SQLite",
-        );
+        await expect(
+          Effect.runPromise(
+            test.service.bind?.(object, { Api: owner, Counters: object }) ?? Effect.void,
+          ),
+        ).rejects.toThrow("verified as SQLite");
         expect(() =>
           durableObjectMetadata(owner, {
             Counters: { ...object, definition: { ...object.definition, retain: true } },

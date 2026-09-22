@@ -56,16 +56,17 @@ jobs:
       - name: Install Chromium for framework browser checks
         run: bun x playwright install --with-deps chromium
 
-      - name: Run behavioral tests without provider credentials
-        run: |
-          bun moon run core:test-unit core:test-integration
-          bun moon run cloudflare-sdk:test-integration cloudflare:test-unit cloudflare:test-integration
-          # Each integration task can start several workerd/browser/compiler processes.
-          # Serialize tasks and ordinary test files; explicit concurrency tests remain enabled.
-          bun moon run --concurrency 1 runtime:test-integration renkin:test-unit renkin:test-integration -- --no-file-parallelism
-          bun moon run --concurrency 1 renkin:test-release-preparation -- --no-file-parallelism
-          bun moon run --concurrency 1 websites:test-unit websites:test-integration example-spa:test-integration example-ssr:test-unit example-ssr:test-integration -- --no-file-parallelism
-          bun moon run --concurrency 1 example-static:test-integration renkin:test-astro -- --no-file-parallelism
+      - name: Run unit tests
+        run: bun moon run --concurrency 1 :test-unit -- --no-file-parallelism
+
+      - name: Run local integration tests
+        run: bun moon run --concurrency 1 :test-integration -- --no-file-parallelism
+
+      - name: Check cloud test preparation without provider credentials
+        run: bun moon run --concurrency 1 :test-release-preparation -- --no-file-parallelism
+
+      - name: Check Astro SSR through its CLI
+        run: bun moon run --concurrency 1 :test-astro -- --no-file-parallelism
 
       - name: Ensure checks leave tracked files unchanged
         run: git diff --exit-code

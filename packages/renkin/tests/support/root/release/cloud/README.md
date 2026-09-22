@@ -38,7 +38,7 @@ From `packages/renkin`, run:
 
 ```sh
 bun --no-env-file node_modules/vitest/vitest.mjs run \
-  --config vitest.release-cloud.config.ts --project preparation
+  --project preparation
 ```
 
 The preparation test uses a synthetic installed manifest solely to test copying and boundary
@@ -63,9 +63,9 @@ before retrying; neither this runner nor its manifest establishes successful cle
 
 The optional Vitest wrapper requires `RENKIN_INSTALLED_CLOUD_CONSUMER` and the explicit scope
 fields exported in `scopeKeys`. `RENKIN_INSTALLED_CLOUD_SUITES` may select comma-separated
-catalog names. Invoke `--project installed-cloud` explicitly only after approval. The default
+catalog names. Invoke `--mode cloud --project installed-cloud` explicitly only after approval. The default
 selection runs all 13 suites, which can send emails in background and full-graph acceptance.
-Do not run the whole release-cloud configuration as a preparation check.
+Use the `preparation` project for preparation checks; cloud mode runs provider tests.
 
 ## Bootstrap and authorization boundary
 

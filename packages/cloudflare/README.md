@@ -11,7 +11,7 @@ removes its Worker and Durable Object namespace. It requires the normal explicit
 Cloudflare test scope plus `RENKIN_CLOUDFLARE_STATE_PRESSURE_TESTS=true`:
 
 ```sh
-bun --bun vitest run --config vitest.cloud.config.ts tests/cloud/root/services/state/state-pressure.test.ts
+bun --bun vitest run --mode cloud --project cloud tests/cloud/root/services/state/state-pressure.test.ts
 ```
 
 Run it from this package with the authorized environment already loaded. Local
