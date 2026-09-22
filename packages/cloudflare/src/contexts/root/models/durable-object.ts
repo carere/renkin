@@ -22,7 +22,7 @@ export interface DurableObjectResource<
 export const durableObject = <Service extends DurableObjectInstance | undefined = undefined>(
   id: string,
   options: DurableObjectOptions,
-): DurableObjectResource<Service> => ({
+): DurableObjectResource<NoInfer<Service>> => ({
   id,
   type: "cloudflare.durable-object",
   identity:

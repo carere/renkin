@@ -34,7 +34,7 @@ const compile = async (consumer: InstalledConsumer, file: string, skip: boolean)
     if (!error || typeof error !== "object" || !("stdout" in error)) throw error;
     const diagnostics = String(error.stdout).trim().split("\n").filter(Boolean).sort();
     if (!diagnostics.length || diagnostics.some((line) => !/error TS[0-9]+:/.test(line)))
-      throw error;
+      throw new Error(`Type checking ${file} failed:\n${String(error.stdout)}`, { cause: error });
     return diagnostics;
   }
 };
@@ -57,6 +57,7 @@ export const verifyTypes = async (consumer: InstalledConsumer) => {
   );
   assert.deepEqual(await compile(consumer, "all-types.ts", true), []);
   assert.deepEqual(await compile(consumer, "worker-types.test.ts", true), []);
+  assert.deepEqual(await compile(consumer, "site-environment.test.ts", true), []);
   await writeFile(
     join(consumer.directory, "core-types.ts"),
     ["renkin", "renkin/worker", "renkin/testing"]

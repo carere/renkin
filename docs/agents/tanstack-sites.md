@@ -38,7 +38,8 @@ export default defineStack({ name: "my-site", resources: [site] });
 `bindings` accepts constants and native resource descriptors. Owned descriptors
 are added to the resource graph once; conflicting declarations fail before
 provisioning. Import `env` from `cloudflare:workers` in server code and use its
-native methods, with a project declaration for the binding types. Client code
+native methods, with a project declaration inferred using
+`SiteEnvironment<typeof site>` from `renkin/cloudflare` (see the root README). Client code
 must not read server bindings. No runtime layer or binding wrapper belongs in
 the consuming route. KV/D1/R2 and the other supported descriptors use the same
 native local graph as ordinary Workers. Service binding references keep their

@@ -224,6 +224,26 @@ match. Declare external inputs through `reuse.inputs`; missing build artifacts
 cause a rebuild. [Build reuse](docs/agents/build-reuse.md) documents external commands
 and cache boundaries.
 
+For native server bindings, infer the environment from your site instead of
+repeating resource types in a handwritten interface:
+
+```ts
+// src/types/cloudflare.d.ts
+// Keep this file ambient: use type import expressions, not top-level imports.
+declare module "cloudflare:workers" {
+  const env: import("renkin/cloudflare").SiteEnvironment<typeof import("../../resources.ts").site>;
+  export { env };
+}
+```
+
+Server code still imports `env` from `cloudflare:workers`. These type-only imports
+add no infrastructure code to the application bundle. `SiteEnvironment` supports
+TanStack and Astro declarations, including enabled Astro session KV bindings.
+It describes native handles, preserves queue/workflow payload and service types,
+and types string configuration as `string`. Infer from the original declaration
+before widening it to a general resource type. Never access server bindings in
+browser code.
+
 ## APIs, testing and further details
 
 The root package exposes Effect operations including `development`, `deploy`,

@@ -18,12 +18,16 @@ export interface TanStackOptions extends FrameworkWorkerOptions {
   readonly afterBuild?: (result: WorkerBuildResult) => void | Promise<void>;
 }
 
-export interface TanStackResource extends WorkerResource {
-  readonly website: TanStackOptions;
+export interface TanStackResource<O extends TanStackOptions = TanStackOptions>
+  extends WorkerResource {
+  readonly website: O;
 }
 
 /** Host build modules load by URL so Worker bundlers never traverse native tooling. */
-export const tanstackStart = (id: string, options: TanStackOptions): TanStackResource => {
+export const tanstackStart = <const O extends TanStackOptions>(
+  id: string,
+  options: O,
+): TanStackResource<O> => {
   const website = { ...options, root: resolve(options.root) };
   return {
     ...frameworkWorker(id, website, {

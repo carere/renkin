@@ -6,9 +6,9 @@ import type { AstroBuildOptions } from "./astro-options.ts";
 import { type FrameworkWorkerOptions, frameworkWorker } from "./framework-worker.ts";
 
 export interface AstroOptions extends AstroBuildOptions, FrameworkWorkerOptions {}
-export interface AstroResource extends WorkerResource {
+export interface AstroResource<O extends AstroOptions = AstroOptions> extends WorkerResource {
   /** Framework configuration shared with the Astro CLI integration. */
-  readonly astro: AstroOptions;
+  readonly astro: O;
   /** The generated or explicitly supplied session namespace, when sessions are enabled. */
   readonly sessionKV?: KVResource;
 }
@@ -19,7 +19,7 @@ const sessionId = (id: string) =>
     : `${id.slice(0, 47)}-${createHash("sha256").update(id).digest("hex").slice(0, 8)}-session`;
 
 /** Declares one Astro Worker and its ordinary protected resource dependencies. */
-export const astro = (id: string, options: AstroOptions): AstroResource => {
+export const astro = <const O extends AstroOptions>(id: string, options: O): AstroResource<O> => {
   validateName(id);
   if (options.bindings?.ASSETS !== undefined)
     throw new Error("ASSETS is reserved for Astro static assets.");

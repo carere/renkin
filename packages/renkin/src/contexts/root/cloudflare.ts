@@ -43,3 +43,11 @@ export const astro = astroSite;
 
 import { tanstackStart as tanstack } from "@renkin/websites/models/tanstack";
 export const tanstackStart = tanstack;
+
+import type { SiteEnvironment as Environment } from "@renkin/websites/models/site-environment";
+/** Native server bindings inferred from a TanStack or Astro site declaration. */
+export type SiteEnvironment<
+  Site extends
+    | import("@renkin/websites/models/tanstack").TanStackResource
+    | import("@renkin/websites/models/astro").AstroResource,
+> = Environment<Site>;
