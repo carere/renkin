@@ -102,5 +102,4 @@ stack. Its intended checks are the connected native flow, signed R2 access, one
 email send with Workflow task retries disabled, and a provider-observed cron change
 without recompiling the three frontends. A local owner-only JSONL ledger records
 allocated scopes, provider IDs after deployment and completed environment cleanup.
-It is not part of the normal integration command. See the current
-[validation record](validation/issue-13.md) for which cloud checks have actually run.
+It is not part of the normal integration command.

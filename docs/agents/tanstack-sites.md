@@ -1,6 +1,6 @@
 # TanStack Start Solid sites
 
-The executable [SPA](../apps/example-spa) and [SSR](../apps/example-ssr) examples
+The executable SPA (`apps/example-spa`) and SSR (`apps/example-ssr`) examples
 use the public API. Both run without provider credentials for development and
 production-build validation. The supported Renkin host is Bun.
 
@@ -93,8 +93,7 @@ traverse Vite or native tooling; release packaging must retain those module file
 and the build subprocess entry alongside their declarations. It can be
 passed to `worker("Site", { build, ... })` for a separately built artifact. Keep
 the site's dependency declarations and constants when doing that. No bundler or
-upload-specific type is required of external builders. Automatic cache reuse is
-not implemented by this ticket.
+upload-specific type is required of external builders. See [build reuse](build-reuse.md) for cached builds and external commands.
 
 ## Run and verify
 
@@ -123,38 +122,9 @@ removes the exact environments. Normal CI does not run it.
 
 Validated dependency frontier: TanStack Solid Start 1.168.54, Solid Router 1.170.36,
 Solid 1.9.15, Vite 8.3.0, vite-plugin-solid 2.11.14, Cloudflare Vite plugin 1.56.0.
-Exact dependency resolutions live in `bun.lock`. This is source-workspace
-validation; packaged installation and publication remain the release task.
+Exact dependency resolutions live in `bun.lock`. See [package assembly](packaging.md) for installed-consumer checks.
 
-## Validation recorded on 2026-09-21
-
-All 183 tests across the 11 populated provider-free Moon suites passed, together
-with TypeScript, Biome, Knip, manifest sorting and Moon synchronization. The
-strengthened SSR browser scenario also passed separately after adding navigation
-back to its native-data server-function route. Manual `agent-browser` checks
-covered both running examples' hydration, navigation and source reload.
-
-The separate real-Cloudflare SPA and SSR scenarios then passed through the public
-`deploy` API using the configured account and test domain:
-
-| Environment | Observed behavior | Cleanup |
-| --- | --- | --- |
-| `renkin-test-spa-1485a997/framework` | Prerendered page, client JavaScript, static asset, native KV POST/GET and SPA fallback | Worker and KV removed; environment removal completed |
-| `renkin-test-ssr-76e5dcb4/framework` | SSR markup, custom server-entry header, native KV POST/GET, client JavaScript and static asset; custom-domain TLS and native-data GET after propagation | Custom domain, Worker and KV removed; environment removal completed |
-
-The custom hostname was the SSR environment's stack name beneath the configured
-test domain. No email, paid certificate purchase or backend upgrade was performed.
-Any retained managed-certificate inventory is recorded by the umbrella task's
-cleanup audit; successful domain removal does not assert deletion of a separate
-certificate pack.
-
-Two earlier failed SPA scopes, `renkin-test-spa-903b8794/framework` and
-`renkin-test-spa-492720b0/framework`, were also removed. The first exposed executable
-builder callbacks entering durable state; the second was interrupted by a test
-trace's consumed-Request bug and was recovered through public removal. The durable
-boundary now projects only `ResourceDefinition` fields, with a local regression
-covering build hooks, deploy, unchanged repeat and removal. Neither initial attempt
-is counted as a passing cloud test.
+## Development dependency optimization
 
 Development optimizer files belong to each Worker/environment's local development
 folder. Renkin canonicalizes that path and the application root; it owns Vite's

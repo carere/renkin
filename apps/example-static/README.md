@@ -17,4 +17,4 @@ bun moon run example-static:test-integration
 Run `bun --bun astro build` directly in this directory, or use the Moon build task.
 The integration writes `dist/` and `.renkin/build-result.json`. The integration test serves
 that public artifact in the real local Worker graph, including routes and headers.
-See [Astro usage](../../docs/astro-sites.md) for cloud deployment and configuration.
+See [Astro usage](../../docs/agents/astro-sites.md) for cloud deployment and configuration.

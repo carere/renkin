@@ -162,4 +162,4 @@ serialization. Application signing in tests uses the independent `aws4fetch`
 development dependency; plain R2/native usage has no signing dependency.
 The separately gated `packages/renkin/tests/cloud/root/r2.test.ts` exercises real
 Cloudflare resources and requires explicit time-bounded resource and token-management
-authorization. See the ticket validation record for the latest executed results.
+authorization.

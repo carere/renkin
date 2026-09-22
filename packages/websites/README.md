@@ -2,8 +2,8 @@
 
 Owns framework recipes and build/development adapters. The Astro factory is public
 through `renkin/cloudflare`, with standalone builds through `renkin/astro`.
-See [Astro usage](../../docs/astro-sites.md) and the
-[architecture](../../docs/architecture.md) for package ownership.
+See [Astro usage](../../docs/agents/astro-sites.md) and the
+[architecture](../../docs/agents/architecture.md) for package ownership.
 
 Astro uses the official adapter for production build and workerd page generation.
 Its native development server receives request-scoped bindings from the shared
@@ -23,7 +23,7 @@ Run `bun moon run websites:test-integration` for actual workerd build/asset chec
 and the native platform bridge test. The normal suite requires no cloud credentials.
 This package composes TanStack Start Solid SPA/SSR builds with Renkin Workers and
 native local bindings. Consumers use `renkin/cloudflare`, `renkin/vite`, and the
-root `renkin` API. See [TanStack sites](../../docs/tanstack-sites.md).
+root `renkin` API. See [TanStack sites](../../docs/agents/tanstack-sites.md).
 
 The framework owns compilation, prerendering, assets and development reload.
 Renkin owns resource dependencies, native handles, publication and cleanup. The

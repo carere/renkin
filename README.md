@@ -101,7 +101,7 @@ The shared state backend survives ordinary environment removal.
 A competing deployment fails instead of changing an environment concurrently.
 Interrupted deployments normally resume from their checkpoint. If a provider
 operation has an unknowable outcome, `renkin inspect` reports the blocked operation;
-[explicit reconciliation](docs/worker-first-slice.md#reconcile-an-ambiguous-provider-operation)
+[explicit reconciliation](docs/agents/worker-first-slice.md#reconcile-an-ambiguous-provider-operation)
 is required after establishing its outcome. Resource recovery is not SQL rollback.
 
 ## Bind resources to application code
@@ -191,7 +191,7 @@ SSR gets a protected session KV namespace by default. Supply native resources vi
 it to `false` to disable sessions. Static output creates no session namespace.
 High-level D1/R2/KV resources are attached after production page generation; use
 SSR routes for resource access. See [the static example](apps/example-static) and
-[Astro compatibility details](docs/astro-sites.md).
+[Astro compatibility details](docs/agents/astro-sites.md).
 
 ## TanStack Start with Solid
 
@@ -221,7 +221,7 @@ Include `site` in your stack and run `renkin dev`. The [SPA](apps/example-spa) a
 [SSR](apps/example-ssr) examples show routing, hydration and native bindings.
 Renkin skips unchanged framework builds when captured inputs and artifacts still
 match. Declare external inputs through `reuse.inputs`; missing build artifacts
-cause a rebuild. [Build reuse](docs/build-reuse.md) documents external commands
+cause a rebuild. [Build reuse](docs/agents/build-reuse.md) documents external commands
 and cache boundaries.
 
 ## APIs, testing and further details
@@ -236,14 +236,14 @@ features such as custom domains, Access policies or production R2 CORS.
 The README is the primary usage guide; no documentation website is maintained.
 The following guides cover resource-specific options and operational details:
 
-- [Connected Workers and KV](docs/connected-workers.md)
-- [D1 and migrations](docs/d1-migrations.md)
-- [R2 and preview environments](docs/r2-and-previews.md)
-- [Queues, Workflows and email](docs/background-jobs.md)
-- [Durable Objects](docs/durable-objects.md)
-- [Custom domains, Access and assets](docs/sites-and-access.md)
-- [Astro](docs/astro-sites.md) and [TanStack](docs/tanstack-sites.md)
-- [Release validation and compatibility limits](docs/release-validation.md)
+- [Connected Workers and KV](docs/agents/connected-workers.md)
+- [D1 and migrations](docs/agents/d1-migrations.md)
+- [R2 and preview environments](docs/agents/r2-and-previews.md)
+- [Queues, Workflows and email](docs/agents/background-jobs.md)
+- [Durable Objects](docs/agents/durable-objects.md)
+- [Custom domains, Access and assets](docs/agents/sites-and-access.md)
+- [Astro](docs/agents/astro-sites.md) and [TanStack](docs/agents/tanstack-sites.md)
+- [Package assembly and checks](docs/agents/packaging.md)
 
 ## Developing this repository
 
@@ -290,10 +290,7 @@ Foundation validation runs Biome, TypeScript, Knip and manifest sorting directly
 TypeScript checks the workspace-owned tool configurations. Populated behavioral
 suites cover resources, runtime, frameworks, example apps and the full local graph;
 credentialed Cloudflare suites run separately. Empty test projects remain strict.
-Standalone artifact validation passed on Linux and macOS, and installed Cloudflare
-acceptance is complete across the documented release candidates. Source CI passed
-237 behavioral tests before the Astro CLI integration; see
-[release validation](docs/release-validation.md) for exact provenance and limits.
+See [package assembly](docs/agents/packaging.md) for standalone artifact checks.
 
 Each workspace owns its `vitest.config.ts` and its Moon test tasks. Its initial
 unit and integration projects discover local `tests/unit/**/*.test.ts` and
@@ -315,7 +312,7 @@ and the shared Remoshu HTTP cache at `https://remoshu.carere.workers.dev`, with
 Renkin artifacts isolated under `carere/renkin`. Cache integrity verification is enabled.
 Repository checks run directly, outside Moon caching.
 Configure application build inputs and external command ordering through the
-[build reuse API](docs/build-reuse.md); workspace Moon task definitions remain explicit.
+[build reuse API](docs/agents/build-reuse.md); workspace Moon task definitions remain explicit.
 
 Dependencies use caret (`^`) ranges. `bun.lock` records the exact resolved versions;
 `bun install --frozen-lockfile` keeps CI reproducible. Run `bun update` to select
@@ -374,8 +371,8 @@ below 1.0; choose the first stable release explicitly. Dry runs do not execute
 bump hooks.
 
 Versioning does not publish a package. Build the standalone artifact with
-`bun moon run renkin:pack` and inspect its identity and the completed checks in
-[release validation](docs/release-validation.md). Source-workspace packing remains
+`bun moon run renkin:pack` and inspect its identity using the commands in
+[package assembly](docs/agents/packaging.md). Source-workspace packing remains
 guarded; only the staged tarball is an intended distribution artifact. Registry
 publication requires separate authorization and is not part of validation.
 

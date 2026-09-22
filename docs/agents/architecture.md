@@ -3,9 +3,8 @@
 Renkin is an Effect-based infrastructure toolkit for Cloudflare. This document
 records ownership and the first-release scope. Workers, protected storage, native
 background services, lifecycle recovery, local/cloud state, website integrations
-and public test helpers are implemented. The staged release artifact and isolated
-consumer checks are described in [release validation](release-validation.md);
-that record distinguishes release candidates, completed checks and compatibility limits.
+and public test helpers are implemented. See [package assembly](packaging.md) for the standalone artifact layout and
+isolated consumer checks.
 
 ## Workspace ownership
 
@@ -55,7 +54,7 @@ Workspace source exports are a development convenience. The release task creates
 separate standalone stage, packs it, and validates the actual installed tarball
 outside workspace resolution on supported systems. The source workspace keeps a
 permanent wrong-target pack guard; its manifest is never temporarily rewritten.
-See [release validation](release-validation.md) for artifact identity and results.
+See [package assembly](packaging.md) for artifact identity and verification commands.
 
 Effect must be a compatible peer dependency of the published API, with a matching
 development dependency for tests. The foundation uses matching caret ranges for Effect and
@@ -70,7 +69,7 @@ Renkin's client setup and error handling at that boundary. Distilled is separate
 from Alchemy; Alchemy package dependencies remain prohibited. Check the selected
 release for the required resource behavior and Effect compatibility, including
 errors used during deployment. See
-[the SDK dependency decision](adr/0004-use-distilled-as-a-dependency.md).
+[the SDK dependency decision](../adr/0004-use-distilled-as-a-dependency.md).
 
 ## Alchemy compatibility and reuse
 
@@ -79,7 +78,7 @@ Renkin must have no dependencies on `alchemy`, `@alchemy.run/*`, or
 but permit redesigned internals from the start when supported by evidence and
 compatibility checks. Consumer declarations and imports may change, but Renkin's
 public API must remain simple; internal simplification must not shift complexity
-into client code. See [the compatibility decision](adr/0001-behavior-compatible-rewrite.md).
+into client code. See [the compatibility decision](../adr/0001-behavior-compatible-rewrite.md).
 
 Reuse only required Alchemy code when appropriate. Record its source revision and
 retain applicable attribution and license notices for each extraction. Review
@@ -88,7 +87,7 @@ Alchemy implementation, history, or deployment configuration is included here.
 
 Delimoov has not been deployed, so the first release may start with fresh resources
 and state. Importing Alchemy state and taking over existing deployments are not
-required; see [the fresh-start decision](adr/0002-start-with-fresh-infrastructure.md).
+required; see [the fresh-start decision](../adr/0002-start-with-fresh-infrastructure.md).
 
 ## User-facing requirements
 
@@ -103,7 +102,7 @@ required; see [the fresh-start decision](adr/0002-start-with-fresh-infrastructur
   A competing deployment stops with a clear message rather than waiting. A crash
   must not leave a permanent lock; different environments may deploy concurrently.
   If a coordinator crash leaves a provider mutation's outcome unknowable, require
-  [explicit reconciliation](adr/0007-reconcile-ambiguous-provider-operations-explicitly.md)
+  [explicit reconciliation](../adr/0007-reconcile-ambiguous-provider-operations-explicitly.md)
   before allowing later mutations, as accepted for this exceptional case.
   Database migration failures can require user intervention; resource recovery
   is not a promise to reverse or repair partially applied SQL automatically.
@@ -154,8 +153,8 @@ required; see [the fresh-start decision](adr/0002-start-with-fresh-infrastructur
 
 Renkin uses Apache 2.0; LICENSE, NOTICE and source provenance are included in the artifact. Retain applicable third-party licenses and notices for
 copied code, record its source revision, and mark modifications as required.
-The release artifact includes the reviewed provenance and notices described in
-[release validation](release-validation.md); future copied code requires the same review.
+The release artifact includes provenance and notices; future copied code requires
+the same license review.
 
 ## Release validation
 

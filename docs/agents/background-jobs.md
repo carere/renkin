@@ -182,7 +182,7 @@ provider consumer. Worker deletion refuses while a native Workflow remains,
 including a retained empty Workflow. Queue deletion refuses remaining producers
 or consumers; no provider force-delete bypass is used.
 
-## Validation evidence
+## Testing
 
 Credential-free public tests cover scheduled → queue → Workflow → captured email,
 native batch retries and DLQ delivery, Workflow retry attempts, cached steps and
@@ -200,13 +200,3 @@ bun --env-file=/secure/path/cloud.env node_modules/vitest/vitest.mjs run \
 # Run from packages/renkin. Normal test projects exclude tests/cloud.
 ```
 
-The 2026-09-21 cloud run `renkin-test-jobs-7a4fe3b7/background` passed native queue
-production, Workflow retry to attempt 2, one authorized email send accepted by
-Cloudflare, poison-message retry and DLQ delivery, protection and explicit cleanup.
-All six temporary resources were removed through Renkin; the shared state backend
-was retained. One live email attempt was made. The user subsequently confirmed
-receiving the test email, providing inbox-delivery evidence as well as provider
-acceptance. The test deploys an inactive annual cron schedule and invokes
-its producer explicitly; the full scheduled-event chain is exercised locally.
-An earlier run failed its health check before producing any jobs, sent zero emails,
-and also cleaned up completely.

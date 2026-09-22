@@ -1,9 +1,7 @@
-# Worker deployment slice
+# Workers, state and recovery
 
-Ticket #4 implements ordinary and Effect-based HTTP Workers, credential-free
-local execution, encrypted shared state, and safe deployment checkpoints. Other
-resources and framework integrations belong to subsequent tickets. This is a
-workspace API; the packed release and its installation checks remain ticket #14.
+Renkin supports ordinary and Effect-based HTTP Workers, credential-free local
+execution, encrypted shared state, and recoverable deployment checkpoints.
 
 ## Authoring
 
@@ -122,8 +120,8 @@ Provider actions verify exact ownership tags before updating or deleting.
 Retention keeps the physical Worker and explicitly gives up ownership.
 
 `remove` removes owned application resources and clears outputs. It currently
-retains the empty environment record as an audit record. Exact named-environment
-record deletion and preview lifecycle belong to the subsequent storage slice.
+retains the empty environment record as an audit record. Use `removeEnvironment` to delete an empty named environment; see
+[R2 and previews](r2-and-previews.md#explicit-cleanup).
 The permanent state Worker is never part of the application resource plan.
 Deploy effects hold their lease to completion even if the calling fiber is
 interrupted. Failed deployments preserve pending operations; rerun to recover.
@@ -160,17 +158,13 @@ versus invalid-route errors, authentication failures, upload multipart encoding
 and fenced mutation transport. See the SDK README for details. No Alchemy or
 Distilled implementation source was copied into this slice.
 
-The [macOS execution record](validation/issue-4.md) reports the checks run with this change. The parent task also verified the initial 55 tests on Linux CI. The release artifact, broader
-cloud-only resources, full application graph and all resource-specific runtime
-regressions remain later tickets; empty projects are not behavioral coverage.
-
 ## Reconcile an ambiguous provider operation
 
 A deployment client can crash and recover through its lease and checkpoint.
 A coordinator crash during a Cloudflare request is different: the provider may
 have accepted a request whose outcome Renkin cannot establish. The environment
 stays quarantined. The accepted recovery exception is recorded in
-[ADR 0007](adr/0007-reconcile-ambiguous-provider-operations-explicitly.md).
+[ADR 0007](../adr/0007-reconcile-ambiguous-provider-operations-explicitly.md).
 
 Inspect without evaluating an infrastructure file:
 

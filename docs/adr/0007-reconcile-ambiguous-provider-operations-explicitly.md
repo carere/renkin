@@ -1,9 +1,9 @@
 # Reconcile ambiguous provider operations explicitly
 
 A coordinator crash during a provider mutation can leave Renkin unable to prove
-whether the mutation completed or could still complete. On 2026-09-21 the user
-chose explicit operator reconciliation over a timeout retry that risks a delayed
-write overlapping later deployment work.
+whether the mutation completed or could still complete. Explicit operator
+reconciliation avoids a timeout retry that risks a delayed write overlapping
+later deployment work.
 
 Renkin keeps the affected environment blocked until the recorded operation is
 reconciled. Inspection and reconciliation must identify that exact operation,

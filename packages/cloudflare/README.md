@@ -2,8 +2,8 @@
 
 The initial Cloudflare resource adapter deploys stateless Workers through the released SDK. Account-level cloud state uses a bootstrapped coordinator Worker and SQLite Durable Object, authenticated encryption, renewable environment leases and fenced mutation dispatch. Bootstrap and coordinator integration tests run against local HTTP fixtures and real workerd.
 
-See [Worker usage and validation](../../docs/worker-first-slice.md) and
-[architecture](../../docs/architecture.md) for interfaces, ownership and limitations.
+See [Worker usage and validation](../../docs/agents/worker-first-slice.md) and
+[architecture](../../docs/agents/architecture.md) for interfaces, ownership and limitations.
 
 The opt-in state pressure regression creates one disposable coordinator containing
 only synthetic data, writes and reads twenty 20 MiB encrypted checkpoints, then

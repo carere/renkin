@@ -79,8 +79,10 @@ export const assembleRelease = async (root: string, stage: string) => {
     await copyFile(join(root, "packages/renkin/README.md"), join(stage, "README.md"));
     await mkdir(join(stage, "docs"), { recursive: true });
     for (const source of await walkFiles(join(root, "docs"))) {
-      if (!source.endsWith(".md") || relative(join(root, "docs"), source).includes("/")) continue;
-      await copyFile(source, join(stage, "docs", relative(join(root, "docs"), source)));
+      if (!source.endsWith(".md")) continue;
+      const destination = join(stage, "docs", relative(join(root, "docs"), source));
+      await mkdir(dirname(destination), { recursive: true });
+      await copyFile(source, destination);
     }
     for (const target of Object.values(manifest.bin)) await chmod(resolve(stage, target), 0o755);
     return manifest;

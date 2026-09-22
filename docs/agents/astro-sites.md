@@ -63,7 +63,7 @@ from `renkin/astro` and the original site declaration from your infrastructure m
 Then `bun --bun astro build` produces `dist/` and `.renkin/build-result.json` without
 a custom build script. The example Moon build task runs that same Astro CLI.
 Renkin owns the Cloudflare adapter; do not also configure another adapter.
-See the [README example](../README.md#astro-use-the-normal-build-command). `buildAstro(site)` from `renkin/astro` returns the
+See the [README example](../../README.md). `buildAstro(site)` from `renkin/astro` returns the
 shared `WorkerBuildResult`, including native requirement metadata, without
 provisioning infrastructure. Deploying the resource invokes this builder
 automatically. Existing explicit Worker build artifacts and custom domains use
@@ -104,7 +104,7 @@ The separately invoked `packages/renkin/tests/cloud/root/astro.test.ts` requires
 explicit current cloud test authorization. It uses unique temporary names and an
 exact hostname, tests both outputs and all session modes, then removes owned
 resources and the empty environment. Cloud credentials are never needed by the
-normal suite. See the ticket validation record for actual run evidence.
+normal suite.
 
 ### Bun build transport compatibility
 

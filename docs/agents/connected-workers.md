@@ -120,7 +120,7 @@ unrelated deployment must be recovered before starting a new rename.
 Cloud state journals server-assigned KV IDs before binding Workers, and keeps pending
 binding and removal progress through interruption. Ordinary client failure is
 retryable. The exceptional ambiguous coordinator/provider-dispatch boundary follows
-[ADR 0007](adr/0007-reconcile-ambiguous-provider-operations-explicitly.md); it never
+[ADR 0007](../adr/0007-reconcile-ambiguous-provider-operations-explicitly.md); it never
 turns uncertainty into an empty environment or blindly repeats an unknown mutation.
 
 Implementation requirements are read from inert metadata in a bounded, credential-free
@@ -129,6 +129,4 @@ inspection. Module initialization must be compatible with workerd. This inspecti
 uses the installed emulator's supported date; the declared deployment compatibility
 date is preserved for Cloudflare.
 
-See [Worker commands and state setup](worker-first-slice.md) and the
-[ticket #5 validation record](validation/issue-5.md). These are workspace APIs;
-packed-package consumer validation remains the release ticket.
+See [Worker commands and state setup](worker-first-slice.md).

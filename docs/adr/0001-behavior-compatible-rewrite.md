@@ -8,6 +8,6 @@ to its consumers. We permit redesigned internals from the start with explicit
 compatibility checks, replacing the previous preserve-first/simplify-later
 sequence so that unnecessary upstream machinery need not be carried forward.
 
-The exact public API remains open. The later
+The
 [fresh-start decision](0002-start-with-fresh-infrastructure.md) excludes migration
 of existing Alchemy deployments from the first release.

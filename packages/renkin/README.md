@@ -55,17 +55,17 @@ usage guide, including stack declarations, development, deployment and bindings.
 
 ## Usage guides
 
-- [Workers, explicit authentication, state and CLI](docs/worker-first-slice.md)
-- [Connected Workers, KV and lifecycle protection](docs/connected-workers.md)
-- [SQL and Drizzle migrations](docs/d1-migrations.md)
-- [R2, application-signed S3 and previews](docs/r2-and-previews.md)
-- [Queues, schedules, Workflows and email](docs/background-jobs.md)
-- [Durable Objects, alarms and persistence](docs/durable-objects.md)
-- [Assets, custom domains and Access](docs/sites-and-access.md)
-- [TanStack Solid applications](docs/tanstack-sites.md)
-- [Astro static and server-rendered applications](docs/astro-sites.md)
-- [Build reuse and external Moon/Bun commands](docs/build-reuse.md)
-- [The five-service, three-frontend validation graph](docs/full-graph.md)
+- [Workers, explicit authentication, state and CLI](docs/agents/worker-first-slice.md)
+- [Connected Workers, KV and lifecycle protection](docs/agents/connected-workers.md)
+- [SQL and Drizzle migrations](docs/agents/d1-migrations.md)
+- [R2, application-signed S3 and previews](docs/agents/r2-and-previews.md)
+- [Queues, schedules, Workflows and email](docs/agents/background-jobs.md)
+- [Durable Objects, alarms and persistence](docs/agents/durable-objects.md)
+- [Assets, custom domains and Access](docs/agents/sites-and-access.md)
+- [TanStack Solid applications](docs/agents/tanstack-sites.md)
+- [Astro static and server-rendered applications](docs/agents/astro-sites.md)
+- [Build reuse and external Moon/Bun commands](docs/agents/build-reuse.md)
+- [The five-service, three-frontend validation graph](docs/agents/full-graph.md)
 
 Cloud configuration is explicit. Renkin does not implicitly select a Wrangler profile
 or a global provider account. Local development and public fixtures need no provider

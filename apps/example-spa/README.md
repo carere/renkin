@@ -13,7 +13,7 @@ task from the workspace root. Install Chromium first with
 `bun x playwright install chromium`. The test calls Renkin in Bun and verifies
 both development and built native workerd execution.
 
-See [TanStack sites](../../docs/tanstack-sites.md) for options and cloud validation.
+See [TanStack sites](../../docs/agents/tanstack-sites.md) for options and cloud validation.
 `src/routeTree.gen.ts` is owned by the official TanStack Router generator and is
 excluded from manual formatting. The Vite polling flag is only for deterministic
 source-reload tests in environments without native filesystem notifications.
