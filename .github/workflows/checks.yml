@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  checks:
+  static:
     runs-on: ubuntu-24.04
     env:
       MOON_REMOTE_CACHE_TOKEN: ${{ secrets.MOON_REMOTE_CACHE_TOKEN }}
@@ -53,11 +53,52 @@ jobs:
       - name: Check package manifest sorting
         run: bun sort-package-json --check package.json apps/*/package.json packages/*/package.json
 
-      - name: Install Chromium for framework browser checks
-        run: bun x playwright install --with-deps chromium
+      - name: Check conventional commits
+        uses: cocogitto/cocogitto-action@v4
+        with:
+          command: check
+          args: --ignore-merge-commits
+
+      - name: Check PR title
+        if: github.event_name == 'pull_request'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: cog verify "$PR_TITLE"
+
+      - name: Ensure static checks leave tracked files unchanged
+        run: git diff --exit-code
+
+  checks:
+    needs: static
+    runs-on: ubuntu-24.04
+    env:
+      MOON_REMOTE_CACHE_TOKEN: ${{ secrets.MOON_REMOTE_CACHE_TOKEN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "lts/*"
+          check-latest: true
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "latest"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Synchronize Moon workspace
+        run: bun moon sync
 
       - name: Run unit tests
-        run: bun moon run --concurrency 1 :test-unit -- --no-file-parallelism
+        run: bun moon run :test-unit
+
+      - name: Install Chromium for framework browser checks
+        run: bun x playwright install --with-deps chromium
 
       - name: Run local integration tests
         run: bun moon run --concurrency 1 :test-integration -- --no-file-parallelism
@@ -70,15 +111,3 @@ jobs:
 
       - name: Ensure checks leave tracked files unchanged
         run: git diff --exit-code
-
-      - name: Check conventional commits
-        uses: cocogitto/cocogitto-action@v4
-        with:
-          command: check
-          args: --ignore-merge-commits
-
-      - name: Check PR title
-        if: github.event_name == 'pull_request'
-        env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-        run: cog verify "$PR_TITLE"

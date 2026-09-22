@@ -322,7 +322,11 @@ needed. Use `@effect/vitest` for Effect behavior and add browser tooling when re
 application flows exist. Read [CODING_STANDARD.md](CODING_STANDARD.md) before
 contributing.
 
-CI runs each category in a separate step. It uses `--concurrency 1` for Moon and
+The Checks workflow first runs a static job: types, formatting/lint, unused code,
+manifest sorting, conventional commits and the PR title. The test job only starts
+if that job passes. Unit tests run together using `bun moon run :test-unit` with
+normal Moon and Vitest parallelism. Integration, preparation and Astro suites
+remain separate serial steps, using `--concurrency 1` for Moon and
 `--no-file-parallelism` for Vitest to keep browser and local Cloudflare processes
 from competing for runner resources. For example:
 
