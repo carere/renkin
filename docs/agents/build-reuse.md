@@ -58,12 +58,12 @@ build script imports that original site; the deployment entry can wrap it:
 ```ts
 // build.ts
 import { writeFile } from "node:fs/promises";
-import { buildTanStack } from "renkin/vite";
+import { buildTanStack } from "@carere/renkin/vite";
 import { site } from "./resources.ts";
 await writeFile(".renkin/build-result.json", JSON.stringify(await buildTanStack(site)));
 
 // renkin.ts
-import { defineStack, withBuildCommand } from "renkin";
+import { defineStack, withBuildCommand } from "@carere/renkin";
 import { site } from "./resources.ts";
 export default defineStack({
   name: "application",

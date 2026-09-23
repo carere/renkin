@@ -43,7 +43,7 @@ const appDependencies = async (root: string) => {
   }
   const owner = JSON.parse(await readFile(join(root, "packages/renkin/package.json"), "utf8"));
   Object.assign(dependencies, owner.devDependencies);
-  delete dependencies.renkin;
+  delete dependencies["@carere/renkin"];
   delete dependencies["@babel/parser"];
   delete dependencies.esbuild;
   return dependencies;
@@ -62,8 +62,8 @@ const copyApplications = async (root: string, directory: string) => {
         "utf8",
       ),
     );
-    manifest.dependencies.renkin = JSON.parse(
-      await readFile(join(directory, "node_modules/renkin/package.json"), "utf8"),
+    manifest.dependencies["@carere/renkin"] = JSON.parse(
+      await readFile(join(directory, "node_modules/@carere/renkin/package.json"), "utf8"),
     ).version;
     await writeFile(join(destination, "package.json"), JSON.stringify(manifest, null, 2));
   }
@@ -90,7 +90,7 @@ export const installConsumer = async (root: string, archive: string) => {
           },
           dependencies: {
             ...dependencies,
-            renkin: `file:${archive}`,
+            "@carere/renkin": `file:${archive}`,
             effect: tools.devDependencies.effect,
           },
           devDependencies: {

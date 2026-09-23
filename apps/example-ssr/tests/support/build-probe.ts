@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { tanstackStart } from "renkin/cloudflare";
+import { tanstackStart } from "@carere/renkin/cloudflare";
 
 /** A custom Vite file checks the real child process environment at build time. */
 export const createBuildProbe = async (original: ReturnType<typeof tanstackStart>) => {

@@ -10,11 +10,11 @@
     "#test-support/*": "./tests/support/*"
   },
   "dependencies": {
+    "@carere/renkin": "workspace:*",
     "@tanstack/solid-query": "^5.103.2",
     "@tanstack/solid-router": "^1.170.36",
     "@tanstack/solid-start": "^1.168.54",
     "effect": "^4.0.0-rc.115",
-    "renkin": "workspace:*",
     "solid-js": "^1.9.15"
   },
   "devDependencies": {

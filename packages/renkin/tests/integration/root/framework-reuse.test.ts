@@ -1,9 +1,9 @@
 import { readdir, readFile, rm } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
+import { defineStack } from "@carere/renkin";
 import { expect, it } from "@effect/vitest";
 import { prepareStack } from "@renkin/cloudflare/services/worker/prepare-stack";
 import { Effect } from "effect";
-import { defineStack } from "renkin";
 import { appendInput, type Mode, reuseFixture } from "#test-support/root/build/reuse-fixture.ts";
 
 type Fixture = Awaited<ReturnType<typeof reuseFixture>>;

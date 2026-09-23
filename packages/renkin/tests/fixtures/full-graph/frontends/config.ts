@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
-import { tanstackStart } from "renkin/cloudflare";
-import { workerReference } from "renkin/worker";
+import { tanstackStart } from "@carere/renkin/cloudflare";
+import { workerReference } from "@carere/renkin/worker";
 import { Files, UploadToken } from "#test-fixtures/full-graph/shared/resources.ts";
 
 // Vite imports only build/resource bindings, never the cron-containing infrastructure module.

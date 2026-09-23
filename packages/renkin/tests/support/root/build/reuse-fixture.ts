@@ -2,9 +2,9 @@ import { cp, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from "n
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildAstro } from "renkin/astro";
-import { astro, kv, tanstackStart } from "renkin/cloudflare";
-import { buildTanStack } from "renkin/vite";
+import { buildAstro } from "@carere/renkin/astro";
+import { astro, kv, tanstackStart } from "@carere/renkin/cloudflare";
+import { buildTanStack } from "@carere/renkin/vite";
 
 export type Mode = "solid-spa" | "solid-ssr" | "astro-static" | "astro-ssr";
 interface FixtureBase {
@@ -38,7 +38,7 @@ const solid = async (mode: Mode, base: FixtureBase, compiled: () => void) => {
   const configuration = resolve(root, "vite.config.ts");
   await writeFile(
     configuration,
-    `import {renkin} from 'renkin/vite';\nimport {tanstackStart} from 'renkin/cloudflare';\nexport default {plugins:[renkin(tanstackStart('compiler',{root:import.meta.dirname,rendering:${JSON.stringify(rendering)},compatibilityDate:'2026-07-30',sourceMap:true}))]};\n`,
+    `import {renkin} from '@carere/renkin/vite';\nimport {tanstackStart} from '@carere/renkin/cloudflare';\nexport default {plugins:[renkin(tanstackStart('compiler',{root:import.meta.dirname,rendering:${JSON.stringify(rendering)},compatibilityDate:'2026-07-30',sourceMap:true}))]};\n`,
   );
   const site = (id: string, stage = "preview") =>
     tanstackStart(id, {

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
+import { listEnvironments } from "@carere/renkin";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { listEnvironments } from "renkin";
 
 const scope = () => {
   const env = process.env;

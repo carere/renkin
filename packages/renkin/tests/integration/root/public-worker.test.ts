@@ -1,6 +1,6 @@
+import { workerFixture } from "@carere/renkin/testing";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { workerFixture } from "renkin/testing";
 
 for (const implementation of ["ordinary", "effect"]) {
   it.effect(`executes the ${implementation} consumer through public testing entrypoint`, () =>

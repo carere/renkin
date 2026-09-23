@@ -1,8 +1,8 @@
 import { rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { removeEnvironment } from "@carere/renkin";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { removeEnvironment } from "renkin";
 import { createCloudD1Fixture, readCloudD1 } from "#test-support/root/cloud-d1-fixture.ts";
 
 it.effect(

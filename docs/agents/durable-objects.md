@@ -1,7 +1,7 @@
 # Durable Objects
 
-`renkin/cloudflare` declares owned SQLite Durable Object namespaces. `renkin/durable-object`
-provides a native workerd class base with inferred Renkin bindings. `renkin/testing`
+`@carere/renkin/cloudflare` declares owned SQLite Durable Object namespaces. `@carere/renkin/durable-object`
+provides a native workerd class base with inferred Renkin bindings. `@carere/renkin/testing`
 provides a scoped application restart fixture. Application code uses real namespace
 IDs, RPC stubs, SQLite, key-value storage and alarms in both local and cloud execution.
 
@@ -10,7 +10,7 @@ types so infrastructure evaluation does not load `cloudflare:workers` in Node or
 
 ```ts
 // resources.ts
-import { durableObject } from "renkin/cloudflare";
+import { durableObject } from "@carere/renkin/cloudflare";
 import type { Counter } from "./api.ts";
 
 export const counters = durableObject<Counter>("Counters", {
@@ -21,8 +21,8 @@ export const counters = durableObject<Counter>("Counters", {
 
 ```ts
 // api.ts
-import { defineDurableObject } from "renkin/durable-object";
-import { defineWorker } from "renkin/worker";
+import { defineDurableObject } from "@carere/renkin/durable-object";
+import { defineWorker } from "@carere/renkin/worker";
 import { counters } from "./resources.ts";
 
 export class Counter extends defineDurableObject({}) {
@@ -41,8 +41,8 @@ export default defineWorker({ COUNTERS: counters }, ({ COUNTERS }) => ({
 
 ```ts
 // renkin.ts
-import { defineStack } from "renkin";
-import { worker } from "renkin/cloudflare";
+import { defineStack } from "@carere/renkin";
+import { worker } from "@carere/renkin/cloudflare";
 import { counters } from "./resources.ts";
 
 export default defineStack({
@@ -59,7 +59,7 @@ class export in that Worker's code. Named class metadata and default Worker meta
 are inspected without calling constructors or application handlers. Class bindings
 are available as `this.bindings`; `this.ctx` and `this.env` remain native objects.
 `DurableObjectState` and `DurableObjectStorage` types are available from
-`renkin/durable-object` and use Cloudflare's installed official definitions.
+`@carere/renkin/durable-object` and use Cloudflare's installed official definitions.
 
 `COUNTERS.native` is the native typed namespace. It exposes `idFromName`,
 `idFromString`, `newUniqueId`, `get`, `getByName` and jurisdiction/location options.
@@ -73,8 +73,8 @@ account for repeated delivery.
 
 ```ts
 import { Effect } from "effect";
-import { development } from "renkin";
-import { applicationFixture } from "renkin/testing";
+import { development } from "@carere/renkin";
+import { applicationFixture } from "@carere/renkin/testing";
 import stack from "./renkin.ts";
 
 await Effect.runPromise(Effect.scoped(Effect.gen(function* () {

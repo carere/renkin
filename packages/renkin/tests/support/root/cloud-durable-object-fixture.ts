@@ -2,9 +2,9 @@ import { randomUUID } from "node:crypto";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { defineStack, deploy, removeEnvironment } from "@carere/renkin";
+import { durableObject, kv, worker } from "@carere/renkin/cloudflare";
 import { Effect } from "effect";
-import { defineStack, deploy, removeEnvironment } from "renkin";
-import { durableObject, kv, worker } from "renkin/cloudflare";
 
 const authorization = () => {
   const prefix = process.env.RENKIN_CLOUDFLARE_TEST_PREFIX;

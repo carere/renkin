@@ -2,9 +2,9 @@ import { randomUUID } from "node:crypto";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { defineStack, deploy, removeEnvironment } from "@carere/renkin";
+import { kv, queue, worker, workflow } from "@carere/renkin/cloudflare";
 import { Effect } from "effect";
-import { defineStack, deploy, removeEnvironment } from "renkin";
-import { kv, queue, worker, workflow } from "renkin/cloudflare";
 
 const authorization = () => {
   const env = process.env;
@@ -25,8 +25,8 @@ const authorization = () => {
   return { from: env.RENKIN_CLOUDFLARE_EMAIL_FROM, to: env.RENKIN_CLOUDFLARE_EMAIL_TO };
 };
 const source = (from: string, to: string) => `import {EmailMessage} from "cloudflare:email";
-import {Effect} from "effect";import {kv,queue,workflow,email} from "renkin/cloudflare";
-import {defineWorker} from "renkin/worker";import {defineWorkflow} from "renkin/workflow";
+import {Effect} from "effect";import {kv,queue,workflow,email} from "@carere/renkin/cloudflare";
+import {defineWorker} from "@carere/renkin/worker";import {defineWorkflow} from "@carere/renkin/workflow";
 const Store=kv("Store"),Jobs=queue("Jobs"),Flow=workflow("Flow",{worker:"App",className:"Job"});
 const FROM=${JSON.stringify(from)},TO=${JSON.stringify(to)};
 export const Job=defineWorkflow({Store,Mail:email({allowedDestinationAddresses:[TO],allowedSenderAddresses:[FROM]})},(event,steps,{Store,Mail})=>Effect.gen(function*(){
@@ -97,7 +97,7 @@ export const createCloudBackgroundFixture = async () => {
   await writeFile(entry, source(from, to));
   await writeFile(
     deadEntry,
-    `import {defineWorker} from "renkin/worker";import {kv} from "renkin/cloudflare";export default defineWorker({Store:kv("Store")},({Store})=>({queue:async batch=>{for(const message of batch.messages)await Store.native.put("dead",JSON.stringify(message.body));}}));`,
+    `import {defineWorker} from "@carere/renkin/worker";import {kv} from "@carere/renkin/cloudflare";export default defineWorker({Store:kv("Store")},({Store})=>({queue:async batch=>{for(const message of batch.messages)await Store.native.put("dead",JSON.stringify(message.body));}}));`,
   );
   const options = {
     environment: "background",

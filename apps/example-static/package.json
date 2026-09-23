@@ -8,9 +8,9 @@
     "#project/*": "./*"
   },
   "dependencies": {
+    "@carere/renkin": "workspace:*",
     "astro": "^7.3.3",
-    "effect": "^4.0.0-rc.115",
-    "renkin": "workspace:*"
+    "effect": "^4.0.0-rc.115"
   },
   "devDependencies": {
     "@effect/vitest": "^4.0.0-rc.115",

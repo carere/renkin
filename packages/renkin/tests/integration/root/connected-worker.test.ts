@@ -1,10 +1,10 @@
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { defineStack, development } from "@carere/renkin";
+import { kv, worker } from "@carere/renkin/cloudflare";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { defineStack, development } from "renkin";
-import { kv, worker } from "renkin/cloudflare";
 
 const run = (
   directory: string,
@@ -22,11 +22,11 @@ const run = (
 const writeApplication = async (root: string) => {
   await writeFile(
     join(root, "resources.mjs"),
-    'import {kv} from "renkin/cloudflare"; export const Cache=kv("Cache");',
+    'import {kv} from "@carere/renkin/cloudflare"; export const Cache=kv("Cache");',
   );
   await writeFile(
     join(root, "a.mjs"),
-    `import {Effect} from "effect";import {defineWorker,workerReference} from "renkin/worker";import {Cache} from "./resources.mjs";
+    `import {Effect} from "effect";import {defineWorker,workerReference} from "@carere/renkin/worker";import {Cache} from "./resources.mjs";
   export default defineWorker({CACHE:Cache, B:workerReference("B",{entrypoint:"Service"})},({CACHE,B})=>({fetch:(request)=>Effect.gen(function*(){
     const path=new URL(request.url).pathname;
     if(path==="/echo")return new Response("from-a");
@@ -41,7 +41,7 @@ const writeApplication = async (root: string) => {
   );
   await writeFile(
     join(root, "b.mjs"),
-    `import {WorkerEntrypoint} from "cloudflare:workers";import {defineWorker,workerReference} from "renkin/worker";
+    `import {WorkerEntrypoint} from "cloudflare:workers";import {defineWorker,workerReference} from "@carere/renkin/worker";
   export class Service extends WorkerEntrypoint { async message(){return "b:"+await (await this.env.A.fetch("http://a/echo")).text();} }
   export default defineWorker({A:workerReference("A")},()=>({fetch:()=>new Response("b")}));`,
   );

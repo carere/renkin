@@ -1,8 +1,8 @@
 import { readFile, writeFile } from "node:fs/promises";
+import { defineStack } from "@carere/renkin";
+import { r2 } from "@carere/renkin/cloudflare";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { defineStack } from "renkin";
-import { r2 } from "renkin/cloudflare";
 import { createR2Fixture, signedR2 } from "#test-support/root/r2-fixture.ts";
 
 const fixture = Effect.acquireRelease(Effect.promise(createR2Fixture), (test) =>
@@ -128,7 +128,7 @@ it.effect(
       yield* Effect.promise(async () => {
         await writeFile(
           test.entry,
-          `import {Effect} from "effect";import {r2,r2Token} from "renkin/cloudflare";import {defineWorker} from "renkin/worker";import {AwsClient} from "aws4fetch";
+          `import {Effect} from "effect";import {r2,r2Token} from "@carere/renkin/cloudflare";import {defineWorker} from "@carere/renkin/worker";import {AwsClient} from "aws4fetch";
 const token=r2Token("Uploads",{buckets:[r2("Files")],permissions:"read-write",expiresAt:"2099-01-01T00:00:00Z"});
 export default defineWorker({Uploads:token},({Uploads})=>({fetch:request=>Effect.promise(async()=>{
  const config=Uploads.forRequest(request);const signer=new AwsClient({...config,service:"s3"});
@@ -136,7 +136,7 @@ export default defineWorker({Uploads:token},({Uploads})=>({fetch:request=>Effect
  return Response.json({url:signed.url,buckets:config.buckets});
 })}));`,
         );
-        const { r2Token } = await import("renkin/cloudflare");
+        const { r2Token } = await import("@carere/renkin/cloudflare");
         const stack = defineStack({
           ...test.stack,
           resources: [

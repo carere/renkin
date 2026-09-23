@@ -2,15 +2,13 @@ import { randomUUID } from "node:crypto";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { expect, it } from "@effect/vitest";
-import { Effect } from "effect";
 import {
   defineStack,
   deploy,
   readOutputs,
   removeEnvironment,
   type WorkerBuildResult,
-} from "renkin";
+} from "@carere/renkin";
 import {
   accessApplication,
   accessPolicy,
@@ -18,7 +16,9 @@ import {
   customDomain,
   observabilityDestination,
   worker,
-} from "renkin/cloudflare";
+} from "@carere/renkin/cloudflare";
+import { expect, it } from "@effect/vitest";
+import { Effect } from "effect";
 import {
   closedTransport,
   navigation,

@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { defineStack, deploy, removeEnvironment } from "@carere/renkin";
+import { customDomain, kv, tanstackStart } from "@carere/renkin/cloudflare";
 import { Effect } from "effect";
-import { defineStack, deploy, removeEnvironment } from "renkin";
-import { customDomain, kv, tanstackStart } from "renkin/cloudflare";
 
 const scope = () => {
   const prefix = process.env.RENKIN_CLOUDFLARE_TEST_PREFIX;

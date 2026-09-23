@@ -12,11 +12,11 @@ it("prepares every maintained cloud suite without provider calls or private pack
   const directory = await mkdtemp(join(tmpdir(), "renkin-cloud-preparation-"));
   try {
     // This fixture validates copying/adaptation only, not release-artifact installation.
-    const packageRoot = join(directory, "node_modules/renkin");
+    const packageRoot = join(directory, "node_modules/@carere/renkin");
     await mkdir(packageRoot, { recursive: true });
     await writeFile(
       join(packageRoot, "package.json"),
-      JSON.stringify({ name: "renkin", bin: { renkin: "cli.js" } }),
+      JSON.stringify({ name: "@carere/renkin", bin: { renkin: "cli.js" } }),
     );
     for (const app of applicationPaths) await mkdir(join(directory, app), { recursive: true });
     await prepareInstalledCloud(resolve("../.."), directory);
@@ -49,7 +49,7 @@ it("prepares every maintained cloud suite without provider calls or private pack
       join(base, "cloud/root/state-authorization.test.ts"),
       "utf8",
     );
-    expect(authorization).toContain('from "renkin"');
+    expect(authorization).toContain('from "@carere/renkin"');
     expect(authorization).toContain("expect(observer.count()).toBeGreaterThan(0)");
     expect(authorization).toContain("expect(denied.status).toBe(401)");
     expect(record.publicEquivalentForAdapterSuites).toEqual([

@@ -6,12 +6,12 @@ its resource requirements once. Renkin derives bindings and provisions their tar
 
 ```ts
 // resources.ts
-import { kv } from "renkin/cloudflare";
+import { kv } from "@carere/renkin/cloudflare";
 export const Cache = kv("Cache");
 
 // worker.ts
 import { Effect } from "effect";
-import { defineWorker } from "renkin/worker";
+import { defineWorker } from "@carere/renkin/worker";
 import { Cache } from "./resources.ts";
 
 export default defineWorker({ CACHE: Cache }, ({ CACHE }) => ({
@@ -24,8 +24,8 @@ export default defineWorker({ CACHE: Cache }, ({ CACHE }) => ({
 }));
 
 // renkin.ts
-import { defineStack } from "renkin";
-import { worker } from "renkin/cloudflare";
+import { defineStack } from "@carere/renkin";
+import { worker } from "@carere/renkin/cloudflare";
 import { Cache } from "./resources.ts";
 
 export default defineStack({

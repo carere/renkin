@@ -1,9 +1,9 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { defineStack, development } from "@carere/renkin";
+import { d1, worker } from "@carere/renkin/cloudflare";
 import { Effect } from "effect";
-import { defineStack, development } from "renkin";
-import { d1, worker } from "renkin/cloudflare";
 
 export const createD1Fixture = async () => {
   const root = await mkdtemp(fileURLToPath(new URL("../../fixtures/d1-", import.meta.url)));
@@ -23,7 +23,7 @@ export const createD1Fixture = async () => {
   const entry = join(root, "worker.ts");
   await writeFile(
     entry,
-    `import {Effect} from "effect";import {d1} from "renkin/cloudflare";import {defineWorker} from "renkin/worker";
+    `import {Effect} from "effect";import {d1} from "@carere/renkin/cloudflare";import {defineWorker} from "@carere/renkin/worker";
 export default defineWorker({DB:d1("Database"),OTHER:d1("Other")},({DB,OTHER})=>({fetch:(request)=>Effect.gen(function*(){
  const path=new URL(request.url).pathname;
  if(path==="/write"){yield* DB.run("INSERT INTO users VALUES (?, ?)",[2,"Grace"]);return new Response("ok");}

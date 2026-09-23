@@ -1,4 +1,4 @@
-import { defineWorker } from "renkin/worker";
+import { defineWorker } from "@carere/renkin/worker";
 import { Sessions } from "#test-fixtures/full-graph/shared/resources.ts";
 
 export default defineWorker({ Sessions }, ({ Sessions }) => ({

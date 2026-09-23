@@ -3,9 +3,9 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { withBuildCommand } from "renkin";
-import { buildAstro } from "renkin/astro";
-import type { astro } from "renkin/cloudflare";
+import { withBuildCommand } from "@carere/renkin";
+import { buildAstro } from "@carere/renkin/astro";
+import type { astro } from "@carere/renkin/cloudflare";
 
 const resourceModule = new URL("../../../../../../apps/example-static/renkin.ts", import.meta.url);
 const { site } = (await import(resourceModule.href)) as { site: ReturnType<typeof astro> };

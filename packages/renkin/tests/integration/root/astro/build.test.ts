@@ -2,11 +2,11 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { defineStack, development } from "@carere/renkin";
+import { buildAstro } from "@carere/renkin/astro";
+import { astro, kv, worker } from "@carere/renkin/cloudflare";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { defineStack, development } from "renkin";
-import { buildAstro } from "renkin/astro";
-import { astro, kv, worker } from "renkin/cloudflare";
 
 it.effect(
   "builds public artifacts with an existing session KV or sessions disabled, overriding file drivers",

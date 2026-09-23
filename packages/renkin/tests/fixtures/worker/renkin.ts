@@ -1,5 +1,5 @@
-import { defineStack, output } from "renkin";
-import { worker } from "renkin/cloudflare";
+import { defineStack, output } from "@carere/renkin";
+import { worker } from "@carere/renkin/cloudflare";
 
 export default defineStack({
   name: "example-worker",

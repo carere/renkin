@@ -1,13 +1,13 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { expect, it } from "@effect/vitest";
-import { Effect } from "effect";
-import { development } from "renkin";
+import { development } from "@carere/renkin";
 import {
   applicationFixture,
   capturedEmails as readCapturedEmails,
   scheduled,
-} from "renkin/testing";
+} from "@carere/renkin/testing";
+import { expect, it } from "@effect/vitest";
+import { Effect } from "effect";
 import { createBackgroundFixture } from "#test-support/root/background-fixture.ts";
 
 const fixture = Effect.acquireRelease(Effect.promise(createBackgroundFixture), (test) =>

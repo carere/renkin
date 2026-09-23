@@ -41,7 +41,8 @@ try {
     if (dependency.startsWith(".")) continue;
     await symlink(join(dependencyRoot, dependency), join(fixture, "node_modules", dependency));
   }
-  await symlink(publicPackage, join(fixture, "node_modules/renkin"));
+  await mkdir(join(fixture, "node_modules/@carere"));
+  await symlink(publicPackage, join(fixture, "node_modules/@carere/renkin"));
   await mkdir(join(directory, "config"));
   const env: Record<string, string> = {
     PATH: process.env.PATH ?? "",

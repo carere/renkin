@@ -1,6 +1,6 @@
+import { defineWorker } from "@carere/renkin/worker";
 import { expect, it } from "@effect/vitest";
 import { Context, Effect } from "effect";
-import { defineWorker } from "renkin/worker";
 
 class Greeting extends Context.Service<Greeting, { readonly text: string }>()("Greeting") {}
 
@@ -26,8 +26,8 @@ it.effect("accepts Effect handlers whose service requirements are satisfied", ()
   }),
 );
 
-import { kv } from "renkin/cloudflare";
-import { workerReference } from "renkin/worker";
+import { kv } from "@carere/renkin/cloudflare";
+import { workerReference } from "@carere/renkin/worker";
 
 const cache = kv("cache");
 const remote = workerReference<{ message(): Promise<string> }>("remote", { entrypoint: "Service" });
@@ -69,10 +69,10 @@ defineWorker({ ordinary: ordinaryReference }, ({ ordinary }) => ({
   fetch: (request) => ordinary.call((service) => service.fetch(request)),
 }));
 
+import { queue, workflow } from "@carere/renkin/cloudflare";
+import type { QueueBatch } from "@carere/renkin/worker";
+import type { defineWorkflow, WorkflowEvent } from "@carere/renkin/workflow";
 import { Layer } from "effect";
-import { queue, workflow } from "renkin/cloudflare";
-import type { QueueBatch } from "renkin/worker";
-import type { defineWorkflow, WorkflowEvent } from "renkin/workflow";
 
 interface Job {
   readonly id: string;

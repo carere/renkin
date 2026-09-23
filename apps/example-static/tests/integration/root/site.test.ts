@@ -3,12 +3,12 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
+import type { WorkerBuildResult } from "@carere/renkin";
+import { defineStack, development } from "@carere/renkin";
+import { worker } from "@carere/renkin/cloudflare";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { type Browser, chromium } from "playwright";
-import type { WorkerBuildResult } from "renkin";
-import { defineStack, development } from "renkin";
-import { worker } from "renkin/cloudflare";
 import { site } from "#project/renkin.ts";
 
 const navigateAbout = async (browser: Browser, url: string) => {

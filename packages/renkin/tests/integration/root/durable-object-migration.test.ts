@@ -1,11 +1,11 @@
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { defineStack, development } from "@carere/renkin";
+import { durableObject, kv, worker } from "@carere/renkin/cloudflare";
+import { applicationFixture } from "@carere/renkin/testing";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { defineStack, development } from "renkin";
-import { durableObject, kv, worker } from "renkin/cloudflare";
-import { applicationFixture } from "renkin/testing";
 
 it.effect(
   "logical and explicit class renames keep native data while undeclared replacement is blocked",

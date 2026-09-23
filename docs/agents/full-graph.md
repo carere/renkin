@@ -1,6 +1,6 @@
 # Representative application graph
 
-The fixture at `packages/renkin/tests/fixtures/full-graph` uses public `renkin`
+The fixture at `packages/renkin/tests/fixtures/full-graph` uses public `@carere/renkin`
 entrypoints to connect five services and three independent Solid frontend roots.
 It is an executable application example, not a production authentication system.
 Review and Companion are separate applications and are not declared, started or

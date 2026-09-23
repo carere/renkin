@@ -13,7 +13,7 @@ pre_bump_hooks = [
   "bun install --lockfile-only --ignore-scripts",
   "git add packages/renkin/package.json bun.lock",
 ]
-# Publishing and deployment will be handled by the eventual release pipeline.
+# The manual Release workflow validates artifacts and optionally publishes to npm.
 post_bump_hooks = []
 
 [changelog]

@@ -11,6 +11,9 @@ export const releaseArchive = async (root: string) => {
     const record = JSON.parse(await readFile(join(dirname(archive), "artifact.json"), "utf8"));
     assert.equal(await sha256File(archive), record.sha256);
     assert.equal(record.source.sourceDirty, false, "Canonical external artifact must be clean");
+    const revision = await execute("git", ["rev-parse", "HEAD"], { cwd: root });
+    assert.equal(record.source.sourceRevision, revision.stdout.trim(), "Artifact source mismatch");
+    assert.equal(record.source.lockSha256, await sha256File(join(root, "bun.lock")));
     return archive;
   }
   const packed = await execute(

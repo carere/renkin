@@ -1,6 +1,12 @@
 name: Release artifact validation
 
 on:
+  workflow_call:
+    inputs:
+      artifact-name:
+        description: Canonical tarball artifact from the calling release workflow
+        type: string
+        required: true
   workflow_dispatch:
   pull_request:
     paths:
@@ -13,6 +19,7 @@ on:
       - "*PROVENANCE*"
       - "*NOTICES*"
       - ".github/workflows/release-artifact.yml"
+      - ".github/workflows/release.yml"
 
 permissions:
   contents: read
@@ -37,6 +44,17 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Install Chromium
         run: bun x playwright install --with-deps chromium
+      - name: Download canonical release artifact
+        if: inputs.artifact-name != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: .renkin/release
+      - name: Select canonical tarball
+        if: inputs.artifact-name != ''
+        run: |
+          version=$(jq -r .version packages/renkin/package.json)
+          echo "RENKIN_RELEASE_ARCHIVE=$GITHUB_WORKSPACE/.renkin/release/renkin-$version.tgz" >> "$GITHUB_ENV"
       - name: Pack and validate an isolated installed consumer
         working-directory: packages/renkin
         run: bun --bun vitest run --mode release --project release
@@ -46,6 +64,7 @@ jobs:
         with:
           name: renkin-release-${{ matrix.os }}
           include-hidden-files: true
+          if-no-files-found: error
           path: |
             .renkin/release/artifact.json
             .renkin/release/renkin-*.tgz

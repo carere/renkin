@@ -1,6 +1,6 @@
+import { removeEnvironment } from "@carere/renkin";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { removeEnvironment } from "renkin";
 import {
   createCloudDurableObjectFixture,
   durableObjectUrl,

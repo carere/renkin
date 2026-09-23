@@ -5,7 +5,7 @@ import { validateRelease } from "#src/contexts/root/services/release/validate.ts
 import { execute, type InstalledConsumer } from "./consumer.ts";
 
 export const verifyPackage = async (consumer: InstalledConsumer, archive: string) => {
-  await validateRelease(join(consumer.directory, "node_modules/renkin"));
+  await validateRelease(join(consumer.directory, "node_modules/@carere/renkin"));
   const entries = (await execute("tar", ["-tf", archive])).stdout.trim().split("\n");
   assert.ok(entries.length > 100);
   assert.ok(
@@ -18,19 +18,19 @@ export const verifyPackage = async (consumer: InstalledConsumer, archive: string
     !entries.some((entry) => /(?:tests\/|services\/release\/|\.tsbuildinfo|\.env)/.test(entry)),
   );
   const manifest = JSON.parse(
-    await readFile(join(consumer.directory, "node_modules/renkin/package.json"), "utf8"),
+    await readFile(join(consumer.directory, "node_modules/@carere/renkin/package.json"), "utf8"),
   );
   assert.equal(manifest.license, "Apache-2.0");
   assert.equal(manifest.dependencies.effect, undefined);
   assert.ok(!/workspace:|@renkin\/|alchemy/.test(JSON.stringify(manifest)));
   assert.equal(
-    await realpath(join(consumer.directory, "node_modules/renkin")),
-    join(await realpath(consumer.directory), "node_modules/renkin"),
+    await realpath(join(consumer.directory, "node_modules/@carere/renkin")),
+    join(await realpath(consumer.directory), "node_modules/@carere/renkin"),
   );
   const probe = `import assert from 'node:assert/strict'; import {createRequire} from 'node:module';
-const here=createRequire(import.meta.url); const library=createRequire(import.meta.resolve('renkin'));
+const here=createRequire(import.meta.url); const library=createRequire(import.meta.resolve('@carere/renkin'));
 assert.equal(here.resolve('effect'),library.resolve('effect'));
-for(const name of ['renkin','renkin/cloudflare','renkin/worker','renkin/testing','renkin/astro','renkin/vite']) await import(name);
+for(const name of ['@carere/renkin','@carere/renkin/cloudflare','@carere/renkin/worker','@carere/renkin/testing','@carere/renkin/astro','@carere/renkin/vite']) await import(name);
 console.log('installed imports and Effect identity passed');`;
   await writeFile(join(consumer.directory, "imports.ts"), probe);
   await execute(process.execPath, ["--no-env-file", "imports.ts"], {
@@ -38,7 +38,7 @@ console.log('installed imports and Effect identity passed');`;
     env: consumer.env,
     maxBuffer: 200000,
   });
-  const cli = join(consumer.directory, "node_modules/renkin", manifest.bin.renkin);
+  const cli = join(consumer.directory, "node_modules/@carere/renkin", manifest.bin.renkin);
   const help = await execute(process.execPath, ["--no-env-file", cli, "help"], {
     cwd: consumer.directory,
     env: consumer.env,

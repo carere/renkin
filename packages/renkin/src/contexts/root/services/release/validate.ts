@@ -15,7 +15,11 @@ const contained = (root: string, path: string) => {
 };
 export const validateRelease = async (stage: string, checkout?: string) => {
   const manifest = JSON.parse(await readFile(join(stage, "package.json"), "utf8"));
-  if (manifest.name !== "renkin" || manifest.type !== "module" || manifest.license !== "Apache-2.0")
+  if (
+    manifest.name !== "@carere/renkin" ||
+    manifest.type !== "module" ||
+    manifest.license !== "Apache-2.0"
+  )
     throw new Error("Invalid release manifest identity.");
   if (!manifest.peerDependencies?.effect || manifest.dependencies?.effect)
     throw new Error("Effect must be an external compatible peer.");

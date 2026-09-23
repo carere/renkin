@@ -30,7 +30,7 @@ it("one Bun command serves and watches an application with no credentials", asyn
     await writeFile(entry, 'export default { fetch() { return new Response("first") } }');
     await writeFile(
       infra,
-      `import {defineStack} from "renkin";import {worker} from "renkin/cloudflare";export default defineStack({name:"cli-test",resources:[worker("api",{entry:${JSON.stringify(entry)},port:0,compatibilityDate:"2026-07-30"})]});`,
+      `import {defineStack} from "@carere/renkin";import {worker} from "@carere/renkin/cloudflare";export default defineStack({name:"cli-test",resources:[worker("api",{entry:${JSON.stringify(entry)},port:0,compatibilityDate:"2026-07-30"})]});`,
     );
     if (cleaning) throw new Error("CLI setup: test finished before spawn.");
     cli = startCli(

@@ -2,10 +2,10 @@ import { cp, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { defineStack, development } from "@carere/renkin";
+import { astro, kv } from "@carere/renkin/cloudflare";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { defineStack, development } from "renkin";
-import { astro, kv } from "renkin/cloudflare";
 import { afterAll, beforeAll, vi } from "vitest";
 
 // Astro intentionally omits its HTTP middleware when VITEST is set. Exercise the real server.

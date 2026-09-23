@@ -40,7 +40,7 @@ read-only inspection, plus the application's negative Effect-requirement type te
 Workerd-only Durable Object and Workflow imports run through the native graph.
 
 All four maintained framework applications run from copied consumer sources using
-installed `renkin`: Solid SPA/SSR, Astro static/SSR, browser hydration/navigation,
+installed `@carere/renkin`: Solid SPA/SSR, Astro static/SSR, browser hydration/navigation,
 native bindings, Astro sessions, prerendering, build assets/source maps and development
 reload. The five-service/three-frontend graph additionally exercises migrations,
 queues/retry/DLQ, Workflows, captured email, schedules, DO SQL/alarms, persisted restart,
@@ -51,6 +51,8 @@ control precedes the denied check; Linux drops back to the original uid/gid befo
 running Bun. Dependency installation happens before this network-denied phase.
 
 The `Release artifact validation` workflow runs the same harness on macOS and Linux
-and saves the tarball and identity record. It contains no provider credentials and
-no publishing step. Real-cloud validation is a separate explicitly scoped operation.
-
+and saves the tarball and identity record. The manual `Release` workflow supplies
+one canonical tarball to both runners, then creates a draft GitHub release and
+optionally publishes that exact artifact to npm. See [the release procedure](../releasing.md)
+for bootstrap and trusted publishing. Real-cloud validation is a separate explicitly
+scoped operation.

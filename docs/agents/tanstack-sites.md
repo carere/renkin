@@ -8,7 +8,7 @@ Declare a site once and import it into the stack and Vite configuration:
 
 ```ts
 // resources.ts
-import { kv, tanstackStart } from "renkin/cloudflare";
+import { kv, tanstackStart } from "@carere/renkin/cloudflare";
 export const site = tanstackStart("Site", {
   root: import.meta.dirname,
   rendering: "ssr", // "spa" prerenders the client shell into index.html
@@ -23,14 +23,14 @@ export const site = tanstackStart("Site", {
 ```ts
 // vite.config.ts
 import { defineConfig } from "vite";
-import { renkin } from "renkin/vite";
+import { renkin } from "@carere/renkin/vite";
 import { site } from "./resources.ts";
 export default defineConfig({ plugins: [renkin(site)] });
 ```
 
 ```ts
 // renkin.ts
-import { defineStack } from "renkin";
+import { defineStack } from "@carere/renkin";
 import { site } from "./resources.ts";
 export default defineStack({ name: "my-site", resources: [site] });
 ```
@@ -39,7 +39,7 @@ export default defineStack({ name: "my-site", resources: [site] });
 are added to the resource graph once; conflicting declarations fail before
 provisioning. Import `env` from `cloudflare:workers` in server code and use its
 native methods, with a project declaration inferred using
-`SiteEnvironment<typeof site>` from `renkin/cloudflare` (see the root README). Client code
+`SiteEnvironment<typeof site>` from `@carere/renkin/cloudflare` (see the root README). Client code
 must not read server bindings. No runtime layer or binding wrapper belongs in
 the consuming route. KV/D1/R2 and the other supported descriptors use the same
 native local graph as ordinary Workers. Service binding references keep their
@@ -87,7 +87,7 @@ and policy resources, pass `access` to the domain, disable `workersDev`, and mak
 the site depend on that Access application. Domain and Access behavior is shared
 with ordinary Workers.
 
-`buildTanStack(site)` from `renkin/vite` returns the public `WorkerBuildResult`,
+`buildTanStack(site)` from `@carere/renkin/vite` returns the public `WorkerBuildResult`,
 including the binding metadata wrapper, modules and asset directory. Host build
 and development modules load by file URL so ordinary Worker bundlers do not
 traverse Vite or native tooling; release packaging must retain those module files

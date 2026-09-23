@@ -4,8 +4,6 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { expect, it } from "@effect/vitest";
-import { Effect } from "effect";
 import {
   defineStack,
   deploy,
@@ -13,8 +11,10 @@ import {
   output,
   readOutputs,
   removeEnvironment,
-} from "renkin";
-import { worker } from "renkin/cloudflare";
+} from "@carere/renkin";
+import { worker } from "@carere/renkin/cloudflare";
+import { expect, it } from "@effect/vitest";
+import { Effect } from "effect";
 
 const scope = () => {
   const prefix = process.env.RENKIN_CLOUDFLARE_TEST_PREFIX;

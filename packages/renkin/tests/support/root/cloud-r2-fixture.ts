@@ -2,11 +2,11 @@ import { randomUUID } from "node:crypto";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { defineStack, deploy, removeEnvironment } from "@carere/renkin";
+import { r2, r2Token, worker } from "@carere/renkin/cloudflare";
 import type { Json } from "@renkin/core/models/stack";
 import { AwsClient } from "aws4fetch";
 import { Effect } from "effect";
-import { defineStack, deploy, removeEnvironment } from "renkin";
-import { r2, r2Token, worker } from "renkin/cloudflare";
 
 const authorization = () => {
   const prefix = process.env.RENKIN_CLOUDFLARE_TEST_PREFIX;
@@ -65,7 +65,7 @@ export const eventuallyR2 = async (stage: string, read: () => Promise<Response>)
     `Cloud R2 ${stage} did not become ready: status=${status ?? "unavailable"}, code=${code ?? "none"}.`,
   );
 };
-const source = `import {Effect} from "effect";import {r2,r2Token} from "renkin/cloudflare";import {defineWorker} from "renkin/worker";import {AwsClient} from "aws4fetch";
+const source = `import {Effect} from "effect";import {r2,r2Token} from "@carere/renkin/cloudflare";import {defineWorker} from "@carere/renkin/worker";import {AwsClient} from "aws4fetch";
 const Files=r2("Files");const Uploads=r2Token("Uploads",{buckets:[Files],permissions:"read-write",expiresAt:"2099-01-01T00:00:00Z"});
 export default defineWorker({Files,Uploads},({Files,Uploads})=>({fetch:request=>Effect.promise(async()=>{
  const url=new URL(request.url);const key=url.searchParams.get("key")??"folder/a %2F café";

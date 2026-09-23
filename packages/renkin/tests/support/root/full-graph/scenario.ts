@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { development } from "@carere/renkin";
+import { applicationFixture, capturedEmails, scheduled } from "@carere/renkin/testing";
 import type { KVNamespace } from "@cloudflare/workers-types";
 import { Effect } from "effect";
 import { chromium, type Page } from "playwright";
-import { development } from "renkin";
-import { applicationFixture, capturedEmails, scheduled } from "renkin/testing";
 import type { graph as fixtureGraph } from "#test-fixtures/full-graph/graph.ts";
 
 import { assertIsolated } from "./network-control.ts";

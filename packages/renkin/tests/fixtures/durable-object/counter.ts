@@ -1,7 +1,7 @@
+import { durableObject, kv } from "@carere/renkin/cloudflare";
+import { defineDurableObject } from "@carere/renkin/durable-object";
+import { defineWorker } from "@carere/renkin/worker";
 import { Effect } from "effect";
-import { durableObject, kv } from "renkin/cloudflare";
-import { defineDurableObject } from "renkin/durable-object";
-import { defineWorker } from "renkin/worker";
 
 export class Counter extends defineDurableObject({ AUDIT: kv("Audit") }) {
   async increment() {

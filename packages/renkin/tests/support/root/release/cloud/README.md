@@ -3,7 +3,7 @@
 `prepareInstalledCloud(checkoutRoot, consumerDirectory)` copies the maintained public cloud
 acceptance into an already installed, isolated consumer. It does not install dependencies,
 load environment files, contact Cloudflare, or run tests. The consumer must contain the
-standalone `renkin` artifact and the four copied example applications supplied by the release
+standalone `@carere/renkin` artifact and the four copied example applications supplied by the release
 consumer setup. Package and application realpaths must remain inside that consumer.
 
 The copy preserves the source test assertions and cleanup paths. A fixed inventory fails if a

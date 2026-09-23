@@ -6,8 +6,8 @@ Effect operations and the real `native` R2 bucket. Local objects live in
 physical namespace. Separate environments get separate namespaces and buckets.
 
 ```ts
-import { r2, r2Token, worker } from "renkin/cloudflare";
-import { defineStack } from "renkin";
+import { r2, r2Token, worker } from "@carere/renkin/cloudflare";
+import { defineStack } from "@carere/renkin";
 
 export const Files = r2("Files", {
   cors: [{ allowed: {
@@ -48,7 +48,7 @@ In Worker code, bind the same pure resource descriptors:
 
 ```ts
 import { Effect } from "effect";
-import { defineWorker } from "renkin/worker";
+import { defineWorker } from "@carere/renkin/worker";
 import { Files, Uploads } from "./resources.ts";
 
 export default defineWorker({ Files, Uploads }, ({ Files, Uploads }) => ({
@@ -84,7 +84,7 @@ const session = yield* development(stack, {
 Use development credentials, not cloud credentials. `Uploads.forRequest(request)`
 returns these local values and maps logical bucket IDs to the endpoint's bucket
 names. Its endpoint is resolved against the incoming Worker request. Alternatively,
-`localS3Endpoint(session.workers.Api.url)` from `renkin/worker` returns the base
+`localS3Endpoint(session.workers.Api.url)` from `@carere/renkin/worker` returns the base
 path-style endpoint. Append the encoded bucket/key and sign with your application
 library. Only buckets bound natively or through that Worker's token descriptor are
 available through its endpoint. Local token bindings do not simulate cloud token
