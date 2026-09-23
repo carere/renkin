@@ -8,8 +8,8 @@ This is a release candidate. Building and validating its tarball does not publis
 or establish that a package-registry release exists.
 
 ```sh
-bun add ./renkin-0.0.0.tgz effect@^4.0.0-rc.115
-bun x renkin help
+bun add @carere/renkin@0.1.0-rc.1 effect@^4.0.0-rc.115
+bunx --bun --package @carere/renkin renkin help
 ```
 
 Run consumer scripts with Bun. Node.js and Windows are not supported deployment or
@@ -20,14 +20,14 @@ install a second incompatible Effect runtime beside the application.
 
 | Import | Purpose |
 | --- | --- |
-| `renkin` | Stack, deployment, development, inspection, recovery and build-command APIs |
-| `renkin/cloudflare` | Cloudflare resources, explicit configuration and shared state |
-| `renkin/worker` | Typed binding requirements and native/Effect Worker composition |
-| `renkin/testing` | Scoped application, HTTP, queue, Workflow, email and Durable Object fixtures |
-| `renkin/durable-object` | Native workerd Durable Object class helpers |
-| `renkin/workflow` | Native workerd Workflow class helpers |
-| `renkin/vite` | TanStack Solid SPA/SSR Vite plugin and build helper |
-| `renkin/astro` | Astro CLI integration, programmatic build helper and configuration types |
+| `@carere/renkin` | Stack, deployment, development, inspection, recovery and build-command APIs |
+| `@carere/renkin/cloudflare` | Cloudflare resources, explicit configuration and shared state |
+| `@carere/renkin/worker` | Typed binding requirements and native/Effect Worker composition |
+| `@carere/renkin/testing` | Scoped application, HTTP, queue, Workflow, email and Durable Object fixtures |
+| `@carere/renkin/durable-object` | Native workerd Durable Object class helpers |
+| `@carere/renkin/workflow` | Native workerd Workflow class helpers |
+| `@carere/renkin/vite` | TanStack Solid SPA/SSR Vite plugin and build helper |
+| `@carere/renkin/astro` | Astro CLI integration, programmatic build helper and configuration types |
 
 Durable Object and Workflow runtime entries belong inside Workers executed by
 workerd; importing them into an ordinary Bun host process is not a runtime test.
@@ -38,11 +38,11 @@ closure separately from Renkin's declarations.
 
 ## Astro builds
 
-Use `renkin(site)` from `renkin/astro` in `astro.config.ts`:
+Use `renkin(site)` from `@carere/renkin/astro` in `astro.config.ts`:
 
 ```ts
 import { defineConfig } from "astro/config";
-import { renkin } from "renkin/astro";
+import { renkin } from "@carere/renkin/astro";
 import { site } from "./renkin.ts";
 export default defineConfig({ integrations: [renkin(site)] });
 ```

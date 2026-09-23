@@ -1,15 +1,15 @@
 # Assets, domains and Access
 
-Import resource constructors from `renkin/cloudflare` and the build contract from
-`renkin`. A framework adapter or external build command can produce a
+Import resource constructors from `@carere/renkin/cloudflare` and the build contract from
+`@carere/renkin`. A framework adapter or external build command can produce a
 `WorkerBuildResult`; its entry must already be an ES module. Renkin reads the
 artifact before planning and uploads those captured bytes without rebundling.
 
 ```ts
-import { defineStack, type WorkerBuildResult } from "renkin";
+import { defineStack, type WorkerBuildResult } from "@carere/renkin";
 import {
   accessApplication, accessPolicy, accessServiceToken, customDomain, worker,
-} from "renkin/cloudflare";
+} from "@carere/renkin/cloudflare";
 
 const build: WorkerBuildResult = {
   entry: "dist/worker.mjs",

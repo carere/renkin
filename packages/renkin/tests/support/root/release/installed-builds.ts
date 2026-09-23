@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { readFile, rm } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { tanstackStart } from "renkin/cloudflare";
-import { buildTanStack } from "renkin/vite";
+import { tanstackStart } from "@carere/renkin/cloudflare";
+import { buildTanStack } from "@carere/renkin/vite";
 
 // This file runs only after being copied into the standalone consumer root.
 const { site } = (await import(

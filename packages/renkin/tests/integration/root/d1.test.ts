@@ -1,9 +1,9 @@
 import { readFile, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { defineStack } from "@carere/renkin";
+import { d1 } from "@carere/renkin/cloudflare";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { defineStack } from "renkin";
-import { d1 } from "renkin/cloudflare";
 import { createD1Fixture } from "#test-support/root/d1-fixture.ts";
 
 it.effect(

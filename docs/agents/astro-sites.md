@@ -1,13 +1,13 @@
 # Astro sites
 
 Renkin supports Astro static sites and server-rendered Workers through the public
-`renkin/cloudflare` factory. Astro 7.3.3 and `@astrojs/cloudflare` 14.3.2 are the
+`@carere/renkin/cloudflare` factory. Astro 7.3.3 and `@astrojs/cloudflare` 14.3.2 are the
 validated versions. The official adapter builds and prerenders pages in workerd;
 Renkin deploys the resulting modules, assets and native bindings.
 
 ```ts
-import { defineStack } from "renkin";
-import { astro, customDomain, kv } from "renkin/cloudflare";
+import { defineStack } from "@carere/renkin";
+import { astro, customDomain, kv } from "@carere/renkin/cloudflare";
 
 const content = kv("content");
 const site = astro("site", {
@@ -58,12 +58,12 @@ Miniflare 5 storage graph. Configure a frontend port with `port: 4321` or
 `config: { server: { port: 4321 } }`; the resource port takes precedence. Native file watching is the default; explicit
 Vite `server.watch.usePolling` is available for environments without native events.
 
-Configure `integrations: [renkin(site)]` in `astro.config.ts`, importing `renkin`
-from `renkin/astro` and the original site declaration from your infrastructure module.
+Configure `integrations: [renkin(site)]` in `astro.config.ts`, importing `@carere/renkin`
+from `@carere/renkin/astro` and the original site declaration from your infrastructure module.
 Then `bun --bun astro build` produces `dist/` and `.renkin/build-result.json` without
 a custom build script. The example Moon build task runs that same Astro CLI.
 Renkin owns the Cloudflare adapter; do not also configure another adapter.
-See the [README example](../../README.md). `buildAstro(site)` from `renkin/astro` returns the
+See the [README example](../../README.md). `buildAstro(site)` from `@carere/renkin/astro` returns the
 shared `WorkerBuildResult`, including native requirement metadata, without
 provisioning infrastructure. Deploying the resource invokes this builder
 automatically. Existing explicit Worker build artifacts and custom domains use

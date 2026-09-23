@@ -1,11 +1,11 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { defineStack, development } from "@carere/renkin";
+import { r2, worker } from "@carere/renkin/cloudflare";
+import { localS3Endpoint } from "@carere/renkin/worker";
 import { AwsClient } from "aws4fetch";
 import { Effect } from "effect";
-import { defineStack, development } from "renkin";
-import { r2, worker } from "renkin/cloudflare";
-import { localS3Endpoint } from "renkin/worker";
 
 const credentials = { accessKeyId: "public-local-key", secretAccessKey: "public-local-secret" };
 const signer = new AwsClient({ ...credentials, service: "s3", region: "auto" });
@@ -25,7 +25,7 @@ export const createR2Fixture = async () => {
   const entry = join(root, "worker.ts");
   await writeFile(
     entry,
-    `import {Effect} from "effect";import {r2} from "renkin/cloudflare";import {defineWorker} from "renkin/worker";
+    `import {Effect} from "effect";import {r2} from "@carere/renkin/cloudflare";import {defineWorker} from "@carere/renkin/worker";
 export default defineWorker({Files:r2("Files")},({Files})=>({fetch:request=>Effect.gen(function*(){
  if(new URL(request.url).pathname!=="/native")return new Response("application");
  const object=yield* Files.get("object");return new Response(object?yield* Effect.promise(()=>object.text()):"missing");

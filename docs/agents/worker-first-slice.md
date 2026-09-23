@@ -11,7 +11,7 @@ can default-export its standard `fetch` handler. For Effect code:
 ```ts
 // worker.ts
 import { Effect } from "effect";
-import { defineWorker } from "renkin/worker";
+import { defineWorker } from "@carere/renkin/worker";
 
 export default defineWorker({
   fetch: (request) => Effect.succeed(new Response(new URL(request.url).pathname)),
@@ -26,8 +26,8 @@ Renkin runtime wrapper.
 
 ```ts
 // renkin.ts
-import { defineStack, output } from "renkin";
-import { worker } from "renkin/cloudflare";
+import { defineStack, output } from "@carere/renkin";
+import { worker } from "@carere/renkin/cloudflare";
 
 export default defineStack({
   name: "hello",
@@ -63,7 +63,7 @@ explicitly includes secret output values; ordinary output reads redact them.
 The TypeScript API exports `development`, `planDeployment`, `deploy`,
 `removeEnvironment`, `listEnvironments` and `readOutputs` as Effect operations.
 Use `Effect.scoped(development(stack))` when controlling local session lifetime.
-`workerFixture` from `renkin/testing` is an Effect-scoped real workerd fixture.
+`workerFixture` from `@carere/renkin/testing` is an Effect-scoped real workerd fixture.
 See `packages/renkin/tests/fixtures/worker` for checked consumer examples.
 
 ## State, authentication and recovery

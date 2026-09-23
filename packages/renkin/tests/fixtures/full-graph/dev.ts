@@ -1,5 +1,5 @@
+import { development } from "@carere/renkin";
 import { Effect } from "effect";
-import { development } from "renkin";
 import { graph } from "./graph.ts";
 
 await Effect.runPromise(

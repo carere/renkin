@@ -9,7 +9,7 @@ for the corresponding Cloudflare API.
 
 ```ts
 // resources.ts — safe to import from application and deployment code
-import { email, queue, workflow } from "renkin/cloudflare";
+import { email, queue, workflow } from "@carere/renkin/cloudflare";
 
 export interface Job { id: string; createdAt: number }
 export const Jobs = queue<Job>("Jobs");
@@ -27,8 +27,8 @@ export const Mail = email({
 // worker.ts
 import { EmailMessage } from "cloudflare:email";
 import { Effect } from "effect";
-import { defineWorker, type QueueBatch } from "renkin/worker";
-import { defineWorkflow, type WorkflowEvent } from "renkin/workflow";
+import { defineWorker, type QueueBatch } from "@carere/renkin/worker";
+import { defineWorkflow, type WorkflowEvent } from "@carere/renkin/workflow";
 import { Completion, Jobs, Mail, type Job } from "./resources.ts";
 
 export const CompletionWorkflow = defineWorkflow(
@@ -63,16 +63,16 @@ export default defineWorker({ Jobs, Completion }, ({ Jobs, Completion }) => ({
 
 Cloudflare supplies `cloudflare:email`, `cloudflare:workers` and
 `cloudflare:workflows` inside Workers. Use your generated Cloudflare environment
-types when authoring application modules. `renkin/workflow` is a Worker-only
-entrypoint; infrastructure code imports `workflow` from `renkin/cloudflare`.
+types when authoring application modules. `@carere/renkin/workflow` is a Worker-only
+entrypoint; infrastructure code imports `workflow` from `@carere/renkin/cloudflare`.
 Workflow class exports and their inert requirements are inspected without running
 handler factories. An optional third argument to either definition supplies the
 Effect service layer needed by the handlers or Workflow tasks.
 
 ```ts
 // renkin.ts
-import { defineStack } from "renkin";
-import { worker } from "renkin/cloudflare";
+import { defineStack } from "@carere/renkin";
+import { worker } from "@carere/renkin/cloudflare";
 import { Completion, Dead, Jobs } from "./resources.ts";
 
 export default defineStack({
@@ -122,8 +122,8 @@ invoke scheduled events rather than waiting for a local timer.
 
 ```ts
 import { Effect } from "effect";
-import { development } from "renkin";
-import { applicationFixture, capturedEmails, scheduled } from "renkin/testing";
+import { development } from "@carere/renkin";
+import { applicationFixture, capturedEmails, scheduled } from "@carere/renkin/testing";
 import stack from "./renkin.ts";
 
 const test = Effect.scoped(Effect.gen(function* () {

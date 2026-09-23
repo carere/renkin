@@ -1,14 +1,14 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { defineStack, development } from "@carere/renkin";
+import { kv, queue, worker, workflow } from "@carere/renkin/cloudflare";
 import { Effect } from "effect";
-import { defineStack, development } from "renkin";
-import { kv, queue, worker, workflow } from "renkin/cloudflare";
 
 const source = `import {NonRetryableError} from "cloudflare:workflows";
 import {EmailMessage} from "cloudflare:email";
-import {Effect} from "effect";import {kv,queue,workflow,email} from "renkin/cloudflare";
-import {defineWorker} from "renkin/worker";import {defineWorkflow} from "renkin/workflow";
+import {Effect} from "effect";import {kv,queue,workflow,email} from "@carere/renkin/cloudflare";
+import {defineWorker} from "@carere/renkin/worker";import {defineWorkflow} from "@carere/renkin/workflow";
 const Store=kv("Store"),Jobs=queue("Jobs"),Flow=workflow("Flow",{worker:"App",className:"Job"});
 export const Job=defineWorkflow({Store,Mail:email({allowedDestinationAddresses:["recipient@example.com"],allowedSenderAddresses:["sender@example.com"]})},(event,steps,{Store,Mail})=>Effect.gen(function*(){
  const task=yield* steps.task("record",context=>Effect.gen(function*(){
@@ -46,7 +46,7 @@ export const createBackgroundFixture = async () => {
   const deadEntry = join(root, "dead.ts");
   await writeFile(
     deadEntry,
-    `import {Effect} from "effect";import {defineWorker} from "renkin/worker";import {kv} from "renkin/cloudflare";export default defineWorker({Store:kv("Store")},({Store})=>({queue:batch=>Effect.gen(function*(){for(const message of batch.messages)yield* Store.put("dead",JSON.stringify(message.body));})}));`,
+    `import {Effect} from "effect";import {defineWorker} from "@carere/renkin/worker";import {kv} from "@carere/renkin/cloudflare";export default defineWorker({Store:kv("Store")},({Store})=>({queue:batch=>Effect.gen(function*(){for(const message of batch.messages)yield* Store.put("dead",JSON.stringify(message.body));})}));`,
   );
   const stack = defineStack({
     name: "background-public",

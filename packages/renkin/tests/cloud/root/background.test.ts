@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
+import { removeEnvironment } from "@carere/renkin";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { removeEnvironment } from "renkin";
 import { createCloudBackgroundFixture } from "#test-support/root/cloud-background-fixture.ts";
 
 it.effect(

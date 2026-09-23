@@ -36,11 +36,11 @@ export const installedPaths = `import {readFile,realpath} from "node:fs/promises
 import {dirname,resolve,relative,isAbsolute} from "node:path";
 import {fileURLToPath} from "node:url";
 export const installedCli=async()=>{
- const manifest=fileURLToPath(new URL("../../../../../node_modules/renkin/package.json",import.meta.url));
+ const manifest=fileURLToPath(new URL("../../../../../node_modules/@carere/renkin/package.json",import.meta.url));
  const root=await realpath(dirname(manifest));
  const pkg=JSON.parse(await readFile(manifest,"utf8"));
  const bin=typeof pkg.bin==="string"?pkg.bin:pkg.bin?.renkin;
- if(pkg.name!=="renkin"||typeof bin!=="string")throw Error("Installed Renkin CLI missing.");
+ if(pkg.name!=="@carere/renkin"||typeof bin!=="string")throw Error("Installed Renkin CLI missing.");
  const path=await realpath(resolve(root,bin));const child=relative(root,path);
  if(child.startsWith("..")||isAbsolute(child))throw Error("Installed CLI escapes package.");
  return path;

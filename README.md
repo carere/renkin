@@ -14,10 +14,10 @@ Windows are not supported Renkin execution environments.
 Once published, install the single public package and its Effect peer:
 
 ```sh
-bun add renkin "effect@^4.0.0-rc.115"
+bun add @carere/renkin "effect@^4.0.0-rc.115"
 ```
 
-For an unpublished release candidate, replace `renkin` with the path to its staged
+For an unpublished release candidate, replace `@carere/renkin` with the path to its staged
 `.tgz` artifact. Internal `@renkin/*` workspaces are not consumer dependencies.
 Framework applications also install their usual Astro or TanStack dependencies.
 
@@ -36,8 +36,8 @@ export default {
 
 ```ts
 // renkin.ts
-import { defineStack } from "renkin";
-import { worker } from "renkin/cloudflare";
+import { defineStack } from "@carere/renkin";
+import { worker } from "@carere/renkin/cloudflare";
 
 export default defineStack({
   name: "hello",
@@ -50,7 +50,7 @@ export default defineStack({
 ```
 
 ```sh
-bunx --bun renkin dev
+bunx --bun --package @carere/renkin renkin dev
 ```
 
 The development command starts the local application graph, watches source changes
@@ -58,11 +58,11 @@ and keeps local data between restarts. No Cloudflare credentials are needed.
 Local email is captured rather than sent. Local state lives under `.renkin/`;
 exclude that directory from Git because it can contain secrets.
 
-Effect handlers can use `defineWorker` from `renkin/worker`:
+Effect handlers can use `defineWorker` from `@carere/renkin/worker`:
 
 ```ts
 import { Effect } from "effect";
-import { defineWorker } from "renkin/worker";
+import { defineWorker } from "@carere/renkin/worker";
 
 export default defineWorker({
   fetch: () => Effect.succeed(new Response("Hello from Effect")),
@@ -81,11 +81,11 @@ a workers.dev subdomain. The first deployment creates its shared encrypted state
 backend automatically; developers and CI must select the same backend.
 
 ```sh
-bunx --bun renkin plan --env preview
-bunx --bun renkin deploy --env preview --yes
-bunx --bun renkin list --stack hello
-bunx --bun renkin outputs --stack hello --env preview
-bunx --bun renkin remove --stack hello --env preview --yes
+bunx --bun --package @carere/renkin renkin plan --env preview
+bunx --bun --package @carere/renkin renkin deploy --env preview --yes
+bunx --bun --package @carere/renkin renkin list --stack hello
+bunx --bun --package @carere/renkin renkin outputs --stack hello --env preview
+bunx --bun --package @carere/renkin renkin remove --stack hello --env preview --yes
 ```
 
 `--file path/to/renkin.ts` selects another stack file. `list` and `outputs` emit
@@ -112,8 +112,8 @@ binding requirements and deployment dependencies from that use:
 ```ts
 // worker.ts
 import { Effect } from "effect";
-import { d1 } from "renkin/cloudflare";
-import { defineWorker } from "renkin/worker";
+import { d1 } from "@carere/renkin/cloudflare";
+import { defineWorker } from "@carere/renkin/worker";
 
 export const database = d1("Database", { migrations: "./migrations" });
 export default defineWorker({ DB: database }, ({ DB }) => ({
@@ -137,8 +137,8 @@ Declare the site and install Renkin's integration in ordinary Astro configuratio
 
 ```ts
 // renkin.ts
-import { defineStack } from "renkin";
-import { astro } from "renkin/cloudflare";
+import { defineStack } from "@carere/renkin";
+import { astro } from "@carere/renkin/cloudflare";
 
 export const site = astro("site", {
   root: import.meta.dirname,
@@ -151,7 +151,7 @@ export default defineStack({ name: "my-site", resources: [site] });
 ```ts
 // astro.config.ts
 import { defineConfig } from "astro/config";
-import { renkin } from "renkin/astro";
+import { renkin } from "@carere/renkin/astro";
 import { site } from "./renkin.ts";
 
 export default defineConfig({
@@ -160,9 +160,9 @@ export default defineConfig({
 ```
 
 ```sh
-bunx --bun renkin dev
+bunx --bun --package @carere/renkin renkin dev
 bunx --bun astro build
-bunx --bun renkin deploy --env preview --yes
+bunx --bun --package @carere/renkin renkin deploy --env preview --yes
 ```
 
 No `build.ts` is needed. Astro builds the site; the integration configures its
@@ -172,7 +172,7 @@ styles and output settings in `astro.config.ts`. Do not also configure another
 adapter. The integration's build setup does not provision cloud resources.
 
 Deployment can build automatically; `buildAstro(site)` remains available from
-`renkin/astro` for programmatic builds. To make deployment call your CLI/Moon task,
+`@carere/renkin/astro` for programmatic builds. To make deployment call your CLI/Moon task,
 wrap the original site with `withBuildCommand` and point it at the generated manifest:
 
 ```ts
@@ -183,7 +183,7 @@ const deployedSite = withBuildCommand(site, {
 });
 ```
 
-Import `withBuildCommand` from `renkin` and put `deployedSite` in the deployment
+Import `withBuildCommand` from `@carere/renkin` and put `deployedSite` in the deployment
 stack. The Astro config must continue to import the original `site`.
 
 SSR gets a protected session KV namespace by default. Supply native resources via
@@ -195,12 +195,12 @@ SSR routes for resource access. See [the static example](apps/example-static) an
 
 ## TanStack Start with Solid
 
-Declare a site with `tanstackStart` from `renkin/cloudflare`, then use the public
+Declare a site with `tanstackStart` from `@carere/renkin/cloudflare`, then use the public
 Vite plugin:
 
 ```ts
 // resources.ts
-import { kv, tanstackStart } from "renkin/cloudflare";
+import { kv, tanstackStart } from "@carere/renkin/cloudflare";
 export const site = tanstackStart("app", {
   root: import.meta.dirname,
   rendering: "ssr", // or "spa"
@@ -212,7 +212,7 @@ export const site = tanstackStart("app", {
 ```ts
 // vite.config.ts
 import { defineConfig } from "vite";
-import { renkin } from "renkin/vite";
+import { renkin } from "@carere/renkin/vite";
 import { site } from "./resources.ts";
 export default defineConfig({ plugins: [renkin(site)] });
 ```
@@ -231,7 +231,7 @@ repeating resource types in a handwritten interface:
 // src/types/cloudflare.d.ts
 // Keep this file ambient: use type import expressions, not top-level imports.
 declare module "cloudflare:workers" {
-  const env: import("renkin/cloudflare").SiteEnvironment<typeof import("../../resources.ts").site>;
+  const env: import("@carere/renkin/cloudflare").SiteEnvironment<typeof import("../../resources.ts").site>;
   export { env };
 }
 ```
@@ -249,7 +249,7 @@ browser code.
 The root package exposes Effect operations including `development`, `deploy`,
 `planDeployment`, `removeEnvironment`, `listEnvironments` and `readOutputs`.
 Use `Effect.scoped(development(stack))` to manage a local session's lifetime.
-Public helpers in `renkin/testing` exercise real local Workers, bindings, events,
+Public helpers in `@carere/renkin/testing` exercise real local Workers, bindings, events,
 restart persistence and captured email. Local emulation does not prove cloud-only
 features such as custom domains, Access policies or production R2 CORS.
 
@@ -389,7 +389,7 @@ uploaded to GitHub. Cacheable project tasks can reuse remote results; repository
 ## Versioning and changelog
 
 [`cog.toml`](cog.toml) configures one repository-wide release version for the sole
-published `renkin` package. Commits across private packages also affect that
+published `@carere/renkin` package. Commits across private packages also affect that
 version; private workspaces do not receive independent release tags. Releases
 use `v`-prefixed tags and a root `CHANGELOG.md` with GitHub links.
 
@@ -416,8 +416,10 @@ bump hooks.
 Versioning does not publish a package. Build the standalone artifact with
 `moon run renkin:pack` and inspect its identity using the commands in
 [package assembly](docs/agents/packaging.md). Source-workspace packing remains
-guarded; only the staged tarball is an intended distribution artifact. Registry
-publication requires separate authorization and is not part of validation.
+guarded; only the staged tarball is an intended distribution artifact. Use the
+manual **Release** workflow to prepare a draft GitHub release and optionally
+publish its validated tarball to npm under `latest`. For the first publish and OIDC
+setup, follow [the release procedure](docs/releasing.md).
 
 References: [Cocogitto configuration](https://docs.cocogitto.io/reference/config.html)
 [automatic versioning and hooks](https://docs.cocogitto.io/guide/bump.html),

@@ -1,9 +1,9 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { defineStack, development } from "@carere/renkin";
+import { worker } from "@carere/renkin/cloudflare";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { defineStack, development } from "renkin";
-import { worker } from "renkin/cloudflare";
 
 it.effect(
   "runs a local external Worker implementation without adding it to owned Worker outputs",
@@ -15,7 +15,7 @@ it.effect(
       await writeFile(permanent, 'export default {fetch(){return new Response("permanent")}}');
       await writeFile(
         entry,
-        `import {defineWorker,externalWorker} from "renkin/worker";
+        `import {defineWorker,externalWorker} from "@carere/renkin/worker";
       export default defineWorker({REVIEW:externalWorker("permanent-review",{localEntry:${JSON.stringify(permanent)}})},({REVIEW})=>({fetch:()=>REVIEW.call(service=>service.fetch("https://review/"))}));`,
       );
       const stack = defineStack({

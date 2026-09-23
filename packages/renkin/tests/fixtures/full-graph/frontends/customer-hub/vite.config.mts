@@ -1,4 +1,4 @@
-import { renkin } from "renkin/vite";
+import { renkin } from "@carere/renkin/vite";
 import { defineConfig } from "vite";
 import { frontend } from "#test-fixtures/full-graph/frontends/config.ts";
 export default defineConfig({

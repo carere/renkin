@@ -53,7 +53,7 @@ export const adaptCloudSource = (path: string, source: string) => {
     source = replace(
       source,
       'import { createBackgroundClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/background-client";',
-      'import type { deploy } from "renkin";',
+      'import type { deploy } from "@carere/renkin";',
     );
     const start = source.indexOf("export const assertCloudCron = async");
     if (start < 0 || !source.slice(start).includes("client.getSchedules(script)"))

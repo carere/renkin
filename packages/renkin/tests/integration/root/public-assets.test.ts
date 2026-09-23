@@ -1,9 +1,7 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { expect, it } from "@effect/vitest";
-import { Effect } from "effect";
-import { defineStack, development, type WorkerBuildResult } from "renkin";
+import { defineStack, development, type WorkerBuildResult } from "@carere/renkin";
 import {
   accessApplication,
   accessPolicy,
@@ -11,7 +9,9 @@ import {
   customDomain,
   observabilityDestination,
   worker,
-} from "renkin/cloudflare";
+} from "@carere/renkin/cloudflare";
+import { expect, it } from "@effect/vitest";
+import { Effect } from "effect";
 
 it.live(
   "runs an external build through public development with assets, routing and reload",

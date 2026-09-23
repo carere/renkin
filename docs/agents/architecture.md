@@ -60,9 +60,9 @@ are deferred. Node may still be used by repository tools or build dependencies;
 that does not make it a supported runtime for Renkin's public CLI.
 
 Only `packages/renkin` is publishable. All other packages and apps are private.
-The public entries are the root API, `renkin/cloudflare`, `renkin/worker`,
-`renkin/testing`, `renkin/durable-object`, `renkin/workflow`, `renkin/vite`,
-`renkin/astro`, and the Bun CLI.
+The public entries are the root API, `@carere/renkin/cloudflare`, `@carere/renkin/worker`,
+`@carere/renkin/testing`, `@carere/renkin/durable-object`, `@carere/renkin/workflow`, `@carere/renkin/vite`,
+`@carere/renkin/astro`, and the Bun CLI.
 
 The release assembler preserves the production module layout, emits ESM JavaScript
 and declarations, and rewrites private workspace imports and package-relative

@@ -1,7 +1,7 @@
+import { durableObject } from "@carere/renkin/cloudflare";
+import { defineDurableObject } from "@carere/renkin/durable-object";
+import { defineWorker } from "@carere/renkin/worker";
 import { Effect } from "effect";
-import { durableObject } from "renkin/cloudflare";
-import { defineDurableObject } from "renkin/durable-object";
-import { defineWorker } from "renkin/worker";
 import { Audit } from "#test-fixtures/full-graph/shared/resources.ts";
 
 export class OrderEvents extends defineDurableObject({ Audit }) {

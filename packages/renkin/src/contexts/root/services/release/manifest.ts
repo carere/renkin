@@ -6,7 +6,7 @@ export const releaseManifest = (
   stage: string,
   packages: readonly SourcePackage[],
 ) => {
-  const publicPackage = packages.find(({ manifest }) => manifest.name === "renkin");
+  const publicPackage = packages.find(({ manifest }) => manifest.name === "@carere/renkin");
   if (!publicPackage) throw new Error("Missing public Renkin package.");
   const { manifest, directory } = publicPackage;
   const dependencies: Record<string, string> = {};

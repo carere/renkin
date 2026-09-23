@@ -1,4 +1,4 @@
-import { renkin } from "renkin/vite";
+import { renkin } from "@carere/renkin/vite";
 import { defineConfig } from "vite";
 import { site } from "./resources.ts";
 export default defineConfig({

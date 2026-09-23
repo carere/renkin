@@ -40,14 +40,14 @@ const compile = async (consumer: InstalledConsumer, file: string, skip: boolean)
 };
 export const verifyTypes = async (consumer: InstalledConsumer) => {
   const entrypoints = [
-    "renkin",
-    "renkin/cloudflare",
-    "renkin/worker",
-    "renkin/testing",
-    "renkin/durable-object",
-    "renkin/workflow",
-    "renkin/astro",
-    "renkin/vite",
+    "@carere/renkin",
+    "@carere/renkin/cloudflare",
+    "@carere/renkin/worker",
+    "@carere/renkin/testing",
+    "@carere/renkin/durable-object",
+    "@carere/renkin/workflow",
+    "@carere/renkin/astro",
+    "@carere/renkin/vite",
   ];
   await writeFile(
     join(consumer.directory, "all-types.ts"),
@@ -60,7 +60,7 @@ export const verifyTypes = async (consumer: InstalledConsumer) => {
   assert.deepEqual(await compile(consumer, "site-environment.test.ts", true), []);
   await writeFile(
     join(consumer.directory, "core-types.ts"),
-    ["renkin", "renkin/worker", "renkin/testing"]
+    ["@carere/renkin", "@carere/renkin/worker", "@carere/renkin/testing"]
       .map((name, i) => `import * as entry${i} from ${JSON.stringify(name)}; void entry${i};`)
       .join("\n"),
   );

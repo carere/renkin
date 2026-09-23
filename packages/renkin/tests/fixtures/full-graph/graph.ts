@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
-import { defineStack } from "renkin";
-import { d1, worker } from "renkin/cloudflare";
+import { defineStack } from "@carere/renkin";
+import { d1, worker } from "@carere/renkin/cloudflare";
 import { frontend } from "#test-fixtures/full-graph/frontends/config.ts";
 import {
   Audit,

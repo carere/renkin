@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { defineStack, deploy, readOutputs, removeEnvironment } from "@carere/renkin";
+import { kv, worker } from "@carere/renkin/cloudflare";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { defineStack, deploy, readOutputs, removeEnvironment } from "renkin";
-import { kv, worker } from "renkin/cloudflare";
 
 const http = async (url: string, expected: string) => {
   for (let attempt = 0; attempt < 40; attempt++) {
@@ -64,7 +64,7 @@ const setup = async () => {
 const writeApplication = async (root: string, externalName: string) => {
   await writeFile(
     join(root, "a.mjs"),
-    `import {Effect} from "effect";import {defineWorker,workerReference,externalWorker} from "renkin/worker";import {kv} from "renkin/cloudflare";
+    `import {Effect} from "effect";import {defineWorker,workerReference,externalWorker} from "@carere/renkin/worker";import {kv} from "@carere/renkin/cloudflare";
       export default defineWorker({CACHE:kv("Cache"),B:workerReference("B",{entrypoint:"Service"}),REVIEW:externalWorker(${JSON.stringify(externalName)})},({CACHE,B,REVIEW})=>({fetch:(request)=>Effect.gen(function*(){
         const path=new URL(request.url).pathname;
         if(path==="/echo")return new Response("from-a");
@@ -77,7 +77,7 @@ const writeApplication = async (root: string, externalName: string) => {
   );
   await writeFile(
     join(root, "b.mjs"),
-    'import {WorkerEntrypoint} from "cloudflare:workers";import {defineWorker,workerReference} from "renkin/worker";export class Service extends WorkerEntrypoint {async message(){return "b:"+await (await this.env.A.fetch("https://a/echo")).text();}} export default defineWorker({A:workerReference("A")},()=>({fetch:()=>new Response("b")}));',
+    'import {WorkerEntrypoint} from "cloudflare:workers";import {defineWorker,workerReference} from "@carere/renkin/worker";export class Service extends WorkerEntrypoint {async message(){return "b:"+await (await this.env.A.fetch("https://a/echo")).text();}} export default defineWorker({A:workerReference("A")},()=>({fetch:()=>new Response("b")}));',
   );
 };
 const read = (name: string, scenario: Scenario) =>

@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
-import { defineStack } from "renkin";
-import { astro, kv } from "renkin/cloudflare";
+import { defineStack } from "@carere/renkin";
+import { astro, kv } from "@carere/renkin/cloudflare";
 
 const content = kv("content");
 export const site = astro("website", {

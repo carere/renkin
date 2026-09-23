@@ -2,9 +2,9 @@ import { randomUUID } from "node:crypto";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { defineStack, deploy, removeEnvironment } from "@carere/renkin";
+import { d1, worker } from "@carere/renkin/cloudflare";
 import { Effect } from "effect";
-import { defineStack, deploy, removeEnvironment } from "renkin";
-import { d1, worker } from "renkin/cloudflare";
 
 const authorization = () => {
   const prefix = process.env.RENKIN_CLOUDFLARE_TEST_PREFIX;
@@ -45,7 +45,7 @@ export const createCloudD1Fixture = async () => {
   const entry = join(root, "worker.ts");
   await writeFile(
     entry,
-    `import {Effect} from "effect";import {d1} from "renkin/cloudflare";import {defineWorker} from "renkin/worker";
+    `import {Effect} from "effect";import {d1} from "@carere/renkin/cloudflare";import {defineWorker} from "@carere/renkin/worker";
 export default defineWorker({DB:d1("Database")},({DB})=>({fetch:(request)=>Effect.gen(function*(){
  if(new URL(request.url).pathname==="/history")return Response.json((yield* DB.query("SELECT name FROM __renkin_migrations ORDER BY rowid")).results);
  if(new URL(request.url).pathname==="/batch")return Response.json(yield* Effect.promise(()=>DB.native.batch([DB.native.prepare("SELECT 2 AS n"),DB.native.prepare("SELECT 1 AS n")])));

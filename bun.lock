@@ -23,7 +23,7 @@
         "@tanstack/solid-router": "^1.170.36",
         "@tanstack/solid-start": "^1.168.54",
         "effect": "^4.0.0-rc.115",
-        "renkin": "workspace:*",
+        "@carere/renkin": "workspace:*",
         "solid-js": "^1.9.15",
       },
       "devDependencies": {
@@ -41,7 +41,7 @@
         "@tanstack/solid-router": "^1.170.36",
         "@tanstack/solid-start": "^1.168.54",
         "effect": "^4.0.0-rc.115",
-        "renkin": "workspace:*",
+        "@carere/renkin": "workspace:*",
         "solid-js": "^1.9.15",
       },
       "devDependencies": {
@@ -57,7 +57,7 @@
       "dependencies": {
         "astro": "^7.3.3",
         "effect": "^4.0.0-rc.115",
-        "renkin": "workspace:*",
+        "@carere/renkin": "workspace:*",
       },
       "devDependencies": {
         "@effect/vitest": "^4.0.0-rc.115",
@@ -106,8 +106,8 @@
       },
     },
     "packages/renkin": {
-      "name": "renkin",
-      "version": "0.0.0",
+      "name": "@carere/renkin",
+      "version": "0.1.0-rc.1",
       "bin": {
         "renkin": "./src/contexts/root/cli/main.ts",
       },
@@ -1110,7 +1110,7 @@
 
     "regex-utilities": ["regex-utilities@2.3.0", "", {}, "sha512-8VhliFJAWRaUiVvREIiW2NXXTmHs4vMNnSzuJVhscgmGav3g9VDxLrQndI3dZZVVdp0ZO/5v0xmX516/7M9cng=="],
 
-    "renkin": ["renkin@workspace:packages/renkin"],
+    "@carere/renkin": ["@carere/renkin@workspace:packages/renkin"],
 
     "resolve-pkg-maps": ["resolve-pkg-maps@1.0.0", "", {}, "sha512-seS2Tj26TBVOC2NIc2rOe2y2ZO7efxITtLZcGSOnHHNOQ7CkiUBfw0Iw2ck6xkIhPwLhKNLS8BO+hEpngQlqzw=="],
 

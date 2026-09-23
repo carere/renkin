@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
+import { defineStack, development, type WorkerBuildResult } from "@carere/renkin";
+import { worker } from "@carere/renkin/cloudflare";
+import { buildTanStack } from "@carere/renkin/vite";
 import { Effect } from "effect";
 import { type Browser, chromium } from "playwright";
-import { defineStack, development, type WorkerBuildResult } from "renkin";
-import { worker } from "renkin/cloudflare";
-import { buildTanStack } from "renkin/vite";
 import { site } from "#project/resources.ts";
 import { createBuildProbe } from "./build-probe.ts";
 

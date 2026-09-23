@@ -2,14 +2,14 @@
 
 D1 databases are data resources, protected from deletion and replacement even
 when empty. Declare a database with `d1("Database", { migrations: "./migrations" })`
-from `renkin/cloudflare`. Pass the same resource descriptor to `defineWorker`'s
+from `@carere/renkin/cloudflare`. Pass the same resource descriptor to `defineWorker`'s
 requirements to obtain a typed Effect client and its native D1 handle. The Worker
 binding and provisioning dependency follow this use automatically.
 
 ```ts
 import { Effect } from "effect";
-import { d1 } from "renkin/cloudflare";
-import { defineWorker } from "renkin/worker";
+import { d1 } from "@carere/renkin/cloudflare";
+import { defineWorker } from "@carere/renkin/worker";
 
 export const database = d1("Database", { migrations: "./migrations" });
 export default defineWorker({ DB: database }, ({ DB }) => ({

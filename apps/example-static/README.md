@@ -1,7 +1,7 @@
 # Astro static example
 
 A runnable Astro site through the public Renkin factory. `renkin.ts` declares the
-site; `astro.config.ts` uses the `renkin(site)` integration from `renkin/astro`.
+site; `astro.config.ts` uses the `renkin(site)` integration from `@carere/renkin/astro`.
 The build task runs the normal `astro build` CLI; there is no custom build script. Page generation
 runs in workerd and the generated assets deploy through the shared Worker pipeline.
 Static output creates no session KV namespace.

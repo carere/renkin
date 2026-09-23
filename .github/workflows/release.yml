@@ -1,0 +1,139 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish to npm through OIDC (leave off for first-publish bootstrap)
+        type: boolean
+        default: false
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    if: github.repository == 'carere/renkin' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/checks.yml
+
+  pack:
+    needs: checks
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.identity.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: moonrepo/setup-toolchain@v0
+        with:
+          auto-install: true
+      - run: bun install --frozen-lockfile
+      - name: Check release identity
+        id: identity
+        run: |
+          set -euo pipefail
+          test "$(jq -r .name packages/renkin/package.json)" = '@carere/renkin'
+          version=$(jq -r .version packages/renkin/package.json)
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]
+          test -z "$(git status --porcelain)"
+          if git rev-parse "v$version" >/dev/null 2>&1; then
+            test "$(git rev-parse "v$version^{commit}")" = "$GITHUB_SHA"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Pack canonical artifact
+        run: moon run renkin:pack
+      - name: Verify clean source identity
+        run: |
+          jq -e --arg sha "$GITHUB_SHA" \
+            '.source.sourceRevision == $sha and .source.sourceDirty == false' \
+            .renkin/release/artifact.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: renkin-release-canonical
+          include-hidden-files: true
+          if-no-files-found: error
+          path: |
+            .renkin/release/artifact.json
+            .renkin/release/renkin-*.tgz
+
+  validate:
+    needs: pack
+    uses: ./.github/workflows/release-artifact.yml
+    with:
+      artifact-name: renkin-release-canonical
+
+  release:
+    needs: [pack, validate]
+    runs-on: ubuntu-24.04
+    environment: npm
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      VERSION: ${{ needs.pack.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install npm with trusted publishing support
+        run: |
+          npm install --global --prefix "$RUNNER_TEMP/release-npm" npm@11.16.0
+          echo "$RUNNER_TEMP/release-npm/bin" >> "$GITHUB_PATH"
+      - uses: actions/download-artifact@v4
+        with:
+          name: renkin-release-canonical
+          path: .renkin/release
+      - name: Verify artifact before release
+        run: |
+          set -euo pipefail
+          archive=".renkin/release/renkin-$VERSION.tgz"
+          record=.renkin/release/artifact.json
+          jq -e --arg sha "$GITHUB_SHA" \
+            '.source.sourceRevision == $sha and .source.sourceDirty == false' "$record"
+          test "$(sha256sum "$archive" | cut -d ' ' -f 1)" = "$(jq -r .sha256 "$record")"
+          tar -xOf "$archive" package/package.json | jq -e --arg version "$VERSION" \
+            '.name == "@carere/renkin" and .version == $version'
+      - name: Create draft GitHub release
+        run: |
+          set -euo pipefail
+          if gh release view "v$VERSION" --json isDraft > "$RUNNER_TEMP/renkin-release.json"; then
+            jq -e '.isDraft == true' "$RUNNER_TEMP/renkin-release.json"
+            # A retry must reuse the exact assets already offered for bootstrap.
+            mkdir -p "$RUNNER_TEMP/renkin-existing-release"
+            gh release download "v$VERSION" --pattern "renkin-$VERSION.tgz" \
+              --pattern artifact.json --dir "$RUNNER_TEMP/renkin-existing-release"
+            cmp ".renkin/release/renkin-$VERSION.tgz" "$RUNNER_TEMP/renkin-existing-release/renkin-$VERSION.tgz"
+            cmp .renkin/release/artifact.json "$RUNNER_TEMP/renkin-existing-release/artifact.json"
+          else
+            prerelease=()
+            if [[ "$VERSION" == *-* ]]; then prerelease=(--prerelease); fi
+            gh release create "v$VERSION" --target "$GITHUB_SHA" --draft \
+              --title "v$VERSION" --generate-notes "${prerelease[@]}" \
+              ".renkin/release/renkin-$VERSION.tgz" .renkin/release/artifact.json
+          fi
+      - name: Publish validated tarball through OIDC
+        if: inputs.publish
+        run: |
+          npm publish ".renkin/release/renkin-$VERSION.tgz" \
+            --registry https://registry.npmjs.org --access public --tag latest
+      - name: Publish GitHub release
+        if: inputs.publish
+        run: gh release edit "v$VERSION" --draft=false
+      - name: Describe bootstrap artifacts
+        if: ${{ !inputs.publish }}
+        run: |
+          {
+            echo "Draft release v$VERSION contains the validated tarball and artifact.json."
+            echo "Download both, verify SHA-256, and publish the tarball manually with --access public --tag latest."
+            echo "After the npm upload succeeds, publish the GitHub draft and configure trusted publishing for release.yml / environment npm."
+          } >> "$GITHUB_STEP_SUMMARY"

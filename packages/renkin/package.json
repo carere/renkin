@@ -1,6 +1,6 @@
 {
-  "name": "renkin",
-  "version": "0.0.0",
+  "name": "@carere/renkin",
+  "version": "0.1.0-rc.1",
   "private": false,
   "description": "Renkin public API and CLI for local and Cloudflare applications.",
   "license": "Apache-2.0",

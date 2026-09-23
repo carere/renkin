@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { defineStack, deploy, listEnvironments, removeEnvironment } from "@carere/renkin";
+import { astro, customDomain, kv } from "@carere/renkin/cloudflare";
 import { Effect } from "effect";
-import { defineStack, deploy, listEnvironments, removeEnvironment } from "renkin";
-import { astro, customDomain, kv } from "renkin/cloudflare";
 
 const authorization = () => {
   const prefix = process.env.RENKIN_CLOUDFLARE_TEST_PREFIX;

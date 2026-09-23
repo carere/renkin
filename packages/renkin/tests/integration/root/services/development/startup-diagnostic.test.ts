@@ -3,10 +3,10 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { inspect } from "node:util";
+import { defineStack, development } from "@carere/renkin";
+import { tanstackStart, worker } from "@carere/renkin/cloudflare";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { defineStack, development } from "renkin";
-import { tanstackStart, worker } from "renkin/cloudflare";
 import { vi } from "vitest";
 
 it.live(
@@ -82,8 +82,8 @@ it.live("prints sanitized startup context on child stderr while leaving stdout e
       (directory) => Effect.promise(() => rm(directory, { recursive: true, force: true })),
     );
     const script = `import {Effect} from "effect";
-import {defineStack,development} from "renkin";
-import {worker} from "renkin/cloudflare";
+import {defineStack,development} from "@carere/renkin";
+import {worker} from "@carere/renkin/cloudflare";
 const fail=async()=>{throw Object.assign(new Error("SECRET_MESSAGE"),{code:"EADDRINUSE"})};
 const resource=worker("Site",{compatibilityDate:"2026-07-30",builder:{build:fail,develop:fail}});
 await Effect.runPromise(Effect.scoped(development(defineStack({name:"child",resources:[resource]}),{directory:process.argv[1]})));`;

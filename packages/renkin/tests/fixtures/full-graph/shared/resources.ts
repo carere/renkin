@@ -1,4 +1,4 @@
-import { d1, durableObject, kv, queue, r2, r2Token, workflow } from "renkin/cloudflare";
+import { d1, durableObject, kv, queue, r2, r2Token, workflow } from "@carere/renkin/cloudflare";
 
 export const Sessions = kv("Sessions");
 export const Orders = d1("Orders");

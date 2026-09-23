@@ -37,11 +37,11 @@ const installedConsumer = async (root: string, directory: string) => {
     checkout = await realpath(root);
   if (consumer === checkout || inside(checkout, consumer))
     throw new Error("Installed cloud consumer must be outside the source checkout.");
-  const packageRoot = await realpath(join(consumer, "node_modules/renkin"));
+  const packageRoot = await realpath(join(consumer, "node_modules/@carere/renkin"));
   if (!inside(consumer, packageRoot))
     throw new Error("Installed Renkin resolves outside consumer.");
   const pkg = JSON.parse(await readFile(join(packageRoot, "package.json"), "utf8"));
-  if (pkg.name !== "renkin" || !pkg.bin || JSON.stringify(pkg).includes("workspace:"))
+  if (pkg.name !== "@carere/renkin" || !pkg.bin || JSON.stringify(pkg).includes("workspace:"))
     throw new Error("Cloud consumer requires the standalone installed Renkin artifact.");
   for (const app of applicationPaths)
     if (!inside(consumer, await realpath(join(consumer, app))))
