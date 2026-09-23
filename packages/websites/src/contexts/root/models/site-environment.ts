@@ -1,3 +1,4 @@
+import type { TextBinding } from "@renkin/core/models/value";
 import type { KVRequirement } from "@renkin/runtime/models/binding";
 import type { NativeBindings } from "@renkin/runtime/models/native-bindings";
 import type { AstroOptions } from "./astro.ts";
@@ -5,7 +6,7 @@ import type { FrameworkWorkerOptions } from "./framework-worker.ts";
 
 type Bindings<O extends FrameworkWorkerOptions> = O extends { readonly bindings: infer B }
   ? B extends NonNullable<FrameworkWorkerOptions["bindings"]>
-    ? B
+    ? { readonly [K in keyof B]: B[K] extends TextBinding ? string : B[K] }
     : never
   : Record<never, never>;
 

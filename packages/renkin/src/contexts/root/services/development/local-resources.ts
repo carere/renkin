@@ -3,6 +3,7 @@ import type { WorkerResource } from "@renkin/cloudflare/models/worker";
 import { durableObjectProperties } from "@renkin/cloudflare/services/durable-object/prepare-durable-objects";
 import type { Stack } from "@renkin/core/models/stack";
 import type { Change, EnvironmentState } from "@renkin/core/models/state";
+import { resolveTextBinding } from "@renkin/core/models/value";
 import { plan } from "@renkin/core/use-cases/plan";
 import { renamedState } from "@renkin/core/use-cases/rename";
 import type { LocalQueue, LocalWorkflow } from "@renkin/runtime/services/local/local-background";
@@ -51,6 +52,16 @@ const tokenBuckets = (value: unknown) => {
     throw new Error("Invalid local R2 token buckets.");
   return properties.buckets as readonly string[];
 };
+const localWorker = (resource: WorkerResource) => ({
+  id: resource.id,
+  ...resource.options,
+  bindings: Object.fromEntries(
+    Object.entries(resource.options.bindings ?? {}).map(([name, value]) => [
+      name,
+      resolveTextBinding(value, {}, true).text,
+    ]),
+  ),
+});
 export const prepareLocalResources = (stack: Stack, state: EnvironmentState, persist: string) =>
   Effect.gen(function* () {
     const changes = new Map(plan(stack, state).map((change) => [change.id, change]));
@@ -111,7 +122,7 @@ export const prepareLocalResources = (stack: Stack, state: EnvironmentState, per
       if (!stack.resources.some((resource) => resource.id === id)) delete state.resources[id];
     return {
       state,
-      workers: workerResources.map((resource) => ({ id: resource.id, ...resource.options })),
+      workers: workerResources.map(localWorker),
       namespaces,
       databases,
       durableObjects,

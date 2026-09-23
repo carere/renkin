@@ -12,7 +12,15 @@ export interface R2TokenOptions {
   /** Explicit rotation trigger, for example after replacing a bucket with the same logical ID. */
   readonly identity?: string;
 }
-export interface R2TokenResource extends ResourceDefinition, R2TokenRequirement {
+export interface R2TokenResource
+  extends ResourceDefinition<{
+      accessKeyId: string;
+      secretAccessKey: string;
+      endpoint: string;
+      region: string;
+      buckets: readonly string[];
+    }>,
+    R2TokenRequirement {
   readonly type: "cloudflare.r2-token";
 }
 export const r2Token = (id: string, options: R2TokenOptions): R2TokenResource => {

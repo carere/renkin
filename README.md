@@ -131,6 +131,88 @@ D1 accepts plain SQL files or the supported Drizzle `meta/_journal.json` layout;
 applied migration names are skipped. Do not edit an applied migration expecting it
 to rerun—add a new migration instead.
 
+## Secrets and generated resource outputs
+
+Use `secret` with an environment variable **name**, not its value. Worker binding
+strings remain ordinary `plain_text`; secret descriptors upload as Cloudflare
+`secret_text`. The same bindings work on `worker`, `tanstackStart` and `astro`:
+
+```ts
+import { defineStack, output, resourceOutput, secret } from "@carere/renkin";
+import { accessApplication, worker } from "@carere/renkin/cloudflare";
+
+const access = accessApplication("ReviewAPI", {
+  name: "review-agents",
+  domain: "review.staging.example.com",
+});
+const lifecycle = accessApplication("ReviewLifecycleAPI", {
+  name: "review-deployments",
+  domain: "review.staging.example.com/v1/scopes",
+});
+const review = worker("Review", {
+  entry: new URL("./worker.ts", import.meta.url).pathname,
+  compatibilityDate: "2026-07-30",
+  bindings: {
+    ACCESS_AUDIENCE: resourceOutput(access, "aud", { local: "local-review" }),
+    LIFECYCLE_AUDIENCE: resourceOutput(lifecycle, "aud", { local: "local-lifecycle" }),
+    BETTER_AUTH_SECRET: secret("BETTER_AUTH_SECRET"),
+    GOOGLE_CLIENT_ID: secret("GOOGLE_CLIENT_ID"),
+    GOOGLE_CLIENT_SECRET: secret("GOOGLE_CLIENT_SECRET"),
+    POSTHOG_PERSONAL_API_KEY: secret("POSTHOG_PERSONAL_API_KEY"),
+    PROBE_TOKEN: secret("PROBE_TOKEN"),
+  },
+});
+export default defineStack({
+  name: "review",
+  resources: [review, access, lifecycle],
+  outputs: { audience: output(resourceOutput(access, "aud", { local: "local-review" })) },
+});
+```
+
+Add the Access policies appropriate to your application; this example focuses on
+binding values. References automatically order Worker provisioning after their
+targets. Include each referenced resource in the stack. Missing targets, wrong
+resource types and dependency cycles fail validation. Missing output fields and
+non-string Worker values fail before the final Worker upload. Output references
+select a top-level provider field; they are supported in Worker bindings and in
+stack outputs (including nested objects and arrays), not arbitrary resource options.
+Keep the original resource type for field-name and value-type inference. Access
+applications, Access service tokens, Workers and R2 tokens declare typed output
+contracts; generic resource definitions retain JSON output typing.
+
+Every deployment refreshes Worker bindings after provisioning. Changed audiences
+and environment secrets trigger publication even when Worker source is unchanged;
+unchanged resolved bindings reuse the existing publication. A read-only plan
+compares declarations and cannot predict cloud-generated values or environment
+secret rotation. Run deploy to reconcile these runtime changes.
+
+Set environment variables through your shell/CI or an ignored `.env` file. Missing
+or empty secrets fail closed. For local development, use local credentials under
+the same variable names. `local` supplies an explicit non-production substitute
+for cloud-only outputs; it is ignored during deployment. Renkin does not emulate
+Access enforcement. Keep real credentials out of `local` literals.
+
+Environment secret values are resolved only for Worker publication and local
+runtime bindings. Renkin does not put them in resource definitions, build results,
+plan/progress output or ordinary Worker state. Provider-generated secrets remain
+in encrypted cloud state (or owner-only local state) as required for recovery.
+References inherit the target's secret classification: for example,
+`resourceOutput(serviceToken, "clientSecret")` uploads as a Worker secret, and
+`output(resourceOutput(serviceToken, "clientSecret"))` stays redacted unless
+`--reveal-secrets` is requested. An explicit `{ secret: false }` cannot downgrade
+an output reference. Exporting `output(secret("ENV_NAME"))` deliberately stores a
+secret stack output under those same state protections.
+
+Framework bindings are server-only and `SiteEnvironment<typeof site>` infers
+secret/reference bindings as `string`. Renkin never substitutes these values into
+browser bundles or build manifests. Your build scripts still control any explicit
+`process.env`, Vite `define`, or public `VITE_*` substitutions; use separate public
+configuration for browser-visible values.
+
+Cloudflare source-map upload is currently unsupported. Ordinary Worker preparation
+disables source maps, and `WorkerBuildResult.auxiliaryFiles` maps are captured for
+build reuse but never uploaded. This applies to framework auxiliary maps as well.
+
 ## Astro: use the normal build command
 
 Declare the site and install Renkin's integration in ordinary Astro configuration:

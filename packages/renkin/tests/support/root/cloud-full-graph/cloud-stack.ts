@@ -65,7 +65,7 @@ export const cloudGraph = (
           bindings: Object.fromEntries(
             Object.entries(website.bindings ?? {}).map(([key, binding]) => [
               key,
-              typeof binding === "string"
+              typeof binding === "string" || !("id" in binding)
                 ? binding
                 : binding.id === "Files"
                   ? files

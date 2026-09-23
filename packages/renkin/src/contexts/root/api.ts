@@ -43,3 +43,7 @@ import type { BuildCommandOptions as CommandOptions } from "@renkin/runtime/mode
 import type { BuildReuseOptions as ReuseOptions } from "@renkin/runtime/models/build-reuse";
 export type BuildCommandOptions = CommandOptions;
 export type BuildReuseOptions = ReuseOptions;
+
+import { resourceOutput as reference, secret as secretValue } from "@renkin/core/models/value";
+export const secret = secretValue;
+export const resourceOutput = reference;

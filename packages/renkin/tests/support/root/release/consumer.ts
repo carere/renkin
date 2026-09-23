@@ -128,7 +128,11 @@ export const installConsumer = async (root: string, archive: string) => {
       join(root, "packages/renkin/tests/support/root/full-graph"),
       join(directory, "tests/support/root/full-graph"),
     );
-    for (const name of ["worker-types.test.ts", "site-environment.test.ts"]) {
+    for (const name of [
+      "worker-types.test.ts",
+      "site-environment.test.ts",
+      "value-types.test.ts",
+    ]) {
       await copy(join(root, "packages/renkin/tests/unit/root", name), join(directory, name));
     }
     return {

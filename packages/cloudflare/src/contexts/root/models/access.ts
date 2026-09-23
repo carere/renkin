@@ -9,13 +9,15 @@ export interface ResourceOptions {
   readonly identity?: string;
   readonly retain?: boolean;
 }
-export interface AccessServiceToken extends ResourceDefinition {
+export interface AccessServiceToken
+  extends ResourceDefinition<{ id: string; clientId: string; clientSecret: string; name: string }> {
   readonly type: "cloudflare.access-service-token";
 }
 export interface AccessPolicy extends ResourceDefinition {
   readonly type: "cloudflare.access-policy";
 }
-export interface AccessApplication extends ResourceDefinition {
+export interface AccessApplication
+  extends ResourceDefinition<{ id: string; aud: string; name: string; domain: string }> {
   readonly type: "cloudflare.access-application";
 }
 const json = (value: unknown): Json => JSON.parse(JSON.stringify(value)) as Json;

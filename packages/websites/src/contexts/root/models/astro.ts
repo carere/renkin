@@ -32,7 +32,7 @@ export const astro = <const O extends AstroOptions>(id: string, options: O): Ast
     const existing = bindings[name];
     if (
       existing !== undefined &&
-      (typeof existing === "string" || existing.type !== "cloudflare.kv")
+      (typeof existing === "string" || !("type" in existing) || existing.type !== "cloudflare.kv")
     )
       throw new Error("Astro sessions require a KV binding.");
     if (existing === undefined) {

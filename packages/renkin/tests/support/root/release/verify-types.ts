@@ -58,6 +58,7 @@ export const verifyTypes = async (consumer: InstalledConsumer) => {
   assert.deepEqual(await compile(consumer, "all-types.ts", true), []);
   assert.deepEqual(await compile(consumer, "worker-types.test.ts", true), []);
   assert.deepEqual(await compile(consumer, "site-environment.test.ts", true), []);
+  assert.deepEqual(await compile(consumer, "value-types.test.ts", true), []);
   await writeFile(
     join(consumer.directory, "core-types.ts"),
     ["@carere/renkin", "@carere/renkin/worker", "@carere/renkin/testing"]

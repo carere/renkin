@@ -6,7 +6,11 @@ export type Json =
   | readonly Json[]
   | { readonly [key: string]: Json };
 
-export interface ResourceDefinition {
+export interface ResourceDefinition<
+  Outputs extends Readonly<Record<string, Json>> = Readonly<Record<string, Json>>,
+> {
+  /** Type-only contract for provider outputs; never populated in declarations or state. */
+  readonly outputTypes?: Outputs;
   readonly id: string;
   readonly type: string;
   /** Changes to this key require replacement, not an in-place update. */

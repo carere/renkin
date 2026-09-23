@@ -1,4 +1,5 @@
 import type { ResourceDefinition } from "@renkin/core/models/stack";
+import { outputReferences, type TextBinding } from "@renkin/core/models/value";
 import type { QueueConsumer } from "./queue.ts";
 import type { WorkerExtensions } from "./worker-extensions.ts";
 
@@ -6,7 +7,7 @@ export interface WorkerOptions extends WorkerExtensions {
   readonly entry?: string;
   readonly compatibilityDate: string;
   readonly compatibilityFlags?: readonly string[];
-  readonly bindings?: Readonly<Record<string, string>>;
+  readonly bindings?: Readonly<Record<string, TextBinding>>;
   readonly port?: number;
   /** Explicit replacement trigger. Defaults to the logical ID. */
   readonly identity?: string;
@@ -18,7 +19,7 @@ export interface WorkerOptions extends WorkerExtensions {
   readonly consumers?: readonly QueueConsumer[];
 }
 
-export interface WorkerResource extends ResourceDefinition {
+export interface WorkerResource extends ResourceDefinition<{ url: string; name: string }> {
   readonly type: "cloudflare.worker";
   readonly options: WorkerOptions;
 }
@@ -29,6 +30,7 @@ export const worker = (id: string, options: WorkerOptions): WorkerResource => ({
   identity: options.identity ?? "worker",
   dependencies: [
     ...new Set([
+      ...outputReferences(options.bindings ?? {}).map((reference) => reference.resource),
       ...(options.dependencies?.map((resource) => resource.id) ?? []),
       ...(options.consumers ?? []).flatMap((consumer) => [
         consumer.queue.id,

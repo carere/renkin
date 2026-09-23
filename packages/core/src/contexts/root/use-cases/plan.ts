@@ -1,5 +1,6 @@
 import type { Json, ResourceDefinition, Stack } from "#src/contexts/root/models/stack.ts";
 import type { Change, EnvironmentState } from "#src/contexts/root/models/state.ts";
+import { outputReferences } from "#src/contexts/root/models/value.ts";
 import { renamedState } from "./rename.ts";
 
 export const canonical = (value: Json): string => {
@@ -36,6 +37,14 @@ const ordered = (resources: readonly ResourceDefinition[]): readonly ResourceDef
 
 export const plan = (stack: Stack, state: EnvironmentState, force = false): readonly Change[] => {
   state = renamedState(stack, state);
+  for (const reference of [
+    ...stack.resources.flatMap((resource) => outputReferences(resource.properties)),
+    ...Object.values(stack.outputs ?? {}).flatMap((item) => outputReferences(item.value)),
+  ]) {
+    const target = stack.resources.find((resource) => resource.id === reference.resource);
+    if (!target || target.type !== reference.resourceType)
+      throw new Error("Referenced resource is missing or has another type.");
+  }
   for (const resource of stack.resources) {
     for (const id of resource.references ?? []) {
       if (!stack.resources.some((target) => target.id === id))
