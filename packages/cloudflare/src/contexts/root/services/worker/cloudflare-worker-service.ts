@@ -8,6 +8,7 @@ import type { createDurableObjectClient } from "@renkin/cloudflare-sdk/services/
 import type { createSiteClient } from "@renkin/cloudflare-sdk/services/cloudflare-client/site-client";
 import type { Json, ResourceDefinition } from "@renkin/core/models/stack";
 import type { ResourceState } from "@renkin/core/models/state";
+import { resolveTextBinding } from "@renkin/core/models/value";
 import type { ResourceService } from "@renkin/core/services/resource/resource-service";
 import { canonical } from "@renkin/core/use-cases/plan";
 import { Effect } from "effect";
@@ -74,8 +75,8 @@ const bindings = (
   const result: NonNullable<Metadata["bindings"]> = Object.entries(
     object(properties.bindings ?? {}),
   ).map(([name, text]) => {
-    if (typeof text !== "string") throw new Error("Text bindings must be strings.");
-    return { type: "plain_text", name, text };
+    const resolved = resolveTextBinding(text, resources);
+    return { type: resolved.secret ? "secret_text" : "plain_text", name, text: resolved.text };
   });
   for (const [name, value] of Object.entries(object(properties.requirements ?? {}))) {
     if (result.some((item) => item.name === name))

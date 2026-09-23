@@ -1,5 +1,6 @@
 import { type WorkerOptions, type WorkerResource, worker } from "@renkin/cloudflare/models/worker";
 import type { ResourceDefinition } from "@renkin/core/models/stack";
+import { isResourceOutput, isSecret, type TextBinding } from "@renkin/core/models/value";
 import type { BindingRequirement, Requirements } from "@renkin/runtime/models/binding";
 import type { WorkerBuildRecipe } from "@renkin/runtime/models/worker-builder";
 import { wrapBuildResult } from "#src/contexts/root/services/build/wrap-build-result.ts";
@@ -7,15 +8,19 @@ import { frameworkStartup } from "./framework-startup.ts";
 
 export interface FrameworkWorkerOptions
   extends Omit<WorkerOptions, "build" | "builder" | "entry" | "bindings"> {
-  readonly bindings?: Readonly<Record<string, string | BindingRequirement>>;
+  readonly bindings?: Readonly<Record<string, TextBinding | BindingRequirement>>;
 }
 
 export const frameworkBindings = (bindings: FrameworkWorkerOptions["bindings"] = {}) => {
   const requirements: Record<string, BindingRequirement> = {};
-  const constants: Record<string, string> = {};
+  const constants: Record<string, TextBinding> = {};
   const resources: ResourceDefinition[] = [];
   for (const [name, value] of Object.entries(bindings)) {
-    if (typeof value === "string") constants[name] = value;
+    if (
+      typeof value === "string" ||
+      ("$renkin" in value && (isSecret(value) || isResourceOutput(value)))
+    )
+      constants[name] = value;
     else {
       requirements[name] = {
         type: value.type,

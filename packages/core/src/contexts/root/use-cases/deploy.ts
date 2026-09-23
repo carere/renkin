@@ -12,6 +12,7 @@ import {
   emptyState,
   type PendingOperation,
 } from "#src/contexts/root/models/state.ts";
+import { resolveValue } from "#src/contexts/root/models/value.ts";
 import { ResourceOperationError } from "#src/contexts/root/services/resource/resource-operation-error.ts";
 import type {
   ResourceService,
@@ -328,7 +329,15 @@ const execute = (stack: Stack, options: DeployOptions) =>
                 { value: resource.outputs, secret: resource.definition.secretOutputs ?? false },
               ]),
             ),
-            stack.outputs ?? {},
+            Object.fromEntries(
+              Object.entries(stack.outputs ?? {}).map(([key, item]) => {
+                const resolved = resolveValue(item.value, state.resources);
+                return [
+                  key,
+                  { value: resolved.value, secret: Boolean(item.secret || resolved.secret) },
+                ];
+              }),
+            ),
           );
           yield* lease.write(state);
           if (options.removeEmpty) yield* lease.removeEmpty();

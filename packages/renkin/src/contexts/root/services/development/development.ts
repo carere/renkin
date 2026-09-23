@@ -8,6 +8,7 @@ import { nativeD1MigrationExecutor } from "@renkin/cloudflare/services/migration
 import { prepareStack } from "@renkin/cloudflare/services/worker/prepare-stack";
 import type { Stack } from "@renkin/core/models/stack";
 import { type EnvironmentState, emptyState } from "@renkin/core/models/state";
+import { resolveValue } from "@renkin/core/models/value";
 import { FileStateRepository } from "@renkin/core/services/state/file-state-repository";
 import type { LocalR2S3Options } from "@renkin/runtime/models/local-r2-s3";
 import { LocalWorkflowRecoveryError } from "@renkin/runtime/models/local-workflow-recovery-error";
@@ -49,7 +50,10 @@ const announceOutputs = (
     state.outputs[id] = { value: { url: localWorker.url } };
     options.progress?.(`${id}: ${localWorker.url}`);
   }
-  Object.assign(state.outputs, stack.outputs ?? {});
+  for (const [key, item] of Object.entries(stack.outputs ?? {})) {
+    const resolved = resolveValue(item.value, state.resources, true);
+    state.outputs[key] = { value: resolved.value, secret: Boolean(item.secret || resolved.secret) };
+  }
 };
 
 const start = (input: Stack, options: DevelopmentOptions, trace: ReturnType<typeof startupTrace>) =>
