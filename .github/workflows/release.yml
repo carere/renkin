@@ -42,7 +42,11 @@ jobs:
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]
           test -z "$(git status --porcelain)"
           if git rev-parse "v$version" >/dev/null 2>&1; then
-            test "$(git rev-parse "v$version^{commit}")" = "$GITHUB_SHA"
+            tagged_commit=$(git rev-parse "v$version^{commit}")
+            if [[ "$tagged_commit" != "$GITHUB_SHA" ]]; then
+              echo "::error::Version $version already belongs to commit $tagged_commit. Bump the package version and lockfile before releasing changed code at $GITHUB_SHA."
+              exit 1
+            fi
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
       - name: Pack canonical artifact
