@@ -23,13 +23,19 @@ it.live("starts commands lazily and stops their subprocess on interruption", () 
     );
     const marker = join(directory, "pid");
     const command = releaseCommand(directory, process.execPath, [
-      "--no-env-file",
       "-e",
       'require("node:fs").writeFileSync("pid", String(process.pid));setInterval(()=>{},1000);',
     ]);
     expect(existsSync(marker)).toBe(false);
     const fiber = yield* Effect.forkChild(command);
-    while (!existsSync(marker)) yield* Effect.sleep("10 millis");
+    yield* Effect.raceFirst(
+      Effect.gen(function* () {
+        while (!existsSync(marker)) yield* Effect.sleep("10 millis");
+      }),
+      Fiber.join(fiber).pipe(
+        Effect.andThen(Effect.fail(new Error("Subprocess exited before interruption."))),
+      ),
+    );
     const pid = Number(yield* readFile(marker, "utf8"));
     yield* Fiber.interrupt(fiber);
     const alive = () => {
@@ -42,5 +48,5 @@ it.live("starts commands lazily and stops their subprocess on interruption", () 
     };
     for (let attempt = 0; alive() && attempt < 100; attempt++) yield* Effect.sleep("10 millis");
     expect(alive()).toBe(false);
-  }).pipe(Effect.scoped, Effect.timeout("5 seconds")),
+  }).pipe(Effect.scoped, Effect.timeout("3 seconds")),
 );
