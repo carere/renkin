@@ -12,9 +12,9 @@
   "devDependencies": {
     "@biomejs/biome": "^2.5.13",
     "@effect/tsgo": "^0.45.0",
-    "@effect/vitest": "^4.0.0-rc.115",
+    "@effect/vitest": "^4.0.0-rc.115 <4.0.0-rc.118",
     "@types/node": "^24.10.1",
-    "effect": "^4.0.0-rc.115",
+    "effect": "^4.0.0-rc.115 <4.0.0-rc.118",
     "knip": "^6.35.1",
     "lefthook": "^2.1.14",
     "sort-package-json": "^4.0.0",

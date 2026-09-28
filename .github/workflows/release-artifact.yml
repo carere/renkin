@@ -3,6 +3,10 @@ name: Release artifact validation
 on:
   workflow_call:
     inputs:
+      revision:
+        description: Exact prepared release commit to validate
+        type: string
+        default: ''
       artifact-name:
         description: Canonical tarball artifact from the calling release workflow
         type: string
@@ -36,6 +40,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          ref: ${{ inputs.revision || github.sha }}
       - name: Set up Proto toolchain
         uses: moonrepo/setup-toolchain@v0
         with:

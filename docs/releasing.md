@@ -4,34 +4,82 @@ The public package is `@carere/renkin`; the executable is `renkin`. The first
 version is `0.1.0-rc.1`, published with the npm `latest` tag intentionally. Its
 GitHub release is still marked as a prerelease. These are independent settings.
 
-## Prepare the first release
+## Run a release
 
-1. Merge the release changes into `main`. The workflow accepts `main` in
-   `carere/renkin` only and reads the committed package version. It does not bump
-   versions or push version commits. This first version is already set; do not
-   run an automatic bump before releasing it.
-2. Create the GitHub environment `npm`. Run **Release** (`release.yml`) on `main`
-   with **publish unchecked**. Repository checks must pass, then one Linux-built
-   tarball is installed and tested on both Linux and macOS. Both consumers verify
-   its hash, clean source revision and lockfile identity.
-3. Wait for the draft GitHub release `v0.1.0-rc.1`. It contains
-   `renkin-0.1.0-rc.1.tgz` and `artifact.json`. Download both assets to the same
-   directory. Compare `shasum -a 256 renkin-0.1.0-rc.1.tgz` with `sha256` in the
-   identity record; verify the recorded source revision is the intended commit.
-4. Run the separate installed-artifact Cloudflare acceptance against that tarball
-   with its explicit resource scope, then audit cleanup. The workflow runs local
-   validation only; skipped cloud tests or successful imports do not establish
-   cloud acceptance. See the [installed cloud harness](../packages/renkin/tests/support/root/release/cloud/README.md).
+Run **Release** (`release.yml`) on `main` in `carere/renkin`:
 
-The workflow takes its prepare/publish split from the Alchemy fork. Build and test
-jobs have read-only repository permissions. Only the final release job can write
-GitHub releases or request npm's OIDC identity. Source-workspace publication remains
-guarded. Private implementation packages are assembled into the single artifact.
+| Input | Behavior |
+| --- | --- |
+| **version** empty | Cocogitto increments the current prerelease number without changing its stage/base; stable versions follow the repository's Conventional Commit rules. |
+| **version** provided | Use this exact SemVer if it is strictly newer than every reserved release version. Equal/older versions and malformed values fail before reservation. |
+| **publish** unchecked | Prepare and validate a draft containing the canonical release bundle. |
+| **publish** checked | Validate, publish the tarball to npm under `latest`, and publish the GitHub release. |
+
+Examples: `0.1.0-alpha.1` automatically becomes `0.1.0-alpha.2`; moving to
+`0.1.0-beta.1`, `0.1.0-rc.1` or `0.1.0` requires an explicit version. Once stable,
+Cocogitto chooses patch/minor/major according to commit history and the pre-1.0
+rules in `cog.toml`. Build metadata alone does not make an explicit version newer.
+Automatic prereleases need a numeric final identifier, such as `rc.1`.
+
+## Version and artifact identity
+
+The workflow fetches current `main` and release tags. Cocogitto creates a release
+commit containing the version, unchanged dependency resolutions and cumulative
+changelog. Release ancestry includes the previous release so previously released
+features are not counted again. A `.release-source.json` marker records the exact
+source commit. These generated commits live in tagged release history, never on
+protected `main`; the development manifest may therefore retain an older version.
+No manual bump PR, main-branch bypass token or protection-rule change is needed.
+
+An atomic push reserves `v<version>` and `release-run-<run-id>`. The run tag pins
+retries even if more commits have since reached main. These tags are durable
+release checkpoints: do not delete or move them. Versions are chosen against all
+reserved tags, including unpublished candidates. The existing initial release
+tag is the starting baseline; bootstrapping an entirely new repository is not
+part of this workflow.
+
+Every subsequent job checks out the generated release commit. Static/local tests
+run on it; one tarball is then built and installed/tested on Linux and macOS.
+Packing saves `renkin-<version>-bundle.tar` in a draft GitHub release. This single
+asset contains the tarball and `artifact.json` together, so a retry cannot pair
+one build's tarball with another build's identity. The draft may exist before
+validation finishes and must not be published manually until validation passes.
+The workflow summary confirms completion when **publish** is off.
+
+Build/check jobs need read permissions. Preparation can create tags, packing can
+create draft assets, and the final job has release-write and npm OIDC permissions.
+The normal GitHub token suffices because the workflow does not push main.
+
+The workflow performs local validation only. Before approving publication, run
+the separate installed-artifact Cloudflare acceptance with its explicit resource
+scope and audit cleanup. Successful imports or local emulation do not establish
+cloud acceptance; see the [installed cloud harness](../packages/renkin/tests/support/root/release/cloud/README.md).
+
+## Retry or finish a release
+
+- **Rerun failed jobs** to resume the same version. Rerunning all jobs also reuses
+  the run checkpoint and completed canonical bundle; it does not bump again.
+- A new run with version empty and unchanged main resumes the current candidate.
+  This lets you validate with **publish** off, then run again with it on.
+- If main gained changes, a new dispatch creates the next version. To finish an
+  older candidate, rerun its original run rather than entering the old version.
+- If nothing changed and the candidate is already published, the run succeeds
+  with an “already released” summary and skips building/publishing.
+- If npm succeeded but GitHub finalization failed, retrying compares npm's
+  recorded SHA-512 integrity with the canonical tarball, skips npm publication
+  when they match, and completes GitHub finalization. A mismatch fails closed.
+- Completed canonical assets are never replaced. Incomplete GitHub upload stubs
+  may be discarded and retried. Missing/expired Actions artifacts can be restored
+  by rerunning all jobs: the canonical bundle remains in the draft release.
+
+The **release** concurrency group serializes release runs. Normal work can continue
+on main while a pinned release is being validated.
 
 ## Bootstrap npm
 
 Use an npm account with publishing access to the `@carere` scope and complete npm's
-interactive authentication. From the directory containing the downloaded assets:
+interactive authentication. For newer workflow drafts, download and extract the canonical bundle first; it
+contains both the `.tgz` and `artifact.json`. From that directory:
 
 ```sh
 npm login
@@ -63,18 +111,3 @@ In the npm package's trusted publisher settings, select GitHub Actions:
 The publishing job uses a GitHub-hosted runner, Node 24, npm 11.16.0 and
 `id-token: write`. It needs no npm token secret. npm automatically supplies
 provenance for OIDC publication. See [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/).
-
-## Subsequent releases
-
-Use Cocogitto on clean `main` to choose the next version, update the changelog and
-lockfile, and create the version commit/tag as described in the root README.
-Push the version commit and its tag. Run **Release** on that commit with
-**publish checked** after cloud acceptance. Any existing `v<version>` tag must
-point to that exact commit. The workflow validates, drafts the GitHub release,
-publishes the tarball under `latest`, and then publishes the GitHub release.
-Dispatching is the release trigger; pushing a tag alone does not publish.
-
-For a failed publishing job, rerun failed jobs to retain the original validated
-artifact. Existing draft assets must match byte-for-byte and are never overwritten.
-If npm succeeded but GitHub finalization failed, verify the npm version and finish
-publishing the existing draft manually. For changed code, create a new version.

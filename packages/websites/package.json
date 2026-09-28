@@ -11,8 +11,8 @@
     "./*": "./src/contexts/root/*.ts"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^14.3.2",
-    "@cloudflare/vite-plugin": "^1.56.0",
+    "@astrojs/cloudflare": "14.3.2",
+    "@cloudflare/vite-plugin": "1.56.0",
     "@renkin/cloudflare": "workspace:*",
     "@renkin/core": "workspace:*",
     "@renkin/runtime": "workspace:*",
@@ -24,11 +24,11 @@
     "vite-plugin-solid": "^2.11.14"
   },
   "devDependencies": {
-    "@effect/vitest": "^4.0.0-rc.115",
+    "@effect/vitest": "^4.0.0-rc.115 <4.0.0-rc.118",
     "aws4fetch": "^1.0.20",
     "vitest": "^5.0.0"
   },
   "peerDependencies": {
-    "effect": "^4.0.0-rc.115"
+    "effect": "^4.0.0-rc.115 <4.0.0-rc.118"
   }
 }

@@ -14,7 +14,7 @@ Windows are not supported Renkin execution environments.
 Once published, install the single public package and its Effect peer:
 
 ```sh
-bun add @carere/renkin "effect@^4.0.0-rc.115"
+bun add @carere/renkin "effect@^4.0.0-rc.115 <4.0.0-rc.118"
 ```
 
 For an unpublished release candidate, replace `@carere/renkin` with the path to its staged
@@ -355,7 +355,7 @@ in the repository. `.prototools` selects `bun = "latest"`, `moon = "latest"` and
 Moon inherits Bun and Node versions from this file. These aliases can advance
 across major versions. Keep Proto's shims on your PATH and invoke `moon` directly;
 other npm tools remain development dependencies invoked through Bun.
-Cocogitto **6.5.0 or newer** is also required for local commit checks.
+Cocogitto **7.0.0 or newer** is also required for local commit checks.
 
 ```sh
 git clone git@github.com:carere/renkin.git
@@ -446,6 +446,12 @@ newer compatible versions, review the lockfile, and rerun checks. Caret ranges
 normally permit minor and patch updates; for `0.x` releases they stop at the next
 minor. Effect is currently a prerelease: update Effect and `@effect/vitest`
 together and validate compatibility before broadening their ranges.
+Effect and its test adapter are capped below `4.0.0-rc.118`, which moved the
+`effect/unstable/*` modules used by Renkin and its SDK dependency. Keep that cap
+until those consumers have migrated and installed-artifact validation passes.
+The Cloudflare Vite plugin and Astro Cloudflare adapter are pinned to their
+tested releases because the Bun build-transport bridge depends on specific
+Miniflare internals. Update them alongside the bridge's compatibility checks.
 
 The published Effect peer uses the same caret range as development tooling.
 Consuming workspaces declare their own dependencies. Runtime selection lives in
@@ -481,14 +487,25 @@ cog changelog                      # Preview release notes without writing files
 cog bump --auto --dry-run           # Preview the next version from committed changes
 ```
 
-Once a release is ready, run `cog bump --auto` on a clean `main` checkout. The
-pre-bump hooks validate commits, update `packages/renkin/package.json` with
-`bun pm --cwd packages/renkin version <version> --no-git-tag-version`, refresh
-`bun.lock` without install scripts, and stage both files. Cocogitto then writes the changelog,
-creates the version commit and adds its tag. Other package versions stay private
-and unchanged. No push, publication or deployment is triggered by these hooks.
+Run the **Release** workflow on `main`. Leave **version** empty for Cocogitto to
+increment within the current prerelease stage (`alpha.1` → `alpha.2`, `beta.1` →
+`beta.2`, `rc.1` → `rc.2`) or choose a stable bump from Conventional Commits.
+Enter an exact, strictly newer SemVer to change stage or promote to stable;
+those transitions are never automatic. Keep **publish** off for a validated draft,
+or enable it to publish the tested artifact through OIDC.
 
-As in Zaidan, `build`, `chore`, `perf`, `refactor`, `revert` and `style` commits
+Version commits and tags are generated automatically in release history, without
+pushing to protected `main`. The workflow derives the current version from release
+tags, so the development manifest on `main` does not need a manual bump. Every
+release commit records the exact source commit, updates the public manifest and
+lockfile, and carries the cumulative changelog. Cocogitto's pre-bump hook updates
+only the public workspace version; dependency resolutions remain unchanged.
+
+Retries resume their reserved version and canonical artifact. With no source
+changes and no explicit version, a new run resumes an unfinished candidate or
+reports that it is already released. See [release preparation and recovery](docs/releasing.md).
+
+`build`, `chore`, `ci`, `docs`, `perf`, `refactor`, `revert`, `style` and `test` commits
 trigger patch bumps, alongside the default `fix` rule. `feat` triggers minor
 bumps, and breaking changes affect the next version. Handwritten `merge:` commits
 are accepted and omitted from release notes. Before 1.0, automatic bumps stay

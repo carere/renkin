@@ -8,7 +8,7 @@ This is a release candidate. Building and validating its tarball does not publis
 or establish that a package-registry release exists.
 
 ```sh
-bun add @carere/renkin@0.1.0-rc.1 effect@^4.0.0-rc.115
+bun add @carere/renkin@0.1.0-rc.1 "effect@^4.0.0-rc.115 <4.0.0-rc.118"
 bunx --bun --package @carere/renkin renkin help
 ```
 

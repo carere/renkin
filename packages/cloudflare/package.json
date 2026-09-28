@@ -15,11 +15,11 @@
     "@renkin/cloudflare-sdk": "workspace:*",
     "@renkin/core": "workspace:*",
     "@renkin/runtime": "workspace:*",
-    "effect": "^4.0.0-rc.115",
+    "effect": "^4.0.0-rc.115 <4.0.0-rc.118",
     "mime": "^4.1.0"
   },
   "devDependencies": {
-    "@effect/vitest": "^4.0.0-rc.115",
+    "@effect/vitest": "^4.0.0-rc.115 <4.0.0-rc.118",
     "esbuild": "^0.28.2",
     "miniflare": "^4.20260730.0",
     "vitest": "^5.0.0"
