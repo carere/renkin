@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { readFile, realpath, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { Effect } from "effect";
 import { validateRelease } from "#src/contexts/root/services/release/validate.ts";
 import { execute, type InstalledConsumer } from "./consumer.ts";
 
 export const verifyPackage = async (consumer: InstalledConsumer, archive: string) => {
-  await validateRelease(join(consumer.directory, "node_modules/@carere/renkin"));
+  await Effect.runPromise(validateRelease(join(consumer.directory, "node_modules/@carere/renkin")));
   const entries = (await execute("tar", ["-tf", archive])).stdout.trim().split("\n");
   assert.ok(entries.length > 100);
   assert.ok(

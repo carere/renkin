@@ -47,7 +47,9 @@ Pure transformations, declarations and validation helpers remain ordinary
 TypeScript. Native file, HTTP, bundler, framework and Cloudflare handler APIs
 still use their platform signatures; adapters wrap asynchronous calls at those
 boundaries. `Effect.runPromise` belongs at a CLI, test or native callback boundary.
-Build/pack tooling and local runtime internals also retain native Promise APIs.
+Release preparation, build/pack and publication tooling also compose Effects;
+native filesystem, process and HTTP APIs are adapted at their boundaries. Local
+runtime internals may retain native Promise APIs.
 
 The private SDK package owns transport and authentication; the private Cloudflare
 package owns resource lifecycle and ownership rules. Keeping those responsibilities

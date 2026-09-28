@@ -1,29 +1,35 @@
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { Effect } from "effect";
 import type { ReleaseService } from "./github-release-service.ts";
 import type { PreparedRelease } from "./prepare-release.ts";
+import { ReleaseError } from "./release-error.ts";
+import { readFile } from "./release-files.ts";
 
 export interface PackageRegistry {
-  integrity(version: string): Promise<string | undefined>;
-  publish(archive: string): Promise<void>;
+  integrity(version: string): Effect.Effect<string | undefined, ReleaseError>;
+  publish(archive: string): Effect.Effect<void, ReleaseError>;
 }
 /** Resume npm-success/GitHub-failure without attempting an immutable npm version twice. */
-export const publishRelease = async (
+export const publishRelease = (
   prepared: PreparedRelease,
   archive: string,
   host: ReleaseService,
   registry: PackageRegistry,
-) => {
-  const integrity = `sha512-${createHash("sha512")
-    .update(await readFile(archive))
-    .digest("base64")}`;
-  const published = await registry.integrity(prepared.version);
-  if (published !== undefined && published !== integrity)
-    throw new Error(
-      "npm version exists with a different artifact; refusing to overwrite or finalize it.",
-    );
-  if (published === undefined) await registry.publish(archive);
-  const release = await host.find(`v${prepared.version}`);
-  if (!release) throw new Error("Canonical GitHub release is missing.");
-  if (release.draft) await host.publish(release);
-};
+) =>
+  Effect.gen(function* () {
+    const integrity = `sha512-${createHash("sha512")
+      .update(yield* readFile(archive))
+      .digest("base64")}`;
+    const published = yield* registry.integrity(prepared.version);
+    if (published !== undefined && published !== integrity)
+      return yield* Effect.fail(
+        new ReleaseError(
+          "npm version exists with a different artifact; refusing to overwrite or finalize it.",
+        ),
+      );
+    if (published === undefined) yield* registry.publish(archive);
+    const release = yield* host.find(`v${prepared.version}`);
+    if (!release)
+      return yield* Effect.fail(new ReleaseError("Canonical GitHub release is missing."));
+    if (release.draft) yield* host.publish(release);
+  });

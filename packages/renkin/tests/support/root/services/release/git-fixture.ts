@@ -12,7 +12,8 @@ export const gitFixture = (version = "0.1.0-rc.1") =>
       const remote = join(directory, "remote.git");
       const source = join(directory, "source");
       const repository = fileURLToPath(new URL("../../../../../../..", import.meta.url));
-      const command = (root: string, ...args: string[]) => releaseCommand(root, "git", args);
+      const command = (root: string, ...args: string[]) =>
+        Effect.runPromise(releaseCommand(root, "git", args));
       await command(directory, "init", "--bare", remote);
       await command(directory, "init", "-b", "main", source);
       await command(source, "config", "user.name", "Release test");
@@ -36,7 +37,7 @@ export const gitFixture = (version = "0.1.0-rc.1") =>
       );
       await writeFile(
         join(source, "packages/renkin/release-version.ts"),
-        `import {updateVersionFiles} from ${JSON.stringify(helper)};await updateVersionFiles(process.cwd(),process.argv[2]);`,
+        `import {Effect} from ${JSON.stringify(join(repository, "node_modules/effect/dist/index.js"))};import {updateVersionFiles} from ${JSON.stringify(helper)};await Effect.runPromise(updateVersionFiles(process.cwd(),process.argv[2]));`,
       );
       await command(source, "add", ".");
       await command(source, "commit", "-m", "feat: initial");

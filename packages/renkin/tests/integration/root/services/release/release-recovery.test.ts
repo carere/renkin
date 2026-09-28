@@ -7,6 +7,7 @@ import { Effect } from "effect";
 import { sha256File } from "#src/contexts/root/services/release/build-info.ts";
 import { canonicalArtifact } from "#src/contexts/root/services/release/canonical-artifact.ts";
 import { publishRelease } from "#src/contexts/root/services/release/publish-release.ts";
+import { releaseAttempt } from "#src/contexts/root/services/release/release-error.ts";
 import { releaseCommand } from "#src/contexts/root/services/release/release-git.ts";
 import { InMemoryReleaseService } from "#test-support/root/services/release/in-memory-release-service.ts";
 
@@ -18,27 +19,28 @@ const fixture = () =>
       await writeFile(join(root, "bun.lock"), "locked dependencies");
       const directory = join(root, ".renkin/release");
       let builds = 0;
-      const build = async () => {
-        builds++;
-        await mkdir(join(root, "package"), { recursive: true });
-        await writeFile(
-          join(root, "package/package.json"),
-          JSON.stringify({ name: "@carere/renkin", version: prepared.version }),
-        );
-        const archive = join(directory, `renkin-${prepared.version}.tgz`);
-        await releaseCommand(root, "tar", ["-czf", archive, "package"]);
-        await writeFile(
-          join(directory, "artifact.json"),
-          JSON.stringify({
-            sha256: await sha256File(archive),
-            source: {
-              sourceRevision: prepared.revision,
-              sourceDirty: false,
-              lockSha256: await sha256File(join(root, "bun.lock")),
-            },
-          }),
-        );
-      };
+      const build = () =>
+        releaseAttempt(async () => {
+          builds++;
+          await mkdir(join(root, "package"), { recursive: true });
+          await writeFile(
+            join(root, "package/package.json"),
+            JSON.stringify({ name: "@carere/renkin", version: prepared.version }),
+          );
+          const archive = join(directory, `renkin-${prepared.version}.tgz`);
+          await Effect.runPromise(releaseCommand(root, "tar", ["-czf", archive, "package"]));
+          await writeFile(
+            join(directory, "artifact.json"),
+            JSON.stringify({
+              sha256: await Effect.runPromise(sha256File(archive)),
+              source: {
+                sourceRevision: prepared.revision,
+                sourceDirty: false,
+                lockSha256: await Effect.runPromise(sha256File(join(root, "bun.lock"))),
+              },
+            }),
+          );
+        });
       return { root, directory, build, builds: () => builds };
     }),
     ({ root }) => Effect.promise(() => rm(root, { recursive: true, force: true })),
@@ -51,7 +53,7 @@ it.live(
       const fixtureValue = yield* fixture();
       const { root, directory, build } = fixtureValue;
       const host = new InMemoryReleaseService();
-      const archive = yield* Effect.promise(() => canonicalArtifact(root, prepared, host, build));
+      const archive = yield* canonicalArtifact(root, prepared, host, build);
       const original = yield* Effect.promise(() => readFile(archive));
       const uploaded = host.uploads[0];
       if (!uploaded) throw new Error("Canonical bundle was not uploaded.");
@@ -62,13 +64,15 @@ it.live(
       };
       host.bytes = uploaded.bytes;
       yield* Effect.promise(() => rm(directory, { force: true, recursive: true }));
-      yield* Effect.promise(() => canonicalArtifact(root, prepared, host, build));
+      yield* canonicalArtifact(root, prepared, host, build);
       expect(yield* Effect.promise(() => readFile(archive))).toEqual(original);
       expect(fixtureValue.builds()).toBe(1);
       expect(host.uploads).toHaveLength(1);
       yield* Effect.promise(() =>
         expect(
-          canonicalArtifact(root, { ...prepared, revision: "wrong" }, host, build),
+          Effect.runPromise(
+            canonicalArtifact(root, { ...prepared, revision: "wrong" }, host, build),
+          ),
         ).rejects.toThrow("identity"),
       );
     }).pipe(Effect.scoped),
@@ -85,7 +89,7 @@ it.live(
         draft: true,
         assets: [{ id: 1, name: `renkin-${prepared.version}-bundle.tar`, state: "starter" }],
       };
-      yield* Effect.promise(() => canonicalArtifact(root, prepared, host, build));
+      yield* canonicalArtifact(root, prepared, host, build);
       expect(host.discarded).toEqual([1]);
       host.release = {
         id: 1,
@@ -93,7 +97,7 @@ it.live(
         assets: [{ id: 2, name: "other.tgz", state: "uploaded" }],
       };
       yield* Effect.promise(() =>
-        expect(canonicalArtifact(root, prepared, host, build)).rejects.toThrow(
+        expect(Effect.runPromise(canonicalArtifact(root, prepared, host, build))).rejects.toThrow(
           "refusing to rebuild",
         ),
       );
@@ -104,18 +108,19 @@ it.live("resumes npm success after GitHub failure and rejects registry integrity
   Effect.gen(function* () {
     const { root, build } = yield* fixture();
     const host = new InMemoryReleaseService();
-    const archive = yield* Effect.promise(() => canonicalArtifact(root, prepared, host, build));
+    const archive = yield* canonicalArtifact(root, prepared, host, build);
     host.release = host.created;
     host.publishError = new Error("GitHub unavailable");
     let publishCalls = 0;
     const registry = {
-      integrity: async (): Promise<string | undefined> => undefined,
-      publish: async () => {
-        publishCalls++;
-      },
+      integrity: (): Effect.Effect<string | undefined> => Effect.succeed(undefined),
+      publish: () =>
+        Effect.sync(() => {
+          publishCalls++;
+        }),
     };
     yield* Effect.promise(() =>
-      expect(publishRelease(prepared, archive, host, registry)).rejects.toThrow(
+      expect(Effect.runPromise(publishRelease(prepared, archive, host, registry))).rejects.toThrow(
         "GitHub unavailable",
       ),
     );
@@ -123,14 +128,14 @@ it.live("resumes npm success after GitHub failure and rejects registry integrity
     const hash = createHash("sha512")
       .update(yield* Effect.promise(() => readFile(archive)))
       .digest("base64");
-    registry.integrity = async () => `sha512-${hash}`;
+    registry.integrity = () => Effect.succeed(`sha512-${hash}`);
     host.publishError = undefined;
-    yield* Effect.promise(() => publishRelease(prepared, archive, host, registry));
+    yield* publishRelease(prepared, archive, host, registry);
     expect(publishCalls).toBe(1);
     expect(host.publishCalls).toBe(2);
-    registry.integrity = async () => "sha512-different";
+    registry.integrity = () => Effect.succeed("sha512-different");
     yield* Effect.promise(() =>
-      expect(publishRelease(prepared, archive, host, registry)).rejects.toThrow(
+      expect(Effect.runPromise(publishRelease(prepared, archive, host, registry))).rejects.toThrow(
         "different artifact",
       ),
     );

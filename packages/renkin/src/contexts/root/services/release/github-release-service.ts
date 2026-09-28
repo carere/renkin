@@ -1,3 +1,5 @@
+import { Effect } from "effect";
+import { ReleaseError, releaseAttempt } from "./release-error.ts";
 import { parseVersion } from "./version.ts";
 export interface ReleaseAsset {
   readonly id: number;
@@ -10,42 +12,59 @@ export interface GitHubRelease {
   readonly assets: readonly ReleaseAsset[];
 }
 export interface ReleaseService {
-  find(tag: string): Promise<GitHubRelease | undefined>;
-  create(tag: string, revision: string): Promise<GitHubRelease>;
-  download(asset: ReleaseAsset): Promise<Uint8Array>;
-  upload(release: GitHubRelease, name: string, bytes: Uint8Array): Promise<void>;
-  discardIncomplete(asset: ReleaseAsset): Promise<void>;
-  publish(release: GitHubRelease): Promise<void>;
+  find(tag: string): Effect.Effect<GitHubRelease | undefined, ReleaseError>;
+  create(tag: string, revision: string): Effect.Effect<GitHubRelease, ReleaseError>;
+  download(asset: ReleaseAsset): Effect.Effect<Uint8Array, ReleaseError>;
+  upload(
+    release: GitHubRelease,
+    name: string,
+    bytes: Uint8Array,
+  ): Effect.Effect<void, ReleaseError>;
+  discardIncomplete(asset: ReleaseAsset): Effect.Effect<void, ReleaseError>;
+  publish(release: GitHubRelease): Effect.Effect<void, ReleaseError>;
 }
 
+const githubRequests = (token: string) => {
+  const request = (url: string, init: RequestInit = {}) =>
+    Effect.gen(function* () {
+      const response = yield* releaseAttempt((signal) =>
+        fetch(url, {
+          signal,
+          ...init,
+          headers: {
+            authorization: `Bearer ${token}`,
+            "content-type": "application/json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            ...init.headers,
+          },
+        }),
+      );
+      if (!response.ok && response.status !== 404)
+        return yield* Effect.fail(
+          new ReleaseError(`GitHub release request failed (${response.status}).`),
+        );
+      return response;
+    });
+  const json = (url: string, init?: RequestInit) =>
+    Effect.gen(function* () {
+      const response = yield* request(url, init);
+      if (response.status === 404)
+        return yield* Effect.fail(new ReleaseError("GitHub release resource is missing."));
+      return yield* releaseAttempt(() => response.json());
+    });
+  return { request, json };
+};
 export const githubReleaseService = (repository: string, token: string): ReleaseService => {
   if (!/^[\w.-]+\/[\w.-]+$/.test(repository) || !token)
     throw new Error("GitHub release credentials are missing.");
   const api = `https://api.github.com/repos/${repository}`;
-  const request = async (url: string, init: RequestInit = {}) => {
-    const response = await fetch(url, {
-      ...init,
-      headers: {
-        authorization: `Bearer ${token}`,
-        "content-type": "application/json",
-        "X-GitHub-Api-Version": "2022-11-28",
-        ...init.headers,
-      },
-    });
-    if (!response.ok && response.status !== 404)
-      throw new Error(`GitHub release request failed (${response.status}).`);
-    return response;
-  };
-  const json = async (url: string, init?: RequestInit) => {
-    const response = await request(url, init);
-    if (response.status === 404) throw new Error("GitHub release resource is missing.");
-    return response.json();
-  };
+  const { request, json } = githubRequests(token);
   return {
-    find: async (tag) => {
-      const response = await request(`${api}/releases/tags/${encodeURIComponent(tag)}`);
-      return response.status === 404 ? undefined : response.json();
-    },
+    find: (tag) =>
+      Effect.gen(function* () {
+        const response = yield* request(`${api}/releases/tags/${encodeURIComponent(tag)}`);
+        return response.status === 404 ? undefined : yield* releaseAttempt(() => response.json());
+      }),
     create: (tag, revision) =>
       json(`${api}/releases`, {
         method: "POST",
@@ -58,32 +77,38 @@ export const githubReleaseService = (repository: string, token: string): Release
           generate_release_notes: true,
         }),
       }),
-    download: async (asset) => {
-      const response = await request(`${api}/releases/assets/${asset.id}`, {
-        headers: { Accept: "application/octet-stream" },
-      });
-      if (response.status === 404) throw new Error("Canonical release asset is missing.");
-      return new Uint8Array(await response.arrayBuffer());
-    },
-    upload: async (release, name, bytes) => {
-      await json(
-        `https://uploads.github.com/repos/${repository}/releases/${release.id}/assets?name=${encodeURIComponent(name)}`,
-        {
-          method: "POST",
-          headers: { "content-type": "application/octet-stream" },
-          body: Buffer.from(bytes),
-        },
-      );
-    },
-    discardIncomplete: async (asset) => {
-      if (asset.state === "uploaded") throw new Error("Cannot replace a completed release asset.");
-      await request(`${api}/releases/assets/${asset.id}`, { method: "DELETE" });
-    },
-    publish: async (release) => {
-      await json(`${api}/releases/${release.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ draft: false }),
-      });
-    },
+    download: (asset) =>
+      Effect.gen(function* () {
+        const response = yield* request(`${api}/releases/assets/${asset.id}`, {
+          headers: { Accept: "application/octet-stream" },
+        });
+        if (response.status === 404)
+          return yield* Effect.fail(new ReleaseError("Canonical release asset is missing."));
+        return new Uint8Array(yield* releaseAttempt(() => response.arrayBuffer()));
+      }),
+    upload: (release, name, bytes) =>
+      Effect.gen(function* () {
+        yield* json(
+          `https://uploads.github.com/repos/${repository}/releases/${release.id}/assets?name=${encodeURIComponent(name)}`,
+          {
+            method: "POST",
+            headers: { "content-type": "application/octet-stream" },
+            body: Buffer.from(bytes),
+          },
+        );
+      }),
+    discardIncomplete: (asset) =>
+      Effect.gen(function* () {
+        if (asset.state === "uploaded")
+          return yield* Effect.fail(new ReleaseError("Cannot replace a completed release asset."));
+        yield* request(`${api}/releases/assets/${asset.id}`, { method: "DELETE" });
+      }),
+    publish: (release) =>
+      Effect.gen(function* () {
+        yield* json(`${api}/releases/${release.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ draft: false }),
+        });
+      }),
   };
 };
