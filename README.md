@@ -449,6 +449,9 @@ together and validate compatibility before broadening their ranges.
 Effect and its test adapter are capped below `4.0.0-rc.118`, which moved the
 `effect/unstable/*` modules used by Renkin and its SDK dependency. Keep that cap
 until those consumers have migrated and installed-artifact validation passes.
+The Cloudflare Vite plugin and Astro Cloudflare adapter are pinned to their
+tested releases because the Bun build-transport bridge depends on specific
+Miniflare internals. Update them alongside the bridge's compatibility checks.
 
 The published Effect peer uses the same caret range as development tooling.
 Consuming workspaces declare their own dependencies. Runtime selection lives in
