@@ -38,7 +38,7 @@ jobs:
         with:
           auto-install: true
       - run: bun install --frozen-lockfile
-      - uses: cocogitto/cocogitto-action@v4
+      - uses: cocogitto/cocogitto-action@v4.2.0
         with:
           command: check
           args: --ignore-merge-commits

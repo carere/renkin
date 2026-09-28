@@ -14,7 +14,7 @@ Windows are not supported Renkin execution environments.
 Once published, install the single public package and its Effect peer:
 
 ```sh
-bun add @carere/renkin "effect@^4.0.0-rc.115"
+bun add @carere/renkin "effect@^4.0.0-rc.115 <4.0.0-rc.118"
 ```
 
 For an unpublished release candidate, replace `@carere/renkin` with the path to its staged
@@ -446,6 +446,9 @@ newer compatible versions, review the lockfile, and rerun checks. Caret ranges
 normally permit minor and patch updates; for `0.x` releases they stop at the next
 minor. Effect is currently a prerelease: update Effect and `@effect/vitest`
 together and validate compatibility before broadening their ranges.
+Effect and its test adapter are capped below `4.0.0-rc.118`, which moved the
+`effect/unstable/*` modules used by Renkin and its SDK dependency. Keep that cap
+until those consumers have migrated and installed-artifact validation passes.
 
 The published Effect peer uses the same caret range as development tooling.
 Consuming workspaces declare their own dependencies. Runtime selection lives in

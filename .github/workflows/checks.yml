@@ -55,7 +55,7 @@ jobs:
         run: bun sort-package-json --check package.json apps/*/package.json packages/*/package.json
 
       - name: Check conventional commits
-        uses: cocogitto/cocogitto-action@v4
+        uses: cocogitto/cocogitto-action@v4.2.0
         with:
           command: check
           args: --ignore-merge-commits
@@ -93,7 +93,7 @@ jobs:
         run: moon sync
 
       - name: Install Cocogitto for release preparation tests
-        uses: cocogitto/cocogitto-action@v4
+        uses: cocogitto/cocogitto-action@v4.2.0
         with:
           command: check
           args: --ignore-merge-commits
