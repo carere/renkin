@@ -19,7 +19,8 @@
         "tests/fixtures/**/*.ts",
         "tests/fixtures/**/*.astro",
         "tests/fixtures/**/vite.config.mts",
-        "release.ts"
+        "release.ts",
+        "release-version.ts"
       ],
       "ignoreDependencies": ["cloudflare"]
     },

@@ -9,8 +9,7 @@ tag_prefix = "v"
 # {{version}} is the SemVer value without the Git tag prefix.
 pre_bump_hooks = [
   "cog check",
-  "bun pm --cwd packages/renkin version {{version}} --no-git-tag-version",
-  "bun install --lockfile-only --ignore-scripts",
+  "bun --no-env-file packages/renkin/release-version.ts {{version}}",
   "git add packages/renkin/package.json bun.lock",
 ]
 # The manual Release workflow validates artifacts and optionally publishes to npm.
@@ -27,6 +26,15 @@ repository = "renkin"
 bump_patch = true
 
 [commit_types.chore]
+bump_patch = true
+
+[commit_types.ci]
+bump_patch = true
+
+[commit_types.docs]
+bump_patch = true
+
+[commit_types.test]
 bump_patch = true
 
 # `merge: <what was merged>` — for merge commits written by hand, which the

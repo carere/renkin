@@ -3,8 +3,12 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
+      version:
+        description: Optional exact version (strictly newer); leave empty for Cocogitto
+        type: string
+        default: ''
       publish:
-        description: Publish to npm through OIDC (leave off for first-publish bootstrap)
+        description: Publish to npm through OIDC (leave off to prepare a draft)
         type: boolean
         default: false
 
@@ -16,15 +20,16 @@ permissions:
   contents: read
 
 jobs:
-  checks:
+  prepare:
     if: github.repository == 'carere/renkin' && github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/checks.yml
-
-  pack:
-    needs: checks
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
     outputs:
-      version: ${{ steps.identity.outputs.version }}
+      version: ${{ steps.prepare.outputs.version }}
+      revision: ${{ steps.prepare.outputs.revision }}
+      source: ${{ steps.prepare.outputs.source }}
+      skip: ${{ steps.prepare.outputs.skip }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -33,32 +38,52 @@ jobs:
         with:
           auto-install: true
       - run: bun install --frozen-lockfile
-      - name: Check release identity
-        id: identity
+      - uses: cocogitto/cocogitto-action@v4
+        with:
+          command: check
+          args: --ignore-merge-commits
+      - name: Reserve or resume the release version
+        id: prepare
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_VERSION: ${{ inputs.version }}
         run: |
-          set -euo pipefail
-          test "$(jq -r .name packages/renkin/package.json)" = '@carere/renkin'
-          version=$(jq -r .version packages/renkin/package.json)
-          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]
-          test -z "$(git status --porcelain)"
-          if git rev-parse "v$version" >/dev/null 2>&1; then
-            tagged_commit=$(git rev-parse "v$version^{commit}")
-            if [[ "$tagged_commit" != "$GITHUB_SHA" ]]; then
-              echo "::error::Version $version already belongs to commit $tagged_commit. Bump the package version and lockfile before releasing changed code at $GITHUB_SHA."
-              exit 1
-            fi
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-      - name: Pack canonical artifact
-        run: moon run renkin:pack
-      - name: Verify clean source identity
-        run: |
-          jq -e --arg sha "$GITHUB_SHA" \
-            '.source.sourceRevision == $sha and .source.sourceDirty == false' \
-            .renkin/release/artifact.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          bun --no-env-file packages/renkin/release-workflow.ts prepare
+
+  checks:
+    needs: prepare
+    if: needs.prepare.outputs.skip != 'true'
+    uses: ./.github/workflows/checks.yml
+    with:
+      revision: ${{ needs.prepare.outputs.revision }}
+    secrets: inherit
+
+  pack:
+    needs: [prepare, checks]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_REVISION: ${{ needs.prepare.outputs.revision }}
+      RELEASE_SOURCE: ${{ needs.prepare.outputs.source }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.prepare.outputs.revision }}
+      - uses: moonrepo/setup-toolchain@v0
+        with:
+          auto-install: true
+      - run: bun install --frozen-lockfile
+      - name: Build or restore the canonical release bundle
+        run: bun --no-env-file packages/renkin/release-workflow.ts pack
       - uses: actions/upload-artifact@v4
         with:
           name: renkin-release-canonical
+          overwrite: true
           include-hidden-files: true
           if-no-files-found: error
           path: |
@@ -66,26 +91,31 @@ jobs:
             .renkin/release/renkin-*.tgz
 
   validate:
-    needs: pack
+    needs: [prepare, pack]
     uses: ./.github/workflows/release-artifact.yml
     with:
       artifact-name: renkin-release-canonical
+      revision: ${{ needs.prepare.outputs.revision }}
 
   release:
-    needs: [pack, validate]
+    needs: [prepare, pack, validate]
     runs-on: ubuntu-24.04
     environment: npm
     permissions:
       contents: write
       id-token: write
     env:
-      VERSION: ${{ needs.pack.outputs.version }}
       GH_TOKEN: ${{ github.token }}
-      GH_REPO: ${{ github.repository }}
+      RELEASE_REVISION: ${{ needs.prepare.outputs.revision }}
+      RELEASE_SOURCE: ${{ needs.prepare.outputs.source }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          ref: ${{ needs.prepare.outputs.revision }}
+      - uses: moonrepo/setup-toolchain@v0
+        with:
+          auto-install: true
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -97,47 +127,12 @@ jobs:
         with:
           name: renkin-release-canonical
           path: .renkin/release
-      - name: Verify artifact before release
-        run: |
-          set -euo pipefail
-          archive=".renkin/release/renkin-$VERSION.tgz"
-          record=.renkin/release/artifact.json
-          jq -e --arg sha "$GITHUB_SHA" \
-            '.source.sourceRevision == $sha and .source.sourceDirty == false' "$record"
-          test "$(sha256sum "$archive" | cut -d ' ' -f 1)" = "$(jq -r .sha256 "$record")"
-          tar -xOf "$archive" package/package.json | jq -e --arg version "$VERSION" \
-            '.name == "@carere/renkin" and .version == $version'
-      - name: Create draft GitHub release
-        run: |
-          set -euo pipefail
-          if gh release view "v$VERSION" --json isDraft > "$RUNNER_TEMP/renkin-release.json"; then
-            jq -e '.isDraft == true' "$RUNNER_TEMP/renkin-release.json"
-            # A retry must reuse the exact assets already offered for bootstrap.
-            mkdir -p "$RUNNER_TEMP/renkin-existing-release"
-            gh release download "v$VERSION" --pattern "renkin-$VERSION.tgz" \
-              --pattern artifact.json --dir "$RUNNER_TEMP/renkin-existing-release"
-            cmp ".renkin/release/renkin-$VERSION.tgz" "$RUNNER_TEMP/renkin-existing-release/renkin-$VERSION.tgz"
-            cmp .renkin/release/artifact.json "$RUNNER_TEMP/renkin-existing-release/artifact.json"
-          else
-            prerelease=()
-            if [[ "$VERSION" == *-* ]]; then prerelease=(--prerelease); fi
-            gh release create "v$VERSION" --target "$GITHUB_SHA" --draft \
-              --title "v$VERSION" --generate-notes "${prerelease[@]}" \
-              ".renkin/release/renkin-$VERSION.tgz" .renkin/release/artifact.json
-          fi
-      - name: Publish validated tarball through OIDC
+      - name: Publish or resume the validated release
         if: inputs.publish
-        run: |
-          npm publish ".renkin/release/renkin-$VERSION.tgz" \
-            --registry https://registry.npmjs.org --access public --tag latest
-      - name: Publish GitHub release
-        if: inputs.publish
-        run: gh release edit "v$VERSION" --draft=false
-      - name: Describe bootstrap artifacts
+        run: bun --no-env-file packages/renkin/release-workflow.ts publish
+      - name: Describe validated draft
         if: ${{ !inputs.publish }}
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
         run: |
-          {
-            echo "Draft release v$VERSION contains the validated tarball and artifact.json."
-            echo "Download both, verify SHA-256, and publish the tarball manually with --access public --tag latest."
-            echo "After the npm upload succeeds, publish the GitHub draft and configure trusted publishing for release.yml / environment npm."
-          } >> "$GITHUB_STEP_SUMMARY"
+          echo "Draft v$VERSION passed validation. Its bundle contains the canonical tarball and artifact.json. Run Release with publish enabled and version empty to resume this candidate while main is unchanged." >> "$GITHUB_STEP_SUMMARY"
