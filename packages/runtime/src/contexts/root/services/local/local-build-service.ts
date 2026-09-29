@@ -6,6 +6,7 @@ import {
   type V4WorkerOptions,
 } from "miniflare";
 import type { WorkerBuildResult } from "#src/contexts/root/models/build-result.ts";
+import { executableModules } from "#src/contexts/root/services/bundler/executable-modules.ts";
 import { readBuildResult } from "#src/contexts/root/services/bundler/read-build-result.ts";
 import { compatibilityDiagnostic } from "./compatibility-diagnostic.ts";
 import type { LocalWorker } from "./local-worker-service.ts";
@@ -47,18 +48,7 @@ export const startLocalBuild = async (
           path: `/renkin-build/${prepared.mainModule}`,
           contents: prepared.source,
         },
-        ...prepared.modules.map((module) => ({
-          type:
-            module.type === "application/wasm"
-              ? ("CompiledWasm" as const)
-              : module.type === "text/plain"
-                ? ("Text" as const)
-                : module.type === "application/octet-stream"
-                  ? ("Data" as const)
-                  : ("ESModule" as const),
-          path: `/renkin-build/${module.name}`,
-          contents: Buffer.from(module.content, "base64"),
-        })),
+        ...executableModules(prepared.modules, "/renkin-build/"),
       ],
       compatibilityDate: build.compatibilityDate ?? "2026-07-30",
       compatibilityFlags: [...(build.compatibilityFlags ?? ["nodejs_compat"])],

@@ -15,6 +15,10 @@ describe("external Worker build and native assets", () => {
           (path) => Effect.promise(() => rm(path, { recursive: true, force: true })),
         );
         yield* Effect.promise(async () => {
+          await writeFile(
+            join(directory, "worker.mjs.map"),
+            '{"version":3,"sources":["missing.ts"],"mappings":""}',
+          );
           await mkdir(join(directory, "public"));
           await writeFile(
             join(directory, "worker.mjs"),
@@ -27,6 +31,7 @@ describe("external Worker build and native assets", () => {
           Effect.promise(() =>
             startLocalBuild({
               entry: join(directory, "worker.mjs"),
+              modules: [{ path: "worker.mjs.map", type: "application/source-map" }],
               assets: {
                 directory: join(directory, "public"),
                 config: { notFoundHandling: "single-page-application", runWorkerFirst: ["/api/*"] },

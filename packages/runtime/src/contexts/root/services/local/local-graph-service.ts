@@ -13,6 +13,7 @@ import type { WorkerBuildResult } from "#src/contexts/root/models/build-result.t
 import type { NativeD1 } from "#src/contexts/root/models/d1.ts";
 import type { LocalR2S3Options } from "#src/contexts/root/models/local-r2-s3.ts";
 import type { NativeR2 } from "#src/contexts/root/models/r2.ts";
+import { executableModules } from "#src/contexts/root/services/bundler/executable-modules.ts";
 import { inspectRequirements } from "#src/contexts/root/services/bundler/inspect-requirements.ts";
 import { readBuildResult } from "#src/contexts/root/services/bundler/read-build-result.ts";
 import { bundleOptions, readBundle } from "#src/contexts/root/services/bundler/worker-bundler.ts";
@@ -121,18 +122,7 @@ const workerSettings = (
               path: `/renkin-build/${prepared.artifact.mainModule}`,
               contents: prepared.code,
             },
-            ...prepared.artifact.modules.map((module) => ({
-              type:
-                module.type === "application/wasm"
-                  ? ("CompiledWasm" as const)
-                  : module.type === "text/plain"
-                    ? ("Text" as const)
-                    : module.type === "application/octet-stream"
-                      ? ("Data" as const)
-                      : ("ESModule" as const),
-              path: `/renkin-build/${module.name}`,
-              contents: Buffer.from(module.content, "base64"),
-            })),
+            ...executableModules(prepared.artifact.modules, "/renkin-build/"),
           ],
         }
       : { script: prepared.code, modules: true }),
@@ -375,13 +365,13 @@ export const startLocalGraph = async (
   const contexts = new Map<string, BuildContext>();
   const watchers: FSWatcher[] = [];
   const prepared: Record<string, PreparedWorker> = {};
-  let runtime: Miniflare | undefined;
   const r2Source = await localR2Source(options.r2S3);
   const settings = () => ({
     host: "127.0.0.1",
     port: 0,
     resourcePersistencePath: options.persist,
     resourceTmpPath: emailDirectory,
+    unsafeLocalExplorer: true,
     workers: [
       ...(Object.keys(options.workflows ?? {}).length
         ? [workflowRecoveryWorker(options.workflows ?? {})]
@@ -406,7 +396,7 @@ export const startLocalGraph = async (
     ],
   });
   const session: GraphSession = {
-    runtime,
+    runtime: undefined,
     prepared,
     pending: Promise.resolve(),
     options,
@@ -416,7 +406,7 @@ export const startLocalGraph = async (
   const close = () => closeGraph(watchers, contexts, session, journal, emailDirectory);
   try {
     await prepareGraph(options, graphWorkers, prepared, contexts, session);
-    runtime = new Miniflare(convertV4MiniflareOptions(settings()));
+    const runtime = new Miniflare(convertV4MiniflareOptions(settings()));
     session.runtime = runtime;
     await runtime.ready;
     await recoverWorkflows(runtime, options.workflows ?? {}, journal);
@@ -425,7 +415,7 @@ export const startLocalGraph = async (
       workers: await exposedWorkers(session, contexts, declaredWorkers),
       close,
       dispatch: graphDispatcher(runtime, declaredWorkers, Boolean(options.r2S3)),
-      capturedEmails: () => capturedEmails(emailDirectory),
+      capturedEmails: capturedEmails(runtime, options.workers),
       ...graphBindings(runtime, prepared, options.databases, options.buckets),
     };
   } catch (error) {

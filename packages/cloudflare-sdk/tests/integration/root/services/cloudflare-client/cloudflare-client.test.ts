@@ -96,9 +96,14 @@ describe("fenced mutations", () => {
         {
           scriptName: "worker",
           metadata: { mainModule: "index.js", compatibilityDate: "2026-09-21" },
-          files: new File(["export default {}"], "index.js", {
-            type: "application/javascript+module",
-          }),
+          files: [
+            new File(["export default {}"], "index.js", {
+              type: "application/javascript+module",
+            }),
+            new File([' { "version": 3, "sources": ["é.ts"], "mappings": "" }\n'], "index.js.map", {
+              type: "application/source-map",
+            }),
+          ],
         },
         "fence-token",
       );
@@ -118,6 +123,12 @@ describe("fenced mutations", () => {
       const module = form.get("index.js");
       expect(module).toBeInstanceOf(File);
       expect(yield* Effect.promise(() => (module as File).text())).toBe("export default {}");
+      const map = form.get("index.js.map");
+      expect(map).toBeInstanceOf(File);
+      expect((map as File).type).toBe("application/source-map");
+      expect(new Uint8Array(yield* Effect.promise(() => (map as File).arrayBuffer()))).toEqual(
+        new TextEncoder().encode(' { "version": 3, "sources": ["é.ts"], "mappings": "" }\n'),
+      );
     }),
   );
 });

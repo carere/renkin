@@ -15,6 +15,10 @@ it.live("captures external modules and assets with ignore, header and redirect r
       await mkdir(join(directory, "public"));
       await writeFile(join(directory, "entry.mjs"), "export default {};");
       await writeFile(join(directory, "message.txt"), "module contents");
+      await writeFile(
+        join(directory, "entry.mjs.map"),
+        ' { "version": 3, "sources": ["é.ts"], "mappings": "" }\n',
+      );
       for (const [name, contents] of Object.entries({
         "index.html": "<h1>site</h1>",
         ".assetsignore": "*.secret\n*.txt\n!public.txt\n",
@@ -29,10 +33,21 @@ it.live("captures external modules and assets with ignore, header and redirect r
     const build = yield* Effect.promise(() =>
       readBuildResult({
         entry: join(directory, "entry.mjs"),
-        modules: [{ path: "message.txt", type: "text/plain" }],
+        modules: [
+          { path: "message.txt", type: "text/plain" },
+          { path: "entry.mjs.map", type: "application/source-map" },
+        ],
         assets: { directory: join(directory, "public") },
       }),
     );
+    expect(build.modules[1]).toEqual({
+      name: "entry.mjs.map",
+      type: "application/source-map",
+      content: Buffer.from(' { "version": 3, "sources": ["é.ts"], "mappings": "" }\n').toString(
+        "base64",
+      ),
+    });
+    expect(build.source).toBe("export default {};");
     expect(Object.keys(build.assets?.files ?? {})).toEqual(["/index.html", "/public.txt"]);
     expect(build.assets?.config).toEqual({
       headers: "/*\n  X-Test: yes\n",
