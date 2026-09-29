@@ -21,3 +21,15 @@ it("does not invoke a user stack getter while sanitizing startup failure", () =>
     log.mockRestore();
   }
 });
+
+it("keeps only runtime-reported compatibility dates and upgrade guidance", () => {
+  const error = new Error(
+    'SECRET_STDERR This Worker requires compatibility date "2026-09-08", but the newest date supported by this server binary is "2026-08-06". SECRET_BINDING',
+  );
+  const result = startupFailure("start-runtime", new Error("SECRET_WRAPPER", { cause: error }));
+  expect(result.message).toContain("2026-09-08");
+  expect(result.message).toContain("2026-08-06");
+  expect(result.message).toContain("Upgrade @carere/renkin");
+  expect(result.message).not.toContain("SECRET_");
+  expect(result.cause).toBeUndefined();
+});

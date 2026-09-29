@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { AwsClient } from "aws4fetch";
-import { Miniflare } from "miniflare";
+import { convertV4MiniflareOptions, Miniflare } from "miniflare";
 import type { NativeR2 } from "#src/contexts/root/models/r2.ts";
 import { bundleWorker } from "#src/contexts/root/services/bundler/worker-bundler.ts";
 
@@ -24,28 +24,30 @@ export const createS3Fixture = async () => {
   );
   const { code } = await bundleWorker(entry, { sourceMap: false });
   const start = () =>
-    new Miniflare({
-      host: "127.0.0.1",
-      port: 0,
-      defaultPersistRoot: directory,
-      workers: [
-        {
-          name: "s3",
-          script: code,
-          modules: true,
-          compatibilityDate: "2026-07-30",
-          r2Buckets: { A: "bucket-a", B: "bucket-b" },
-          bindings: { RENKIN_S3: { ...credentials, buckets: { first: "A", second: "B" } } },
-          serviceBindings: { ORIGINAL: "original" },
-        },
-        {
-          name: "original",
-          script: 'export default {fetch(){return new Response("application fallback")}}',
-          modules: true,
-          compatibilityDate: "2026-07-30",
-        },
-      ],
-    });
+    new Miniflare(
+      convertV4MiniflareOptions({
+        host: "127.0.0.1",
+        port: 0,
+        resourcePersistencePath: directory,
+        workers: [
+          {
+            name: "s3",
+            script: code,
+            modules: true,
+            compatibilityDate: "2026-07-30",
+            r2Buckets: { A: "bucket-a", B: "bucket-b" },
+            bindings: { RENKIN_S3: { ...credentials, buckets: { first: "A", second: "B" } } },
+            serviceBindings: { ORIGINAL: "original" },
+          },
+          {
+            name: "original",
+            script: 'export default {fetch(){return new Response("application fallback")}}',
+            modules: true,
+            compatibilityDate: "2026-07-30",
+          },
+        ],
+      }),
+    );
   let runtime = start();
   let url = String(await runtime.ready);
   const signed = async (method: string, key: string, options: SignOptions = {}) => {

@@ -16,7 +16,7 @@
     "effect": "^4.0.0-rc.115 <4.0.0-rc.118",
     "esbuild": "^0.28.2",
     "ignore": "^7.0.9",
-    "miniflare": "^4.20260730.0"
+    "miniflare": "5.20260926.0-alpha"
   },
   "devDependencies": {
     "@effect/vitest": "^4.0.0-rc.115 <4.0.0-rc.118",

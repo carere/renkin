@@ -1,12 +1,18 @@
 import { resolve } from "node:path";
-import { Miniflare, type MiniflareOptions } from "miniflare";
+import {
+  convertV4MiniflareOptions,
+  Miniflare,
+  type V4MiniflareOptions as MiniflareOptions,
+  type V4WorkerOptions,
+} from "miniflare";
 import type { WorkerBuildResult } from "#src/contexts/root/models/build-result.ts";
 import { readBuildResult } from "#src/contexts/root/services/bundler/read-build-result.ts";
+import { compatibilityDiagnostic } from "./compatibility-diagnostic.ts";
 import type { LocalWorker } from "./local-worker-service.ts";
 
 export const localAssetOptions = (
   build: WorkerBuildResult,
-): Partial<Pick<MiniflareOptions, "assets">> => {
+): Partial<Pick<V4WorkerOptions, "assets">> => {
   if (!build.assets) return {};
   const config = build.assets.config;
   const first = config?.runWorkerFirst;
@@ -14,14 +20,10 @@ export const localAssetOptions = (
     assets: {
       directory: resolve(build.assets.directory),
       binding: build.assets.binding ?? "ASSETS",
-      routerConfig: {
-        has_user_worker: true,
-        ...(typeof first === "boolean"
-          ? { invoke_user_worker_ahead_of_assets: first }
-          : first
-            ? { static_routing: { user_worker: [...first] } }
-            : {}),
-      },
+      routerConfig: { has_user_worker: true },
+      ...(first === undefined
+        ? {}
+        : { run_worker_first: typeof first === "boolean" ? first : [...first] }),
       assetConfig: {
         ...(config?.htmlHandling ? { html_handling: config.htmlHandling } : {}),
         ...(config?.notFoundHandling ? { not_found_handling: config.notFoundHandling } : {}),
@@ -66,7 +68,7 @@ export const startLocalBuild = async (
       ...localAssetOptions(build),
     };
   };
-  const instance = new Miniflare(await settings());
+  const instance = new Miniflare(convertV4MiniflareOptions(await settings()));
   try {
     const url = String(await instance.ready);
     return {
@@ -74,12 +76,12 @@ export const startLocalBuild = async (
       fetch: (path = "/", init) => fetch(new URL(path, url), init),
       scheduled: async (options) => (await instance.getWorker()).scheduled(options),
       reload: async () => {
-        await instance.setOptions(await settings());
+        await instance.setOptions(convertV4MiniflareOptions(await settings()));
       },
       close: () => instance.dispose(),
     };
   } catch (error) {
     await instance.dispose();
-    throw error;
+    throw compatibilityDiagnostic(error) ?? error;
   }
 };

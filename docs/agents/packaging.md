@@ -32,7 +32,7 @@ part of these tasks.
 ## Installed-consumer checks
 
 The harness installs the actual tarball into a fresh directory outside the
-repository with no private workspace package resolution or manual dependency
+repository with its own empty Bun installation cache and no private workspace package resolution or manual dependency
 symlinks. It inspects
 archive entries and the installed transitive module/URL closure, verifies all eight
 public declaration subpaths, host imports and shared Effect identity, CLI help and
@@ -56,3 +56,10 @@ one canonical tarball to both runners, then creates a draft GitHub release and
 optionally publishes that exact artifact to npm. See [the release procedure](../releasing.md)
 for bootstrap and trusted publishing. Real-cloud validation is a separate explicitly
 scoped operation.
+
+The installed consumer also verifies the explicit `2026-09-08` runtime regression,
+secret bindings and rejection of a future date without leaking binding values.
+It reports the backend and Vite workerd versions and requires them to agree.
+The maintained graph and four framework fixtures use that same tested date.
+Runtime version pins and the intentional date-upgrade procedure are documented in
+the README. The gate never inherits `MINIFLARE_WORKERD_PATH`.

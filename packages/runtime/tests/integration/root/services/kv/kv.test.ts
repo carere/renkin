@@ -1,7 +1,7 @@
 import type { KVNamespace } from "@cloudflare/workers-types";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { Miniflare } from "miniflare";
+import { convertV4MiniflareOptions, Miniflare } from "miniflare";
 import { kvClient, type NativeKV } from "#src/contexts/root/models/binding.ts";
 
 const nativeConsumer = (namespace: KVNamespace) =>
@@ -12,12 +12,14 @@ const nativeConsumer = (namespace: KVNamespace) =>
 
 it.effect("keeps the official native KV options and metadata surface available to consumers", () =>
   Effect.promise(async () => {
-    const mf = new Miniflare({
-      modules: true,
-      script: "export default {fetch(){return new Response('ok')}}",
-      compatibilityDate: "2026-07-30",
-      kvNamespaces: { CACHE: "native-cache" },
-    });
+    const mf = new Miniflare(
+      convertV4MiniflareOptions({
+        modules: true,
+        script: "export default {fetch(){return new Response('ok')}}",
+        compatibilityDate: "2026-07-30",
+        kvNamespaces: { CACHE: "native-cache" },
+      }),
+    );
     try {
       const handle = (await mf.getKVNamespace("CACHE")) as unknown as NativeKV;
       const client = kvClient(handle, "CACHE");

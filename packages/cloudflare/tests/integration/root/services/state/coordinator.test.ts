@@ -1,5 +1,10 @@
 import { build } from "esbuild";
-import { type Request as EmulatorRequest, Miniflare, Response } from "miniflare";
+import {
+  convertV4MiniflareOptions,
+  type Request as EmulatorRequest,
+  Miniflare,
+  Response,
+} from "miniflare";
 import { afterAll, beforeAll, expect, it } from "vitest";
 
 let emulator: Miniflare;
@@ -21,39 +26,41 @@ beforeAll(async () => {
     platform: "browser",
   });
   coordinatorScript = bundle.outputFiles[0]?.text ?? "";
-  emulator = new Miniflare({
-    modules: true,
-    script: coordinatorScript,
-    compatibilityDate: "2026-08-01",
-    bindings: { ACCOUNT_ID: "test-account", RENKIN_STATE_AUTH: stateAuthToken },
-    durableObjects: { STATE_COORDINATOR: { className: "StateCoordinator", useSQLite: true } },
-    outboundService: async (request: EmulatorRequest) => {
-      expect(request.headers.get("authorization")).toMatch(/^Bearer valid-[ab]$/);
-      expect(request.headers.get("x-renkin-cloudflare-token")).toBeNull();
-      expect(request.headers.get("authorization")).not.toContain(stateAuthToken);
-      const path = new URL(request.url).pathname;
-      if (path.includes("invalid-route"))
-        return Response.json({ errors: [{ code: 7003 }] }, { status: 404 });
-      if (path.includes("already-missing"))
-        return Response.json({ errors: [{ code: 10007 }] }, { status: 404 });
-      if (path.endsWith("/subdomain")) {
-        if (request.method === "POST") {
-          subdomainEnabled = ((await request.json()) as { enabled: boolean }).enabled;
+  emulator = new Miniflare(
+    convertV4MiniflareOptions({
+      modules: true,
+      script: coordinatorScript,
+      compatibilityDate: "2026-08-01",
+      bindings: { ACCOUNT_ID: "test-account", RENKIN_STATE_AUTH: stateAuthToken },
+      durableObjects: { STATE_COORDINATOR: { className: "StateCoordinator", useSQLite: true } },
+      outboundService: async (request: EmulatorRequest) => {
+        expect(request.headers.get("authorization")).toMatch(/^Bearer valid-[ab]$/);
+        expect(request.headers.get("x-renkin-cloudflare-token")).toBeNull();
+        expect(request.headers.get("authorization")).not.toContain(stateAuthToken);
+        const path = new URL(request.url).pathname;
+        if (path.includes("invalid-route"))
+          return Response.json({ errors: [{ code: 7003 }] }, { status: 404 });
+        if (path.includes("already-missing"))
+          return Response.json({ errors: [{ code: 10007 }] }, { status: 404 });
+        if (path.endsWith("/subdomain")) {
+          if (request.method === "POST") {
+            subdomainEnabled = ((await request.json()) as { enabled: boolean }).enabled;
+            return new Response("response lost after acceptance", { status: 503 });
+          }
+          return Response.json({ result: { enabled: subdomainEnabled } });
+        }
+        if (request.method === "PUT") {
+          const form = await request.formData();
+          const metadata = JSON.parse(String(form.get("metadata"))) as { tags: string[] };
+          acceptedTags = metadata.tags;
           return new Response("response lost after acceptance", { status: 503 });
         }
-        return Response.json({ result: { enabled: subdomainEnabled } });
-      }
-      if (request.method === "PUT") {
-        const form = await request.formData();
-        const metadata = JSON.parse(String(form.get("metadata"))) as { tags: string[] };
-        acceptedTags = metadata.tags;
-        return new Response("response lost after acceptance", { status: 503 });
-      }
-      if (new URL(request.url).pathname.endsWith("/settings"))
-        return Response.json({ result: { tags: acceptedTags } });
-      return Response.json({ success: true });
-    },
-  });
+        if (new URL(request.url).pathname.endsWith("/settings"))
+          return Response.json({ result: { tags: acceptedTags } });
+        return Response.json({ success: true });
+      },
+    }),
+  );
 });
 afterAll(async () => {
   await emulator.dispose();
@@ -240,13 +247,15 @@ it("rejects account-read credentials as the state bearer", async () => {
   expect(await (await call("read", { environment })).json()).toBe("protected-state");
 });
 it("fails closed when the state auth secret binding is missing", async () => {
-  const unconfigured = new Miniflare({
-    modules: true,
-    script: coordinatorScript,
-    compatibilityDate: "2026-08-01",
-    bindings: { ACCOUNT_ID: "test-account" },
-    durableObjects: { STATE_COORDINATOR: { className: "StateCoordinator", useSQLite: true } },
-  });
+  const unconfigured = new Miniflare(
+    convertV4MiniflareOptions({
+      modules: true,
+      script: coordinatorScript,
+      compatibilityDate: "2026-08-01",
+      bindings: { ACCOUNT_ID: "test-account" },
+      durableObjects: { STATE_COORDINATOR: { className: "StateCoordinator", useSQLite: true } },
+    }),
+  );
   try {
     const result = await unconfigured.dispatchFetch("https://state.example/v1/identity", {
       method: "POST",

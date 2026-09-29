@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { expect, it } from "@effect/vitest";
 import { guardD1, type NativeD1 } from "@renkin/runtime/models/d1";
 import { Effect } from "effect";
-import { Miniflare } from "miniflare";
+import { convertV4MiniflareOptions, Miniflare } from "miniflare";
 import {
   applyMigrations,
   migrationHistoryTable,
@@ -21,13 +21,15 @@ const database = Effect.acquireRelease(
   Effect.promise(async () => {
     const directory = await mkdtemp(join(tmpdir(), "renkin-d1-migrations-"));
     const start = () =>
-      new Miniflare({
-        modules: true,
-        script: "export default {fetch(){return new Response('ok')}}",
-        compatibilityDate: "2026-07-30",
-        d1Databases: { DB: "migration-db" },
-        defaultPersistRoot: directory,
-      });
+      new Miniflare(
+        convertV4MiniflareOptions({
+          modules: true,
+          script: "export default {fetch(){return new Response('ok')}}",
+          compatibilityDate: "2026-07-30",
+          d1Databases: { DB: "migration-db" },
+          resourcePersistencePath: directory,
+        }),
+      );
     const mf = start();
     const db = guardD1((await mf.getD1Database("DB")) as unknown as NativeD1);
     return { directory, mf, db, start };

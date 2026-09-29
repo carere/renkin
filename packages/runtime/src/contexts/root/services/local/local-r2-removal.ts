@@ -1,4 +1,4 @@
-import { Miniflare } from "miniflare";
+import { convertV4MiniflareOptions, Miniflare } from "miniflare";
 
 export interface LocalR2Removal {
   readonly physicalId: string;
@@ -19,15 +19,17 @@ export const removeLocalR2Objects = async (
 ): Promise<void> => {
   if (!removals.length) return;
   const names = removals.map((_, index) => `R2_${index}`);
-  const runtime = new Miniflare({
-    script: "export default {fetch(){return new Response(null,{status:404})}}",
-    modules: true,
-    compatibilityDate: "2026-07-30",
-    defaultPersistRoot: persist,
-    r2Buckets: Object.fromEntries(
-      removals.map((item, index) => [names[index] ?? "", item.physicalId]),
-    ),
-  });
+  const runtime = new Miniflare(
+    convertV4MiniflareOptions({
+      script: "export default {fetch(){return new Response(null,{status:404})}}",
+      modules: true,
+      compatibilityDate: "2026-07-30",
+      resourcePersistencePath: persist,
+      r2Buckets: Object.fromEntries(
+        removals.map((item, index) => [names[index] ?? "", item.physicalId]),
+      ),
+    }),
+  );
   try {
     const buckets = await Promise.all(names.map((name) => runtime.getR2Bucket(name)));
     for (const [index, bucket] of buckets.entries())

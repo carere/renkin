@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { build } from "esbuild";
-import { Miniflare } from "miniflare";
+import { convertV4MiniflareOptions, Miniflare } from "miniflare";
 
 const fixture = async (directory: string) => {
   const bundle = await build({
@@ -14,14 +14,16 @@ const fixture = async (directory: string) => {
     format: "esm",
     platform: "browser",
   });
-  return new Miniflare({
-    modules: true,
-    script: bundle.outputFiles[0]?.text ?? "",
-    compatibilityDate: "2026-08-01",
-    bindings: { ACCOUNT_ID: "account", RENKIN_STATE_AUTH: "state-secret" },
-    durableObjects: { STATE_COORDINATOR: { className: "StateCoordinator", useSQLite: true } },
-    durableObjectsPersist: directory,
-  });
+  return new Miniflare(
+    convertV4MiniflareOptions({
+      modules: true,
+      script: bundle.outputFiles[0]?.text ?? "",
+      compatibilityDate: "2026-08-01",
+      bindings: { ACCOUNT_ID: "account", RENKIN_STATE_AUTH: "state-secret" },
+      durableObjects: { STATE_COORDINATOR: { className: "StateCoordinator", useSQLite: true } },
+      resourcePersistencePath: directory,
+    }),
+  );
 };
 const call = (
   emulator: Miniflare,

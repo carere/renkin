@@ -9,7 +9,7 @@ export const frontend = (id: string, directory: string, rendering: "spa" | "ssr"
     root: fileURLToPath(new URL(`./${directory}/`, import.meta.url)),
     rendering,
     reuse: { inputs: ["../shared", "../config.ts", "../../shared"] },
-    compatibilityDate: "2026-07-30",
+    compatibilityDate: "2026-09-08",
     bindings: {
       API: workerReference("API"),
       AUTH: workerReference("Auth"),

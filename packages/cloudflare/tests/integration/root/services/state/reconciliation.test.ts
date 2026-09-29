@@ -1,5 +1,10 @@
 import { build } from "esbuild";
-import { type Request as EmulatorRequest, Miniflare, Response } from "miniflare";
+import {
+  convertV4MiniflareOptions,
+  type Request as EmulatorRequest,
+  Miniflare,
+  Response,
+} from "miniflare";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import type { RecoveryInspection } from "#src/contexts/root/services/state/reconciliation.ts";
 
@@ -15,22 +20,24 @@ beforeAll(async () => {
     format: "esm",
     platform: "browser",
   });
-  emulator = new Miniflare({
-    modules: true,
-    script: bundle.outputFiles[0]?.text ?? "",
-    compatibilityDate: "2026-08-01",
-    bindings: { ACCOUNT_ID: "test-account", RENKIN_STATE_AUTH: "state-secret" },
-    durableObjects: { STATE_COORDINATOR: { className: "StateCoordinator", useSQLite: true } },
-    outboundService: async (request: EmulatorRequest) => {
-      calls += 1;
-      if (request.url.includes("held"))
-        await new Promise<void>((resolve) => {
-          complete = resolve;
-          dispatchStarted?.();
-        });
-      return new Response("unknown provider outcome", { status: 503 });
-    },
-  });
+  emulator = new Miniflare(
+    convertV4MiniflareOptions({
+      modules: true,
+      script: bundle.outputFiles[0]?.text ?? "",
+      compatibilityDate: "2026-08-01",
+      bindings: { ACCOUNT_ID: "test-account", RENKIN_STATE_AUTH: "state-secret" },
+      durableObjects: { STATE_COORDINATOR: { className: "StateCoordinator", useSQLite: true } },
+      outboundService: async (request: EmulatorRequest) => {
+        calls += 1;
+        if (request.url.includes("held"))
+          await new Promise<void>((resolve) => {
+            complete = resolve;
+            dispatchStarted?.();
+          });
+        return new Response("unknown provider outcome", { status: 503 });
+      },
+    }),
+  );
 });
 afterAll(async () => {
   await emulator.dispose();

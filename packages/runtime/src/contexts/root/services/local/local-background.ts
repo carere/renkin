@@ -1,6 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { WorkerOptions } from "miniflare";
+import type { V4WorkerOptions as WorkerOptions } from "miniflare";
 import type { Requirements } from "#src/contexts/root/models/binding.ts";
 
 export interface LocalWorkflow {
@@ -34,14 +34,16 @@ export const localBackgroundOptions = (
   consumers: readonly LocalQueueConsumer[],
   options: LocalBackgroundOptions,
 ): Pick<WorkerOptions, "queueProducers" | "queueConsumers" | "workflows" | "email"> => {
-  const queueProducers: Record<string, { queueName: string; deliveryDelay?: number | undefined }> =
-    {};
+  const queueProducers: Record<string, { queueName: string; deliveryDelay?: number }> = {};
   const workflows: Record<string, LocalWorkflow> = {};
   const send_email: NonNullable<NonNullable<WorkerOptions["email"]>["send_email"]> = [];
   for (const [name, requirement] of Object.entries(requirements)) {
     if (requirement.type === "cloudflare.queue") {
       const target = queue(requirement.id, options);
-      queueProducers[name] = { queueName: target.name, deliveryDelay: target.deliveryDelay };
+      queueProducers[name] = {
+        queueName: target.name,
+        ...(target.deliveryDelay === undefined ? {} : { deliveryDelay: target.deliveryDelay }),
+      };
     } else if (requirement.type === "cloudflare.workflow") {
       const target = options.workflows?.[requirement.id];
       if (!target) throw new Error(`Workflow ${requirement.id} is not declared in the stack.`);
@@ -91,9 +93,10 @@ export const capturedEmails = async (directory: string): Promise<readonly string
 
 export const workflowNames = (requirements: Requirements, options: LocalBackgroundOptions) =>
   Object.fromEntries(
-    Object.entries(requirements).flatMap(([binding, requirement]) =>
-      requirement.type === "cloudflare.workflow"
-        ? [[binding, options.workflows?.[requirement.id]?.name]]
-        : [],
-    ),
+    Object.entries(requirements).flatMap(([binding, requirement]) => {
+      if (requirement.type !== "cloudflare.workflow") return [];
+      const target = options.workflows?.[requirement.id];
+      if (!target) throw new Error(`Workflow ${requirement.id} is not declared in the stack.`);
+      return [[binding, target.name]];
+    }),
   );

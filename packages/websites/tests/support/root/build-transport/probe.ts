@@ -28,7 +28,7 @@ const runtime = new first.Miniflare(
     modules: true,
     script:
       "export default {fetch(request){return Response.json({host:new URL(request.url).host,runtime:typeof WebSocketPair})}}",
-    compatibilityDate: "2026-07-30",
+    compatibilityDate: "2026-09-08",
   }),
 );
 try {

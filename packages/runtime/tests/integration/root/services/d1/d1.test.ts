@@ -3,7 +3,7 @@ import { expect, it } from "@effect/vitest";
 import { drizzle } from "drizzle-orm/d1";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { Effect } from "effect";
-import { Miniflare } from "miniflare";
+import { convertV4MiniflareOptions, Miniflare } from "miniflare";
 import { d1Client, guardD1, type NativeD1 } from "#src/contexts/root/models/d1.ts";
 
 const users = sqliteTable("users", {
@@ -13,12 +13,14 @@ const users = sqliteTable("users", {
 
 it.effect("preserves real native batch order, binding provenance and rollback", () =>
   Effect.promise(async () => {
-    const mf = new Miniflare({
-      modules: true,
-      script: "export default {fetch(){return new Response('ok')}}",
-      compatibilityDate: "2026-07-30",
-      d1Databases: { A: "database-a", B: "database-b" },
-    });
+    const mf = new Miniflare(
+      convertV4MiniflareOptions({
+        modules: true,
+        script: "export default {fetch(){return new Response('ok')}}",
+        compatibilityDate: "2026-07-30",
+        d1Databases: { A: "database-a", B: "database-b" },
+      }),
+    );
     try {
       const a = guardD1((await mf.getD1Database("A")) as unknown as NativeD1);
       const b = guardD1((await mf.getD1Database("B")) as unknown as NativeD1);
@@ -60,12 +62,14 @@ it.effect("preserves real native batch order, binding provenance and rollback", 
 
 it.effect("native handles work with the actual Drizzle D1 adapter", () =>
   Effect.promise(async () => {
-    const mf = new Miniflare({
-      modules: true,
-      script: "export default {fetch(){return new Response('ok')}}",
-      compatibilityDate: "2026-07-30",
-      d1Databases: { DB: "drizzle-db" },
-    });
+    const mf = new Miniflare(
+      convertV4MiniflareOptions({
+        modules: true,
+        script: "export default {fetch(){return new Response('ok')}}",
+        compatibilityDate: "2026-07-30",
+        d1Databases: { DB: "drizzle-db" },
+      }),
+    );
     try {
       const client = d1Client((await mf.getD1Database("DB")) as unknown as NativeD1, "DB");
       const native: CloudflareD1Database = client.native;

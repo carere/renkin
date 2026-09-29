@@ -4,6 +4,7 @@ import { releaseArchive } from "#test-support/root/release/archive.ts";
 import { installConsumer } from "#test-support/root/release/consumer.ts";
 import { verifyApplications } from "#test-support/root/release/verify-applications.ts";
 import { verifyBuilds } from "#test-support/root/release/verify-builds.ts";
+import { verifyCompatibility } from "#test-support/root/release/verify-compatibility.ts";
 import { verifyGraph } from "#test-support/root/release/verify-graph.ts";
 import { verifyPackage } from "#test-support/root/release/verify-package.ts";
 import { verifySourceGuard } from "#test-support/root/release/verify-source-guard.ts";
@@ -17,10 +18,11 @@ it("packs and installs the public artifact without workspace resolution", async 
   try {
     console.info(await verifyPackage(consumer, archive));
     console.info(await verifyTypes(consumer));
+    console.info(await verifyCompatibility(consumer));
     await verifyApplications(consumer);
     console.info(await verifyGraph(consumer));
     console.info(await verifyBuilds(consumer, root));
   } finally {
     await consumer.close();
   }
-}, 600000);
+}, 1200000);
