@@ -49,3 +49,27 @@ it.effect(
       ).rejects.toThrow("isolated runtime");
     }),
 );
+
+it.effect("ignores source-map metadata when inspecting an injected bundle", () =>
+  Effect.promise(async () => {
+    expect(
+      await inspectRequirements(
+        'export default {__renkinRequirements:{CACHE:{type:"cloudflare.kv",id:"cache"}}}',
+        "2026-09-08",
+        [],
+        {
+          mainModule: "worker.mjs",
+          modules: [
+            {
+              name: "worker.mjs.map",
+              type: "application/source-map",
+              content: Buffer.from(
+                '{"version":3,"sources":["original.ts"],"mappings":""}',
+              ).toString("base64"),
+            },
+          ],
+        },
+      ),
+    ).toEqual({ CACHE: { type: "cloudflare.kv", id: "cache" } });
+  }),
+);

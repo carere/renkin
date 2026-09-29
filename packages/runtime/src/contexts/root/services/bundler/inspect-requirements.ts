@@ -1,6 +1,7 @@
 import { convertV4MiniflareOptions, Log, LogLevel, Miniflare } from "miniflare";
 import type { BindingRequirement, Requirements } from "#src/contexts/root/models/binding.ts";
 import { validateEmailOptions } from "#src/contexts/root/models/email.ts";
+import { executableModules } from "#src/contexts/root/services/bundler/executable-modules.ts";
 import { compatibilityDiagnostic } from "../local/compatibility-diagnostic.ts";
 
 const inspect = (value: unknown): Requirements => {
@@ -86,18 +87,7 @@ export const inspectRequirements = async (
           contents: `import {WorkflowEntrypoint} from "cloudflare:workers";import * as implementation from ${JSON.stringify(`./${artifact.mainModule}`)}; export default {fetch(){for(const name of ${JSON.stringify(workflowClasses)}){if(!(implementation[name]?.prototype instanceof WorkflowEntrypoint))throw new Error("Missing Workflow class export");}const result={};for(const exported of Object.values(implementation)){for(const [name, requirement] of Object.entries(exported?.__renkinRequirements ?? {})){if(name in result && JSON.stringify(result[name])!==JSON.stringify(requirement))throw new Error("Conflicting Worker requirements");result[name]=requirement;}}return Response.json(result)}}`,
         },
         { type: "ESModule", path: artifact.mainModule, contents: source },
-        ...artifact.modules.map((module) => ({
-          type:
-            module.type === "application/wasm"
-              ? ("CompiledWasm" as const)
-              : module.type === "text/plain"
-                ? ("Text" as const)
-                : module.type === "application/octet-stream"
-                  ? ("Data" as const)
-                  : ("ESModule" as const),
-          path: module.name,
-          contents: Buffer.from(module.content, "base64"),
-        })),
+        ...executableModules(artifact.modules, ""),
       ],
       modulesRoot: "/",
       compatibilityDate,

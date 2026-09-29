@@ -87,6 +87,15 @@ const resource: ResourceState = {
     identity: "site",
     properties: {
       source: "export default {fetch:()=>new Response('private-application')}",
+      modules: [
+        {
+          name: "worker.mjs.map",
+          type: "application/source-map",
+          content: Buffer.from(' { "version": 3, "sources": ["é.ts"], "mappings": "" }\n').toString(
+            "base64",
+          ),
+        },
+      ],
       compatibilityDate: "2026-07-30",
       compatibilityFlags: [],
       workersDev: false,
@@ -119,7 +128,14 @@ for (const rejectClosure of [false, true]) {
         });
         const uploads = requests.filter((request) => request.method === "PUT");
         expect(uploads).toHaveLength(rejectClosure ? 0 : 1);
-        if (!rejectClosure) expect(requests[3]?.body).toContain("private-application");
+        if (!rejectClosure) {
+          expect(requests[3]?.body).toContain("private-application");
+          expect(requests[3]?.body).toContain('filename="worker.mjs.map"');
+          expect(requests[3]?.body).toContain("application/source-map");
+          expect(requests[3]?.body).toContain(
+            ' { "version": 3, "sources": ["é.ts"], "mappings": "" }\n',
+          );
+        }
       }).pipe(Effect.scoped),
   );
 }

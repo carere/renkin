@@ -1,6 +1,4 @@
-import { readdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
-import type { V4WorkerOptions as WorkerOptions } from "miniflare";
+import type { Miniflare, V4WorkerOptions as WorkerOptions } from "miniflare";
 import type { Requirements } from "#src/contexts/root/models/binding.ts";
 
 export interface LocalWorkflow {
@@ -75,21 +73,97 @@ export const localBackgroundOptions = (
   return { queueProducers, queueConsumers, workflows, email: { send_email } };
 };
 
-/** Reads native Miniflare capture files; no email is sent over the network locally. */
-export const capturedEmails = async (directory: string): Promise<readonly string[]> => {
-  const entries = await readdir(directory, { recursive: true }).catch(
-    (error: NodeJS.ErrnoException) => {
-      if (error.code === "ENOENT") return [];
-      throw error;
-    },
-  );
-  return Promise.all(
-    entries
-      .filter((path) => path.endsWith(".eml"))
-      .sort()
-      .map((path) => readFile(join(directory, path), "utf8")),
-  );
+interface CapturedEmail {
+  readonly messageId: string;
+  readonly from: string;
+  readonly to: readonly string[];
+  readonly cc?: readonly string[];
+  readonly bcc?: readonly string[];
+  readonly replyTo?: string;
+  readonly subject: string;
+  readonly headers?: Readonly<Record<string, string>>;
+  readonly text?: string;
+  readonly html?: string;
+  readonly raw?: string;
+}
+
+/** One string per native send; multipart representations are parts of that string. */
+const renderEmail = (email: CapturedEmail): string => {
+  if (email.raw !== undefined) return email.raw;
+  const headers = [
+    `From: ${email.from}`,
+    `To: ${email.to.join(", ")}`,
+    `Subject: ${email.subject}`,
+    `Message-ID: ${email.messageId}`,
+    ...(email.cc ? [`Cc: ${email.cc.join(", ")}`] : []),
+    ...(email.bcc ? [`Bcc: ${email.bcc.join(", ")}`] : []),
+    ...(email.replyTo ? [`Reply-To: ${email.replyTo}`] : []),
+    ...Object.entries(email.headers ?? {}).map(([name, value]) => `${name}: ${value}`),
+    "MIME-Version: 1.0",
+  ];
+  const parts = [
+    ...(email.text === undefined ? [] : [{ type: "text/plain", body: email.text }]),
+    ...(email.html === undefined ? [] : [{ type: "text/html", body: email.html }]),
+  ];
+  const boundary = `renkin-${Buffer.from(email.messageId).toString("hex")}`;
+  return [
+    ...headers,
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    "",
+    ...parts.flatMap((part) => [
+      `--${boundary}`,
+      `Content-Type: ${part.type}; charset=utf-8`,
+      "Content-Transfer-Encoding: 8bit",
+      "",
+      part.body,
+    ]),
+    `--${boundary}--`,
+    "",
+  ].join("\r\n");
 };
+
+/** Read the session-local native store, never the explorer's cross-process aggregate. */
+export const capturedEmails =
+  (runtime: Miniflare, workers: readonly { readonly id: string }[]) =>
+  async (): Promise<readonly string[]> => {
+    const read = async <A>(
+      query: URLSearchParams,
+    ): Promise<{
+      result: A;
+      result_info?: { has_more?: boolean; cursor?: string };
+      messages?: readonly { code: number; message: string }[];
+    }> => {
+      const response = await runtime.dispatchFetch(
+        `http://localhost/cdn-cgi/local/explorer/api/local/email/sending?${query}`,
+      );
+      if (!response.ok) throw new Error(`Could not read captured email: ${response.status}`);
+      return (await response.json()) as {
+        result: A;
+        result_info?: { has_more?: boolean; cursor?: string };
+        messages?: readonly { code: number; message: string }[];
+      };
+    };
+    const messages: string[] = [];
+    for (const { id: worker } of workers) {
+      const query = new URLSearchParams({ worker, per_page: "100" });
+      for (;;) {
+        const page = await read<readonly CapturedEmail[]>(query);
+        for (const item of page.result) {
+          const detail = await read<CapturedEmail>(
+            new URLSearchParams({ worker, email_id: item.messageId }),
+          );
+          if (detail.messages?.length)
+            throw new Error(detail.messages.map((message) => message.message).join("; "));
+          messages.push(renderEmail(detail.result));
+        }
+        if (!page.result_info?.has_more) break;
+        if (!page.result_info.cursor)
+          throw new Error("Captured email pagination cursor is missing.");
+        query.set("cursor", page.result_info.cursor);
+      }
+    }
+    return messages;
+  };
 
 export const workflowNames = (requirements: Requirements, options: LocalBackgroundOptions) =>
   Object.fromEntries(

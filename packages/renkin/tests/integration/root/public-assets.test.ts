@@ -22,6 +22,10 @@ it.live(
         (directory) => Effect.promise(() => rm(directory, { recursive: true, force: true })),
       );
       yield* Effect.promise(async () => {
+        await writeFile(
+          join(directory, "entry.mjs.map"),
+          '{"version":3,"sources":["missing.ts"],"mappings":""}',
+        );
         await mkdir(join(directory, "assets"));
         await writeFile(
           join(directory, "entry.mjs"),
@@ -33,6 +37,7 @@ it.live(
       });
       const build: WorkerBuildResult = {
         entry: join(directory, "entry.mjs"),
+        modules: [{ path: "entry.mjs.map", type: "application/source-map" }],
         assets: {
           directory: join(directory, "assets"),
           config: { notFoundHandling: "single-page-application", runWorkerFirst: ["/api/*"] },

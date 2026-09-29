@@ -55,7 +55,11 @@ bunx --bun --package @carere/renkin renkin dev
 
 The development command starts the local application graph, watches source changes
 and keeps local data between restarts. No Cloudflare credentials are needed.
-Local email is captured rather than sent. Local state lives under `.renkin/`;
+Local email is captured rather than sent. `capturedEmails()` returns one MIME string
+per successful raw or structured send in the current session, including both text
+and HTML parts. Structured attachment bytes are not included by the native capture
+store. If Miniflare reports truncated capture content, reading captures fails
+explicitly rather than returning incomplete content. Local state lives under `.renkin/`;
 exclude that directory from Git because it can contain secrets.
 
 Effect handlers can use `defineWorker` from `@carere/renkin/worker`:
@@ -209,9 +213,11 @@ browser bundles or build manifests. Your build scripts still control any explici
 `process.env`, Vite `define`, or public `VITE_*` substitutions; use separate public
 configuration for browser-visible values.
 
-Cloudflare source-map upload is currently unsupported. Ordinary Worker preparation
-disables source maps, and `WorkerBuildResult.auxiliaryFiles` maps are captured for
-build reuse but never uploaded. This applies to framework auxiliary maps as well.
+Explicit external-build modules with type `application/source-map` retain their
+original bytes and MIME type for provider upload. Local inspection and execution
+treat them as metadata. Ordinary Worker preparation disables source maps, and
+`WorkerBuildResult.auxiliaryFiles` maps are captured for build reuse but never
+uploaded. This applies to framework auxiliary maps as well.
 
 ## Astro: use the normal build command
 
