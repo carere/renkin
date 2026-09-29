@@ -4,12 +4,12 @@ import { join } from "node:path";
 import { afterAll, beforeAll, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { build } from "esbuild";
-import { Miniflare, Response } from "miniflare";
+import { convertV4MiniflareOptions, Miniflare, Response, type V4MiniflareOptions } from "miniflare";
 
 let emulator: Miniflare;
 let dispatches = 0;
 let directory: string;
-let options: ConstructorParameters<typeof Miniflare>[0];
+let options: V4MiniflareOptions;
 beforeAll(async () => {
   const script = await build({
     entryPoints: [new URL("./recovery-fixture.ts", import.meta.url).pathname],
@@ -20,7 +20,7 @@ beforeAll(async () => {
   });
   directory = await mkdtemp(join(tmpdir(), "renkin-receipt-"));
   options = {
-    durableObjectsPersist: directory,
+    resourcePersistencePath: directory,
     modules: true,
     script: script.outputFiles[0]?.text ?? "",
     compatibilityDate: "2026-08-01",
@@ -40,7 +40,7 @@ beforeAll(async () => {
       });
     },
   };
-  emulator = new Miniflare(options);
+  emulator = new Miniflare(convertV4MiniflareOptions(options));
 });
 afterAll(async () => {
   await emulator.dispose();
@@ -102,7 +102,7 @@ it.live(
       expect(dispatches).toBe(before);
       const created = await (await gateway("receipt", first.token)).json();
       await emulator.dispose();
-      emulator = new Miniflare(options);
+      emulator = new Miniflare(convertV4MiniflareOptions(options));
       await call("test-expire", "receipt");
       const second = await acquire("receipt");
       expect(

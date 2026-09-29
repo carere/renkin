@@ -449,7 +449,7 @@ together and validate compatibility before broadening their ranges.
 Effect and its test adapter are capped below `4.0.0-rc.118`, which moved the
 `effect/unstable/*` modules used by Renkin and its SDK dependency. Keep that cap
 until those consumers have migrated and installed-artifact validation passes.
-The Cloudflare Vite plugin and Astro Cloudflare adapter are pinned to their
+Miniflare, the Cloudflare Vite plugin and Astro Cloudflare adapter are pinned to their
 tested releases because the Bun build-transport bridge depends on specific
 Miniflare internals. Update them alongside the bridge's compatibility checks.
 
@@ -523,3 +523,35 @@ setup, follow [the release procedure](docs/releasing.md).
 References: [Cocogitto configuration](https://docs.cocogitto.io/reference/config.html)
 [automatic versioning and hooks](https://docs.cocogitto.io/guide/bump.html),
 and [Bun package versioning](https://bun.com/docs/pm/cli/pm#version).
+
+## Local runtime compatibility dates
+
+`compatibilityDate` belongs to your application. Renkin's release gate exercises
+`2026-09-08` across backend Workers, public test helpers, Vite development and
+framework builds, including connected bindings, queues, Workflows, Durable Objects
+and local state across restarts. This is the tested date, not a claim about the
+binary's maximum date. Delimoov can retain `2026-09-08` when upgrading Renkin.
+
+Runtime updates and behavior opt-ins are separate decisions. Upgrade Renkin and
+refresh your dependency lockfile to obtain a newer runtime; keep your application's
+date unchanged until you intentionally adopt and test newer behavior. Renkin does
+not clamp dates, including during Worker metadata inspection. Unsupported dates
+fail with upgrade guidance and the binary's supported limit when workerd reports
+one; future dates fail with the runtime's future-date explanation. See Cloudflare's
+[compatibility-date guidance](https://developers.cloudflare.com/workers/configuration/compatibility-dates/).
+
+The validated dependency set is Miniflare `5.20260926.0-alpha`, its workerd
+`1.20260926.1`, Cloudflare Vite plugin `1.62.0` (Wrangler `4.143.0`) and Astro's
+Cloudflare adapter `14.3.3`. Miniflare and the two integrations are intentionally
+pinned: the Miniflare 5 options converter and Bun transport bridge require tested
+upgrades. No global workerd override or transitive dependency override is needed.
+Miniflare 5 uses `resourcePersistencePath` and `resourceTmpPath`; retaining the old
+option names silently loses persistence, so restart tests are part of qualification.
+
+Weekly Dependabot PRs group the Cloudflare runtime dependencies. Review those PRs,
+run the ordinary checks and the macOS/Linux packed-consumer release gate, then merge
+and release deliberately. Updating the Bun transport bridge's allowed version
+requires its real HTTP transport and framework tests to pass. Dependency PRs do
+not merge or publish automatically. To raise the tested application date, change
+the maintained graph and framework fixtures plus their assertions, document the
+new date here, and pass the same release gate before advertising it.

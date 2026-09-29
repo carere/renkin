@@ -148,3 +148,40 @@ it.live(
       expect(JSON.stringify(logged)).not.toContain(directory);
     }).pipe(Effect.scoped),
 );
+
+it("honors the tested date and reports an unsupported date through public development", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "renkin-compatibility-"));
+  const entry = join(directory, "worker.mjs");
+  await writeFile(entry, 'export default {fetch(){return new Response("compatible")}}');
+  const stack = (compatibilityDate: string) =>
+    defineStack({
+      name: "compatibility",
+      resources: [
+        worker("Api", { entry, compatibilityDate, bindings: { TOKEN: "PRIVATE_TOKEN" } }),
+      ],
+    });
+  try {
+    const failure = await Effect.runPromise(
+      Effect.scoped(development(stack("2999-01-01"), { directory, watch: false })).pipe(
+        Effect.match({ onFailure: (error) => error, onSuccess: () => undefined }),
+      ),
+    );
+    expect(failure?.message).toContain("2999-01-01");
+    expect(failure?.message).toContain("future");
+    expect(inspect(failure)).not.toContain("PRIVATE_TOKEN");
+    // A rejected date also releases the environment lease.
+    await Effect.runPromise(
+      Effect.scoped(
+        Effect.gen(function* () {
+          const session = yield* development(stack("2026-09-08"), { directory, watch: false });
+          const body = yield* Effect.promise(async () =>
+            (await session.workers.Api?.fetch("/"))?.text(),
+          );
+          expect(body).toBe("compatible");
+        }),
+      ),
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+}, 30000);

@@ -10,6 +10,7 @@ const consumerEnvironment = (directory: string) => ({
   PATH: `${dirname(process.execPath)}:${process.env.PATH ?? ""}`,
   HOME: process.env.HOME ?? "",
   TMPDIR: tmpdir(),
+  BUN_INSTALL_CACHE_DIR: join(directory, ".bun-cache"),
   XDG_CONFIG_HOME: join(directory, ".config"),
   CLOUDFLARE_AUTH_USE_KEYRING: "false",
   RENKIN_TEST_POLLING: "true",
@@ -103,10 +104,10 @@ export const installConsumer = async (root: string, archive: string) => {
       ),
     );
     await mkdir(join(directory, ".config"));
-    await execute(process.execPath, ["install"], {
+    await execute(process.execPath, ["install", "--network-concurrency", "16"], {
       cwd: directory,
       env: consumerEnvironment(directory),
-      timeout: 180000,
+      timeout: 600000,
       maxBuffer: 200000,
     });
     await copyApplications(root, directory);

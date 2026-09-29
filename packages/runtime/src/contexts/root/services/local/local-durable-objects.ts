@@ -1,4 +1,4 @@
-import type { WorkerOptions } from "miniflare";
+import type { V4WorkerOptions as WorkerOptions } from "miniflare";
 import type { Requirements } from "#src/contexts/root/models/binding.ts";
 
 export interface LocalDurableObject {

@@ -1,6 +1,7 @@
-import { Log, LogLevel, Miniflare, supportedCompatibilityDate } from "miniflare";
+import { convertV4MiniflareOptions, Log, LogLevel, Miniflare } from "miniflare";
 import type { BindingRequirement, Requirements } from "#src/contexts/root/models/binding.ts";
 import { validateEmailOptions } from "#src/contexts/root/models/email.ts";
+import { compatibilityDiagnostic } from "../local/compatibility-diagnostic.ts";
 
 const inspect = (value: unknown): Requirements => {
   if (!value || typeof value !== "object" || Array.isArray(value))
@@ -75,37 +76,36 @@ export const inspectRequirements = async (
   } = { mainModule: "worker.mjs", modules: [] },
   workflowClasses: readonly string[] = [],
 ): Promise<Requirements> => {
-  const runtime = new Miniflare({
-    log: new Log(LogLevel.NONE),
-    modules: [
-      {
-        type: "ESModule",
-        path: "inspect.mjs",
-        contents: `import {WorkflowEntrypoint} from "cloudflare:workers";import * as implementation from ${JSON.stringify(`./${artifact.mainModule}`)}; export default {fetch(){for(const name of ${JSON.stringify(workflowClasses)}){if(!(implementation[name]?.prototype instanceof WorkflowEntrypoint))throw new Error("Missing Workflow class export");}const result={};for(const exported of Object.values(implementation)){for(const [name, requirement] of Object.entries(exported?.__renkinRequirements ?? {})){if(name in result && JSON.stringify(result[name])!==JSON.stringify(requirement))throw new Error("Conflicting Worker requirements");result[name]=requirement;}}return Response.json(result)}}`,
-      },
-      { type: "ESModule", path: artifact.mainModule, contents: source },
-      ...artifact.modules.map((module) => ({
-        type:
-          module.type === "application/wasm"
-            ? ("CompiledWasm" as const)
-            : module.type === "text/plain"
-              ? ("Text" as const)
-              : module.type === "application/octet-stream"
-                ? ("Data" as const)
-                : ("ESModule" as const),
-        path: module.name,
-        contents: Buffer.from(module.content, "base64"),
-      })),
-    ],
-    modulesRoot: "/",
-    compatibilityDate:
-      compatibilityDate > supportedCompatibilityDate
-        ? supportedCompatibilityDate
-        : compatibilityDate,
-    compatibilityFlags: [...compatibilityFlags],
-    outboundService: () =>
-      new Response("Metadata inspection cannot access the network.", { status: 403 }),
-  });
+  const runtime = new Miniflare(
+    convertV4MiniflareOptions({
+      log: new Log(LogLevel.NONE),
+      modules: [
+        {
+          type: "ESModule",
+          path: "inspect.mjs",
+          contents: `import {WorkflowEntrypoint} from "cloudflare:workers";import * as implementation from ${JSON.stringify(`./${artifact.mainModule}`)}; export default {fetch(){for(const name of ${JSON.stringify(workflowClasses)}){if(!(implementation[name]?.prototype instanceof WorkflowEntrypoint))throw new Error("Missing Workflow class export");}const result={};for(const exported of Object.values(implementation)){for(const [name, requirement] of Object.entries(exported?.__renkinRequirements ?? {})){if(name in result && JSON.stringify(result[name])!==JSON.stringify(requirement))throw new Error("Conflicting Worker requirements");result[name]=requirement;}}return Response.json(result)}}`,
+        },
+        { type: "ESModule", path: artifact.mainModule, contents: source },
+        ...artifact.modules.map((module) => ({
+          type:
+            module.type === "application/wasm"
+              ? ("CompiledWasm" as const)
+              : module.type === "text/plain"
+                ? ("Text" as const)
+                : module.type === "application/octet-stream"
+                  ? ("Data" as const)
+                  : ("ESModule" as const),
+          path: module.name,
+          contents: Buffer.from(module.content, "base64"),
+        })),
+      ],
+      modulesRoot: "/",
+      compatibilityDate,
+      compatibilityFlags: [...compatibilityFlags],
+      outboundService: () =>
+        new Response("Metadata inspection cannot access the network.", { status: 403 }),
+    }),
+  );
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const result = await Promise.race([
@@ -115,7 +115,9 @@ export const inspectRequirements = async (
       }),
     ]);
     return inspect(result);
-  } catch {
+  } catch (error) {
+    const diagnostic = compatibilityDiagnostic(error);
+    if (diagnostic) throw diagnostic;
     throw new Error("Worker requirements could not be inspected in the isolated runtime.");
   } finally {
     if (timer) clearTimeout(timer);

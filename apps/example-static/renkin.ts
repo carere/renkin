@@ -5,6 +5,6 @@ import { astro } from "@carere/renkin/cloudflare";
 export const site = astro("static", {
   root: fileURLToPath(new URL(".", import.meta.url)),
   output: "static",
-  compatibilityDate: "2026-07-30",
+  compatibilityDate: "2026-09-08",
 });
 export default defineStack({ name: "renkin-example-static", resources: [site] });

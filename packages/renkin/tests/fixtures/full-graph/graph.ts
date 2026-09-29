@@ -23,7 +23,7 @@ export const graph = (
   const service = (id: string, entry: string, extra = {}) =>
     worker(id, {
       entry: fileURLToPath(new URL(`./services/${entry}.ts`, import.meta.url)),
-      compatibilityDate: "2026-07-30",
+      compatibilityDate: "2026-09-08",
       ...extra,
     });
   return defineStack({

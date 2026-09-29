@@ -3,7 +3,11 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { type BuildContext, type BuildResult, context as buildContext } from "esbuild";
-import { Miniflare, type WorkerOptions } from "miniflare";
+import {
+  convertV4MiniflareOptions,
+  Miniflare,
+  type V4WorkerOptions as WorkerOptions,
+} from "miniflare";
 import type { Requirements, WorkerRequirement } from "#src/contexts/root/models/binding.ts";
 import type { WorkerBuildResult } from "#src/contexts/root/models/build-result.ts";
 import type { NativeD1 } from "#src/contexts/root/models/d1.ts";
@@ -12,6 +16,7 @@ import type { NativeR2 } from "#src/contexts/root/models/r2.ts";
 import { inspectRequirements } from "#src/contexts/root/services/bundler/inspect-requirements.ts";
 import { readBuildResult } from "#src/contexts/root/services/bundler/read-build-result.ts";
 import { bundleOptions, readBundle } from "#src/contexts/root/services/bundler/worker-bundler.ts";
+import { compatibilityDiagnostic } from "./compatibility-diagnostic.ts";
 import {
   capturedEmails,
   type LocalBackgroundOptions,
@@ -171,7 +176,7 @@ interface GraphSession {
     workers: WorkerOptions[];
     host: string;
     port: number;
-    defaultPersistRoot: string;
+    resourcePersistencePath: string;
   };
 }
 const reloader = (worker: GraphWorker, session: GraphSession) => (result: BuildResult) => {
@@ -193,13 +198,13 @@ const reloader = (worker: GraphWorker, session: GraphSession) => (result: BuildR
           worker.compatibilityFlags,
         );
         session.prepared[worker.id] = { code, requirements };
-        await session.runtime?.setOptions(session.settings());
+        await session.runtime?.setOptions(convertV4MiniflareOptions(session.settings()));
         if (session.runtime)
           await recoverWorkflows(session.runtime, session.options.workflows ?? {}, session.journal);
         session.options.onReload?.(worker.id);
       } catch (error) {
         if (previous) session.prepared[worker.id] = previous;
-        throw error;
+        throw compatibilityDiagnostic(error) ?? error;
       }
     });
   return session.pending.catch(() => {
@@ -228,13 +233,13 @@ const reloadArtifact = (worker: GraphWorker, session: GraphSession): Promise<voi
       const previous = session.prepared[worker.id];
       try {
         session.prepared[worker.id] = await prepareArtifact(worker);
-        await session.runtime?.setOptions(session.settings());
+        await session.runtime?.setOptions(convertV4MiniflareOptions(session.settings()));
         if (session.runtime)
           await recoverWorkflows(session.runtime, session.options.workflows ?? {}, session.journal);
         session.options.onReload?.(worker.id);
       } catch (error) {
         if (previous) session.prepared[worker.id] = previous;
-        throw error;
+        throw compatibilityDiagnostic(error) ?? error;
       }
     });
   return session.pending;
@@ -375,8 +380,8 @@ export const startLocalGraph = async (
   const settings = () => ({
     host: "127.0.0.1",
     port: 0,
-    defaultPersistRoot: options.persist,
-    defaultProjectTmpPath: emailDirectory,
+    resourcePersistencePath: options.persist,
+    resourceTmpPath: emailDirectory,
     workers: [
       ...(Object.keys(options.workflows ?? {}).length
         ? [workflowRecoveryWorker(options.workflows ?? {})]
@@ -411,7 +416,7 @@ export const startLocalGraph = async (
   const close = () => closeGraph(watchers, contexts, session, journal, emailDirectory);
   try {
     await prepareGraph(options, graphWorkers, prepared, contexts, session);
-    runtime = new Miniflare(settings());
+    runtime = new Miniflare(convertV4MiniflareOptions(settings()));
     session.runtime = runtime;
     await runtime.ready;
     await recoverWorkflows(runtime, options.workflows ?? {}, journal);
@@ -425,6 +430,6 @@ export const startLocalGraph = async (
     };
   } catch (error) {
     await close();
-    throw error;
+    throw compatibilityDiagnostic(error) ?? error;
   }
 };

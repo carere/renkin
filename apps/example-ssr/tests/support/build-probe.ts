@@ -38,7 +38,7 @@ export default (context) => {
       },
       afterBuild: (result) => {
         after++;
-        assert.equal(result.compatibilityDate, "2026-07-30");
+        assert.equal(result.compatibilityDate, "2026-09-08");
         assert.deepEqual(result.compatibilityFlags, ["nodejs_compat"]);
       },
     }),

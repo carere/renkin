@@ -1,6 +1,11 @@
 import { context as buildContext } from "esbuild";
-import { Miniflare, type MiniflareOptions } from "miniflare";
+import {
+  convertV4MiniflareOptions,
+  Miniflare,
+  type V4MiniflareOptions as MiniflareOptions,
+} from "miniflare";
 import { bundleOptions, readBundle } from "#src/contexts/root/services/bundler/worker-bundler.ts";
+import { compatibilityDiagnostic } from "./compatibility-diagnostic.ts";
 
 export interface LocalWorkerOptions {
   readonly entry: string;
@@ -34,7 +39,7 @@ export const startLocalWorker = async (options: LocalWorkerOptions): Promise<Loc
     compatibilityDate: options.compatibilityDate,
     compatibilityFlags: [...(options.compatibilityFlags ?? ["nodejs_compat"])],
     bindings: options.bindings ?? {},
-    ...(options.persist ? { defaultPersistRoot: options.persist } : {}),
+    ...(options.persist ? { resourcePersistencePath: options.persist } : {}),
   });
   const context = await buildContext({
     ...bundleOptions(options.entry),
@@ -53,7 +58,7 @@ export const startLocalWorker = async (options: LocalWorkerOptions): Promise<Loc
             pending = pending
               .catch(() => {})
               .then(async () => {
-                await instance?.setOptions(settings(script));
+                await instance?.setOptions(convertV4MiniflareOptions(settings(script)));
                 currentCode = script;
                 options.onReload?.();
               });
@@ -67,7 +72,7 @@ export const startLocalWorker = async (options: LocalWorkerOptions): Promise<Loc
   });
   try {
     currentCode = readBundle(await context.rebuild()).code;
-    instance = new Miniflare(settings(currentCode));
+    instance = new Miniflare(convertV4MiniflareOptions(settings(currentCode)));
     const url = String(await instance.ready);
     if (options.watch) await context.watch();
     return {
@@ -93,6 +98,6 @@ export const startLocalWorker = async (options: LocalWorkerOptions): Promise<Loc
     } finally {
       await instance?.dispose();
     }
-    throw error;
+    throw compatibilityDiagnostic(error) ?? error;
   }
 };

@@ -1,3 +1,7 @@
+import {
+  compatibilityDiagnostic,
+  LocalCompatibilityDateError,
+} from "@renkin/runtime/services/local/compatibility-diagnostic";
 import { Effect } from "effect";
 export type StartupPhase =
   | "acquire-state"
@@ -93,6 +97,9 @@ const errorStack = (error: object): unknown => {
 
 /** Never retain user messages, paths, stacks, arbitrary codes, or the original exception. */
 export const startupFailure = (phase: StartupPhase, error: unknown): Error => {
+  const compatibility =
+    error instanceof LocalCompatibilityDateError ? error : compatibilityDiagnostic(error);
+  if (compatibility) return compatibility;
   const failures: {
     name: string;
     code?: string;

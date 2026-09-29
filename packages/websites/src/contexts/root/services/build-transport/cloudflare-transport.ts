@@ -17,7 +17,7 @@ type Loader = {
   }): void;
 };
 const registered = new Set<string>();
-const supported = new Set(["5.20260918.0-alpha", "5.20260921.0-alpha"]);
+const supported = new Set(["5.20260926.0-alpha"]);
 
 const loadMiniflare = (path: string, undici: string) => {
   const source = readFileSync(path, "utf8");
