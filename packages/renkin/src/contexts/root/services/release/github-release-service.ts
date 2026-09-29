@@ -54,17 +54,28 @@ const githubRequests = (token: string) => {
     });
   return { request, json };
 };
+const findRelease = (api: string, token: string, tag: string) =>
+  Effect.gen(function* () {
+    const { request, json } = githubRequests(token);
+    const response = yield* request(`${api}/releases/tags/${encodeURIComponent(tag)}`);
+    if (response.status !== 404) return yield* releaseAttempt(() => response.json());
+    // GitHub's tag endpoint excludes drafts; authenticated release lists include them.
+    for (let page = 1; ; page++) {
+      const releases: (GitHubRelease & { readonly tag_name: string })[] = yield* json(
+        `${api}/releases?per_page=100&page=${page}`,
+      );
+      const release = releases.find((candidate) => candidate.tag_name === tag);
+      if (release) return release;
+      if (releases.length < 100) return undefined;
+    }
+  });
 export const githubReleaseService = (repository: string, token: string): ReleaseService => {
   if (!/^[\w.-]+\/[\w.-]+$/.test(repository) || !token)
     throw new Error("GitHub release credentials are missing.");
   const api = `https://api.github.com/repos/${repository}`;
   const { request, json } = githubRequests(token);
   return {
-    find: (tag) =>
-      Effect.gen(function* () {
-        const response = yield* request(`${api}/releases/tags/${encodeURIComponent(tag)}`);
-        return response.status === 404 ? undefined : yield* releaseAttempt(() => response.json());
-      }),
+    find: (tag) => findRelease(api, token, tag),
     create: (tag, revision) =>
       json(`${api}/releases`, {
         method: "POST",
