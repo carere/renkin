@@ -79,9 +79,9 @@ permanent wrong-target pack guard; its manifest is never temporarily rewritten.
 See [package assembly](packaging.md) for artifact identity and verification commands.
 
 Effect must be a compatible peer dependency of the published API, with a matching
-development dependency for tests. The foundation uses matching caret ranges for Effect and
-its test adapter, with exact resolutions recorded in the lockfile. The public
-peer uses the same range; validate compatibility when updating prereleases. Avoid bundling a
+development dependency for tests. The foundation uses matching caret ranges for stable
+Effect and its test adapter, with exact resolutions recorded in the lockfile. The public
+peer uses the same range; validate compatibility when upgrading. Avoid bundling a
 second Effect runtime into the public package.
 
 ## SDK sourcing

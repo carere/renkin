@@ -14,7 +14,7 @@ Windows are not supported Renkin execution environments.
 Once published, install the single public package and its Effect peer:
 
 ```sh
-bun add @carere/renkin "effect@^4.0.0-rc.115 <4.0.0-rc.118"
+bun add @carere/renkin "effect@^4.0.0"
 ```
 
 For an unpublished release candidate, replace `@carere/renkin` with the path to its staged
@@ -450,16 +450,15 @@ Dependencies use caret (`^`) ranges. `bun.lock` records the exact resolved versi
 `bun install --frozen-lockfile` keeps CI reproducible. Run `bun update` to select
 newer compatible versions, review the lockfile, and rerun checks. Caret ranges
 normally permit minor and patch updates; for `0.x` releases they stop at the next
-minor. Effect is currently a prerelease: update Effect and `@effect/vitest`
-together and validate compatibility before broadening their ranges.
-Effect and its test adapter are capped below `4.0.0-rc.118`, which moved the
-`effect/unstable/*` modules used by Renkin and its SDK dependency. Keep that cap
-until those consumers have migrated and installed-artifact validation passes.
+minor. Effect and `@effect/vitest` both use the stable `^4.0.0` range; update them
+together with the compatible Distilled dependency and validate the installed artifact.
 Miniflare, the Cloudflare Vite plugin and Astro Cloudflare adapter are pinned to their
 tested releases because the Bun build-transport bridge depends on specific
 Miniflare internals. Update them alongside the bridge's compatibility checks.
 
 The published Effect peer uses the same caret range as development tooling.
+Consumers must install a compatible stable Effect version and commit their own
+lockfile; this repository's lockfile does not constrain a consumer's installation.
 Consuming workspaces declare their own dependencies. Runtime selection lives in
 `.prototools` and CI rather than an exact `packageManager` pin; Moon's automatic
 synchronization of that field is disabled.

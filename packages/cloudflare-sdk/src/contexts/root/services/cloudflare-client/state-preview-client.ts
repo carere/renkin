@@ -2,7 +2,7 @@ import * as Credentials from "@distilled.cloud/cloudflare/Credentials";
 import * as Retry from "@distilled.cloud/cloudflare/Retry";
 import * as Workers from "@distilled.cloud/cloudflare/workers";
 import { Data, Effect } from "effect";
-import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
+import * as FetchHttpClient from "effect/http/FetchHttpClient";
 import type { CloudflareConfig } from "./cloudflare-client.ts";
 
 export class StatePreviewError extends Data.TaggedError("StatePreviewError")<{

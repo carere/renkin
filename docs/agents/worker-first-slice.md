@@ -151,8 +151,8 @@ It creates narrowly scoped read-only tokens, proves they cannot access shared
 state, then revokes both. The ordinary Worker cloud suite does not require token
 management credentials.
 
-The released Distilled dependency is `@distilled.cloud/cloudflare@1.0.0-rc.12`,
-compatible with the workspace's Effect `4.0.0-rc.115`. Its HTTP boundary tests
+The Distilled dependency is `@distilled.cloud/cloudflare@^1.0.0-rc.13`,
+compatible with the workspace's stable Effect `4.0.0`. Its HTTP boundary tests
 cover bearer authentication, bounded throttling retry, exact missing-Worker
 versus invalid-route errors, authentication failures, upload multipart encoding
 and fenced mutation transport. See the SDK README for details. No Alchemy or

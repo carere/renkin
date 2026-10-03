@@ -2,7 +2,7 @@ import * as Credentials from "@distilled.cloud/cloudflare/Credentials";
 import * as Retry from "@distilled.cloud/cloudflare/Retry";
 import * as Workers from "@distilled.cloud/cloudflare/workers";
 import { Effect } from "effect";
-import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
+import * as FetchHttpClient from "effect/http/FetchHttpClient";
 import type { DurableObjectExports } from "#src/contexts/root/models/durable-object-exports.ts";
 import { createOperationClient } from "./operation-client.ts";
 

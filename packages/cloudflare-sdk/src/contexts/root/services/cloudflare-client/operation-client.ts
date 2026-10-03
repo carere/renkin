@@ -1,7 +1,7 @@
 import * as Credentials from "@distilled.cloud/cloudflare/Credentials";
 import * as Retry from "@distilled.cloud/cloudflare/Retry";
 import { Effect, Schedule } from "effect";
-import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
+import * as FetchHttpClient from "effect/http/FetchHttpClient";
 import type { CloudflareConfig, GatewayRequest, MutationGateway } from "./cloudflare-client.ts";
 
 const throttled = (error: unknown) =>

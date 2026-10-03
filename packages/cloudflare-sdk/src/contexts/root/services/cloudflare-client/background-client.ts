@@ -2,7 +2,7 @@ import * as Queues from "@distilled.cloud/cloudflare/queues";
 import * as Workers from "@distilled.cloud/cloudflare/workers";
 import * as Workflows from "@distilled.cloud/cloudflare/workflows";
 import { Effect } from "effect";
-import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
+import * as FetchHttpClient from "effect/http/FetchHttpClient";
 import type { CloudflareConfig, MutationGateway } from "./cloudflare-client.ts";
 import { createOperationClient } from "./operation-client.ts";
 

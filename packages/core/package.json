@@ -12,10 +12,10 @@
     "./*": "./src/contexts/root/*.ts"
   },
   "dependencies": {
-    "effect": "^4.0.0-rc.115 <4.0.0-rc.118"
+    "effect": "^4.0.0"
   },
   "devDependencies": {
-    "@effect/vitest": "^4.0.0-rc.115 <4.0.0-rc.118",
+    "@effect/vitest": "^4.0.0",
     "vitest": "^5.0.0"
   }
 }

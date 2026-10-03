@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
+import * as FetchHttpClient from "effect/http/FetchHttpClient";
 import { readStateAuth } from "#src/contexts/root/services/cloudflare-client/state-preview-client.ts";
 
 const secret = "a".repeat(64);
