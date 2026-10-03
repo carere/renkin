@@ -1,6 +1,6 @@
 import { defineConfig } from "vitest/config";
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   test: {
     projects: [
       {
@@ -15,6 +15,13 @@ export default defineConfig({
           include: ["tests/integration/**/*.test.ts"],
         },
       },
-    ],
+      {
+        test: {
+          name: "stress",
+          include: ["tests/stress/**/*.test.ts"],
+          fileParallelism: false,
+        },
+      },
+    ].filter(({ test }) => (mode === "stress" ? test.name === "stress" : test.name !== "stress")),
   },
-});
+}));

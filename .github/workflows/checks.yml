@@ -7,6 +7,10 @@ on:
         description: Exact prepared release commit to check
         type: string
         default: ''
+      stress:
+        description: Run repeated transport probes during release qualification
+        type: boolean
+        default: false
   push:
     branches: [main]
   pull_request:
@@ -106,6 +110,10 @@ jobs:
 
       - name: Run local integration tests
         run: moon run --concurrency 1 :test-integration -- --no-file-parallelism
+
+      - name: Run transport stress tests
+        if: inputs.stress == true
+        run: moon run websites:test-stress
 
       - name: Check cloud test preparation without provider credentials
         run: moon run --concurrency 1 :test-release-preparation -- --no-file-parallelism

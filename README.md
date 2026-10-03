@@ -425,6 +425,15 @@ from competing for runner resources. For example:
 moon run --concurrency 1 :test-integration -- --no-file-parallelism
 ```
 
+PR integration checks retain fresh serial and concurrent transport-import probes.
+The Release workflow additionally runs the repeated process stress matrix. Run it
+locally with `moon run websites:test-stress`; its Vitest `stress` project requires
+`--mode stress --project stress` and is excluded from ordinary runs.
+Framework reuse integration checks exercise every compiler mode; the exhaustive
+input and missing-output matrices live in runtime's shared-cache integration tests.
+Coordinator recovery uses the test-only persisted-lease expiry fixture, retaining
+live-lease rejection and stale-token fencing without waiting a minute.
+
 Renkin's config also owns the `preparation`, `astro`, `release`, `cloud` and
 `installed-cloud` projects. Ordinary runs only discover local suites. Select
 `--mode release --project release` for installed-package checks, or

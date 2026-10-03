@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { expect, it } from "@effect/vitest";
+import { verifyTransportImports } from "#test-support/root/build-transport/verify-imports.ts";
 
 it("uses the real dispatcher only inside the official build runtime", async () => {
   const result = await promisify(execFile)(
@@ -33,19 +34,8 @@ it("detects the native Bun shim's missing dispatcher support", async () => {
 }, 30000);
 
 it("initializes one bridge before serial or concurrent ESM and CommonJS consumers", async () => {
-  const probe = fileURLToPath(
-    new URL("../../../../support/root/build-transport/imports-probe.ts", import.meta.url),
-  );
-  const run = async (serial: boolean) => {
-    const result = await promisify(execFile)(
-      "bun",
-      ["--no-env-file", probe, ...(serial ? ["--serial"] : [])],
-      { timeout: 10000 },
-    );
-    expect(result.stdout.trim()).toBe("Wrangler CJS and Miniflare ESM share initialized exports");
-  };
   // Fresh processes exercise initial module evaluation instead of an already warm cache.
-  for (let attempt = 0; attempt < 8; attempt++) await run(true);
-  for (let attempt = 0; attempt < 8; attempt++) await run(false);
-  await Promise.all(Array.from({ length: 4 }, () => run(false)));
+  await verifyTransportImports(true);
+  await verifyTransportImports(false);
+  await Promise.all(Array.from({ length: 4 }, () => verifyTransportImports(false)));
 }, 30000);
