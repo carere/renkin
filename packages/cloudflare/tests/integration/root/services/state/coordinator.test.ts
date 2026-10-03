@@ -14,12 +14,7 @@ let acceptedTags: string[] = [];
 let subdomainEnabled = false;
 beforeAll(async () => {
   const bundle = await build({
-    entryPoints: [
-      new URL(
-        "../../../../../src/contexts/root/services/state/coordinator-worker.ts",
-        import.meta.url,
-      ).pathname,
-    ],
+    entryPoints: [new URL("./recovery-fixture.ts", import.meta.url).pathname],
     bundle: true,
     write: false,
     format: "esm",
@@ -160,8 +155,18 @@ it("recovers a crashed lease holder after its accepted upload and fences the old
       bodyBase64: Buffer.from(await upload.arrayBuffer()).toString("base64"),
     },
   });
-  // A stopped client cannot release or renew. Exercise the real server lease deadline.
-  await new Promise((resolve) => setTimeout(resolve, 60_100));
+  // The real coordinator must refuse takeover while the persisted lease is live.
+  expect((await call("acquire", { environment })).status).toBe(409);
+  const before = (await (await call("inspect", { environment })).json()) as {
+    leaseActive: boolean;
+  };
+  expect(before.leaseActive).toBe(true);
+  // Reuse the test-only SQLite expiry seam; production lease duration is unchanged.
+  expect((await call("test-expire", { environment })).status).toBe(200);
+  const expired = (await (await call("inspect", { environment })).json()) as {
+    leaseActive: boolean;
+  };
+  expect(expired.leaseActive).toBe(false);
   expect((await call("acquire", { environment })).status).toBe(200);
   expect((await call("renew", { environment, token: lease.token })).status).toBe(409);
   expect(
@@ -173,7 +178,7 @@ it("recovers a crashed lease holder after its accepted upload and fences the old
       })
     ).status,
   ).toBe(409);
-}, 75_000);
+});
 
 it("recovers subdomain configuration and skips an already-applied duplicate", async () => {
   const environment = "subdomain";

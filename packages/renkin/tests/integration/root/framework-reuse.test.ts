@@ -30,17 +30,12 @@ const verifyCoalescing = async (fixture: Fixture) => {
 };
 
 const verifyInputs = async (fixture: Fixture) => {
-  for (const input of [
-    fixture.shared,
-    resolve(fixture.directory, "bun.lock"),
-    fixture.configuration,
-    resolve(fixture.root, "public/deployment.json"),
-  ]) {
-    const count = fixture.compilations();
-    await appendInput(input);
-    await fixture.build("first");
-    expect(fixture.compilations()).toBe(count + 1);
-  }
+  // Exhaustive file invalidation lives in runtime's fingerprint integration test.
+  // Keep an actual compiler configuration edit for each framework adapter here.
+  const count = fixture.compilations();
+  await appendInput(fixture.configuration);
+  await fixture.build("first");
+  expect(fixture.compilations()).toBe(count + 1);
   const before = fixture.compilations();
   const production = await fixture.build("first", "production");
   expect(fixture.compilations()).toBe(before + 1);
@@ -51,15 +46,15 @@ const verifyInputs = async (fixture: Fixture) => {
 
 const verifyMissingOutputs = async (fixture: Fixture) => {
   const dist = resolve(fixture.root, "dist");
-  for (const suffix of ["deployment.json", "_headers"]) {
-    const paths = await readdir(dist, { recursive: true });
-    const path = paths.find((path) => path.endsWith(suffix));
-    expect(path).toBeDefined();
-    const count = fixture.compilations();
-    await rm(resolve(dist, path ?? "missing"));
-    await fixture.build("first", "production");
-    expect(fixture.compilations()).toBe(count + 1);
-  }
+  // Runtime's build-context tests cover the missing-output matrix. Keep routing
+  // output recovery through every real framework compiler.
+  const paths = await readdir(dist, { recursive: true });
+  const path = paths.find((path) => path.endsWith("_headers"));
+  expect(path).toBeDefined();
+  const count = fixture.compilations();
+  await rm(resolve(dist, path ?? "missing"));
+  await fixture.build("first", "production");
+  expect(fixture.compilations()).toBe(count + 1);
 };
 
 for (const mode of ["solid-spa", "solid-ssr", "astro-static", "astro-ssr"] satisfies Mode[]) {

@@ -10,3 +10,7 @@ tasks:
     command: vitest run --project integration
     options:
       cache: false
+  test-stress:
+    command: vitest run --mode stress --project stress
+    options:
+      cache: false

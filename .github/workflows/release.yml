@@ -58,6 +58,7 @@ jobs:
     uses: ./.github/workflows/checks.yml
     with:
       revision: ${{ needs.prepare.outputs.revision }}
+      stress: true
     secrets: inherit
 
   pack:
