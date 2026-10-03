@@ -2,6 +2,56 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.1.0-rc.5](https://github.com/carere/renkin/compare/v0.1.0-rc.4..v0.1.0-rc.5) - 2026-10-03
+#### Bug Fixes
+- migrate to stable Effect 4 (#23) - ([66c8462](https://github.com/carere/renkin/commit/66c846267491a001ca5b925f95c2b5b48da921d1)) - Kevin Abatan
+#### Tests
+- reduce repeated integration setup and compilation (#24) - ([f90d448](https://github.com/carere/renkin/commit/f90d44843d477387d7fe32e687895f8104e543a7)) - Kevin Abatan
+
+- - -
+
+## [v0.1.0-rc.4](https://github.com/carere/renkin/compare/v0.1.0-rc.3..v0.1.0-rc.4) - 2026-09-30
+#### Bug Fixes
+- capture structured email and preserve source-map metadata (#22) - ([63443c8](https://github.com/carere/renkin/commit/63443c86238bf0a808edb5944dc8ae0a12bf3e77)) - Kevin Abatan
+#### Miscellaneous Chores
+- (**version**) v0.1.0-rc.4 - ([f08133a](https://github.com/carere/renkin/commit/f08133a097ec656c036040af26c5c2c00d4e4518)) - github-actions[bot]
+
+- - -
+
+## [v0.1.0-rc.3](https://github.com/carere/renkin/compare/v0.1.0-rc.2..v0.1.0-rc.3) - 2026-09-29
+#### Bug Fixes
+- align local Cloudflare runtimes and compatibility dates (#21) - ([63a5001](https://github.com/carere/renkin/commit/63a500158f74e29e0956a1f1ec69a17186980396)) - Kevin Abatan
+- find draft releases during publication recovery (#20) - ([d6f1649](https://github.com/carere/renkin/commit/d6f1649d14addf6329adea2883aeab55319eb383)) - Kevin Abatan
+#### Miscellaneous Chores
+- (**version**) v0.1.0-rc.3 - ([9e19b35](https://github.com/carere/renkin/commit/9e19b359f820201e0205765930f35e9fd7c35061)) - github-actions[bot]
+
+- - -
+
+## [v0.1.0-rc.2](https://github.com/carere/renkin/compare/v0.1.0-rc.1..v0.1.0-rc.2) - 2026-09-28
+#### Features
+- automate release versions and resumable publication (#19) - ([07d68f7](https://github.com/carere/renkin/commit/07d68f7b88dda4683a2e7c6b6bfda00d6b0e7bad)) - Kevin Abatan
+- support secret Worker bindings and generated output references (#18) - ([c7aa60a](https://github.com/carere/renkin/commit/c7aa60ae5d9acb3362bb872b47237bad8b817ce2)) - Kevin Abatan
+#### Miscellaneous Chores
+- (**version**) v0.1.0-rc.2 - ([7e0f5b8](https://github.com/carere/renkin/commit/7e0f5b83a89926d3c240b76dcfe025f24e4e2605)) - github-actions[bot]
+
+- - -
+
+## [v0.1.0-rc.1](https://github.com/carere/renkin/compare/9f1f0869f9db6a35ac8988478ae4a3cdeaababaa..v0.1.0-rc.1) - 2026-09-23
+#### Features
+- prepare scoped npm release (#17) - ([254be2f](https://github.com/carere/renkin/commit/254be2fb298563ba290d7dec40830467b83835d8)) - Kevin Abatan
+- implement Renkin first release (#16) - ([8eb074b](https://github.com/carere/renkin/commit/8eb074b2b4e2156c557df3693bcecad6898ceead)) - Kevin Abatan
+#### Documentation
+- define first-release scope and architecture decisions (#15) - ([4260f76](https://github.com/carere/renkin/commit/4260f7653891a5842434cd42ed797451c39b030d)) - Kevin Abatan
+- configure Matt Pocock skills for Renkin (#2) - ([3b4ebc1](https://github.com/carere/renkin/commit/3b4ebc1ffcf2cc93096a273584d79ed61db01367)) - Kevin Abatan
+#### Continuous Integration
+- update actions and stabilize the checks runner (#1) - ([b93c468](https://github.com/carere/renkin/commit/b93c468f2eb2f4ceb51cd4d87355f5b1add409ae)) - Kevin Abatan
+#### Miscellaneous Chores
+- align monorepo tooling and development conventions - ([e50e77a](https://github.com/carere/renkin/commit/e50e77a0e144e113a6ecaff525e352944a1f369b)) - Kevin Abatan
+- finalize workspace synchronization and validation - ([7072314](https://github.com/carere/renkin/commit/70723149ff12862e0217918e19f5a3f3d37adbfd)) - Kevin Abatan
+- establish Renkin monorepo tooling and architecture - ([9f1f086](https://github.com/carere/renkin/commit/9f1f0869f9db6a35ac8988478ae4a3cdeaababaa)) - Kevin Abatan
+
+- - -
+
 ## [v0.1.0-rc.4](https://github.com/carere/renkin/compare/v0.1.0-rc.3..v0.1.0-rc.4) - 2026-09-30
 #### Bug Fixes
 - capture structured email and preserve source-map metadata (#22) - ([63443c8](https://github.com/carere/renkin/commit/63443c86238bf0a808edb5944dc8ae0a12bf3e77)) - Kevin Abatan
