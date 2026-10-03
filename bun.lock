@@ -7,9 +7,9 @@
       "devDependencies": {
         "@biomejs/biome": "^2.5.13",
         "@effect/tsgo": "^0.45.0",
-        "@effect/vitest": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "@effect/vitest": "^4.0.0",
         "@types/node": "^24.10.1",
-        "effect": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "effect": "^4.0.0",
         "knip": "^6.35.1",
         "lefthook": "^2.1.14",
         "sort-package-json": "^4.0.0",
@@ -23,11 +23,11 @@
         "@carere/renkin": "workspace:*",
         "@tanstack/solid-router": "^1.170.36",
         "@tanstack/solid-start": "^1.168.54",
-        "effect": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "effect": "^4.0.0",
         "solid-js": "^1.9.15",
       },
       "devDependencies": {
-        "@effect/vitest": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "@effect/vitest": "^4.0.0",
         "playwright": "^1.63.0",
         "vite": "^8.3.0",
         "vitest": "^5.0.0",
@@ -41,11 +41,11 @@
         "@tanstack/solid-query": "^5.103.2",
         "@tanstack/solid-router": "^1.170.36",
         "@tanstack/solid-start": "^1.168.54",
-        "effect": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "effect": "^4.0.0",
         "solid-js": "^1.9.15",
       },
       "devDependencies": {
-        "@effect/vitest": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "@effect/vitest": "^4.0.0",
         "playwright": "^1.63.0",
         "vite": "^8.3.0",
         "vitest": "^5.0.0",
@@ -57,10 +57,10 @@
       "dependencies": {
         "@carere/renkin": "workspace:*",
         "astro": "^7.3.3",
-        "effect": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "effect": "^4.0.0",
       },
       "devDependencies": {
-        "@effect/vitest": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "@effect/vitest": "^4.0.0",
         "playwright": "^1.63.0",
         "vitest": "^5.0.0",
       },
@@ -72,11 +72,11 @@
         "@renkin/cloudflare-sdk": "workspace:*",
         "@renkin/core": "workspace:*",
         "@renkin/runtime": "workspace:*",
-        "effect": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "effect": "^4.0.0",
         "mime": "^4.1.0",
       },
       "devDependencies": {
-        "@effect/vitest": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "@effect/vitest": "^4.0.0",
         "esbuild": "^0.28.2",
         "miniflare": "5.20260926.0-alpha",
         "vitest": "^5.0.0",
@@ -86,11 +86,11 @@
       "name": "@renkin/cloudflare-sdk",
       "version": "0.0.0",
       "dependencies": {
-        "@distilled.cloud/cloudflare": "^1.0.0-rc.12",
-        "effect": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "@distilled.cloud/cloudflare": "^1.0.0-rc.13",
+        "effect": "^4.0.0",
       },
       "devDependencies": {
-        "@effect/vitest": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "@effect/vitest": "^4.0.0",
         "vitest": "^5.0.0",
       },
     },
@@ -98,10 +98,10 @@
       "name": "@renkin/core",
       "version": "0.0.0",
       "dependencies": {
-        "effect": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "effect": "^4.0.0",
       },
       "devDependencies": {
-        "@effect/vitest": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "@effect/vitest": "^4.0.0",
         "vitest": "^5.0.0",
       },
     },
@@ -122,7 +122,7 @@
       "devDependencies": {
         "@babel/parser": "^7.29.9",
         "@cloudflare/workers-types": "^5.20260921.1",
-        "@effect/vitest": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "@effect/vitest": "^4.0.0",
         "@tanstack/solid-query": "^5.103.2",
         "@tanstack/solid-router": "^1.170.36",
         "@tanstack/solid-start": "^1.168.54",
@@ -135,7 +135,7 @@
         "vitest": "^5.0.0",
       },
       "peerDependencies": {
-        "effect": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "effect": "^4.0.0",
       },
     },
     "packages/runtime": {
@@ -143,13 +143,13 @@
       "version": "0.0.0",
       "dependencies": {
         "@cloudflare/workers-types": "^5.20260921.1",
-        "effect": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "effect": "^4.0.0",
         "esbuild": "^0.28.2",
         "ignore": "^7.0.9",
         "miniflare": "5.20260926.0-alpha",
       },
       "devDependencies": {
-        "@effect/vitest": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "@effect/vitest": "^4.0.0",
         "aws4fetch": "^1.0.20",
         "drizzle-orm": "^0.45.3",
         "vitest": "^5.0.0",
@@ -160,10 +160,10 @@
       "version": "0.0.0",
       "dependencies": {
         "@renkin/runtime": "workspace:*",
-        "effect": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "effect": "^4.0.0",
       },
       "devDependencies": {
-        "@effect/vitest": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "@effect/vitest": "^4.0.0",
         "vitest": "^5.0.0",
       },
     },
@@ -184,12 +184,12 @@
         "vite-plugin-solid": "^2.11.14",
       },
       "devDependencies": {
-        "@effect/vitest": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "@effect/vitest": "^4.0.0",
         "aws4fetch": "^1.0.20",
         "vitest": "^5.0.0",
       },
       "peerDependencies": {
-        "effect": "^4.0.0-rc.115 <4.0.0-rc.118",
+        "effect": "^4.0.0",
       },
     },
   },
@@ -330,9 +330,9 @@
 
     "@cspotcode/source-map-support": ["@cspotcode/source-map-support@0.8.1", "", { "dependencies": { "@jridgewell/trace-mapping": "0.3.9" } }, "sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw=="],
 
-    "@distilled.cloud/cloudflare": ["@distilled.cloud/cloudflare@1.0.0-rc.12", "", { "dependencies": { "@distilled.cloud/core": "1.0.0-rc.12" }, "peerDependencies": { "effect": ">=4.0.0-rc.115 || >=4.0.0" } }, "sha512-ddcL4RnAx6L8gRWCnE5T1W35ZlerI7SlaRLidX726iG/K/aA+bkU0ND39y7ljJ2Eyx3zR03TfpNrgXAXc9E3ng=="],
+    "@distilled.cloud/cloudflare": ["@distilled.cloud/cloudflare@1.0.0-rc.13", "", { "dependencies": { "@distilled.cloud/core": "1.0.0-rc.13" }, "peerDependencies": { "effect": "^4.0.0" } }, "sha512-Py5FoA6azyYExDb91VaeC+9x+ravOBSRhXeUmpcQjCtgqmOdiXgc2YZGMMPI68DF+kMuHRVIrR+2uRZNDOhYjw=="],
 
-    "@distilled.cloud/core": ["@distilled.cloud/core@1.0.0-rc.12", "", { "dependencies": { "graphql": "16.11.0" }, "peerDependencies": { "effect": ">=4.0.0-rc.115 || >=4.0.0" } }, "sha512-YeH/uPohGXp2qIctbqVzBtQV+bUs+K5Zdac8qIid7/t6VlwY964SALme5znRdFu/rQgrloXnaej8iTSK9RIQdA=="],
+    "@distilled.cloud/core": ["@distilled.cloud/core@1.0.0-rc.13", "", { "dependencies": { "graphql": "16.11.0" }, "peerDependencies": { "effect": "^4.0.0" } }, "sha512-RYyrxW+F5zrTuu1UWV/JoycholBCIkXIusYJdDniDwCdmbjdKGl07KlkkeeY774uBawNGf+pt1ESNGeLVnNHsg=="],
 
     "@effect/tsgo": ["@effect/tsgo@0.45.0", "", { "optionalDependencies": { "@effect/tsgo-darwin-arm64": "0.45.0", "@effect/tsgo-darwin-x64": "0.45.0", "@effect/tsgo-linux-arm": "0.45.0", "@effect/tsgo-linux-arm64": "0.45.0", "@effect/tsgo-linux-x64": "0.45.0", "@effect/tsgo-win32-arm64": "0.45.0", "@effect/tsgo-win32-x64": "0.45.0" }, "bin": { "effect-tsgo": "dist/effect-tsgo.cjs" } }, "sha512-gPG0ixVHgtYBUe5DbKX9vzHlhqd9+ZEfs4m/XWy0808av0A2XqMzaG3F5rnPBN7EUJRPlo9TluIi8WHx/pBV+A=="],
 
@@ -350,7 +350,7 @@
 
     "@effect/tsgo-win32-x64": ["@effect/tsgo-win32-x64@0.45.0", "", { "os": "win32", "cpu": "x64" }, "sha512-1Hsr/sT5dmIafoY9L0ASJo4VqGyPNzM1nwTb4Wj1Lmjq6kGuwO/PVozFg3WZZ0piChFmgiU3nx1AKZfyqgjGUw=="],
 
-    "@effect/vitest": ["@effect/vitest@4.0.0-rc.115", "", { "peerDependencies": { "effect": "^4.0.0-rc.115", "vitest": ">=5.0.0 <6.0.0" } }, "sha512-DJR0hfdr3HNXAkzW8AzfvUz6VmrNFLrKk9tZGDURi33faMyxkc7ZewxELMMZwGpOTGN4mfqYVbX2CXgI+ZJBeQ=="],
+    "@effect/vitest": ["@effect/vitest@4.0.0", "", { "peerDependencies": { "effect": "^4.0.0", "vitest": ">=5.0.0 <6.0.0" } }, "sha512-kGElCPFGtP+CgMCwV/HjJWqtE3zYo6I1+8MSA54l+EI24lPU9p2Efa+TBp1jfkg9j711KKzEqgSAy3VzTsb76Q=="],
 
     "@emnapi/core": ["@emnapi/core@1.11.2", "", { "dependencies": { "@emnapi/wasi-threads": "1.2.2", "tslib": "^2.4.0" } }, "sha512-TC8MkTuZUtcTSiFeuC0ksCh9QIJ5+F21MvZ4Wn4ORfYaFJ/0dsiudv5tVkejgwZlwQ39jL9WWDe2lz8x0WglOA=="],
 
@@ -860,7 +860,7 @@
 
     "dset": ["dset@3.1.4", "", {}, "sha512-2QF/g9/zTaPDc3BjNcVTGoBbXBgYfMTTceLaYcFJ/W9kggFUkhxD/hMEeuLKbugyef9SqAx8cpgwlIP/jinUTA=="],
 
-    "effect": ["effect@4.0.0-rc.115", "", {}, "sha512-ogYulZ5ffeOzrJqQrG0XOkDO5lKn2s9KNHhoxJy/6wKUkF0i12dlVXWA9TgsgQ+zV/JzizyG0+XMPepZEQX6vw=="],
+    "effect": ["effect@4.0.0", "", {}, "sha512-ooc1TG5t+FfzgYnFz2ff6BBKyZ7EwBRVXC7c4RhQUAD6/TZ2gTXXMeb4WX7a19ozQo4J73/QW+S00YAIresoMQ=="],
 
     "electron-to-chromium": ["electron-to-chromium@1.5.433", "", {}, "sha512-5lCAbyZBjtmUt/RAGHRqrL2q0oEFRThDAsZHHDn9XHa89Qw7gMYOeSicBTy+AHfvo0r6vwsZvqNJTQIQy1BLzA=="],
 

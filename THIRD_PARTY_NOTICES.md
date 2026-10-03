@@ -12,8 +12,8 @@ must state its actual resolutions.
 
 | Package | Reviewed version | Declared license |
 | --- | --- | --- |
-| effect | 4.0.0-rc.115 | MIT |
-| @distilled.cloud/cloudflare | 1.0.0-rc.12 | Apache-2.0 |
+| effect | 4.0.0 | MIT |
+| @distilled.cloud/cloudflare | 1.0.0-rc.13 | Apache-2.0 |
 | @cloudflare/workers-types | 5.20260921.1 | MIT OR Apache-2.0 |
 | esbuild | 0.28.2 | MIT |
 | miniflare | 4.20260730.0 | MIT |

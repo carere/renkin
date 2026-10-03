@@ -1,7 +1,7 @@
 # Cloudflare SDK boundary
 
-This private package uses external Distilled Cloudflare `1.0.0-rc.12` with Effect
-`4.0.0-rc.115`. Import the client through
+This private package uses external Distilled Cloudflare `^1.0.0-rc.13` with stable
+Effect `^4.0.0`. Import the client through
 `@renkin/cloudflare-sdk/services/cloudflare-client/cloudflare-client`.
 
 `createCloudflareClient` accepts an explicit account ID and API token. It never

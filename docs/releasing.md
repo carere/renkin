@@ -92,9 +92,10 @@ npm view @carere/renkin dist-tags
 
 After successful npm publication, publish the existing GitHub draft. Keep its
 prerelease marker. Do not run the OIDC workflow to republish this version: npm
-versions are immutable. Install the release in Delimoov with
-`bun add --exact @carere/renkin@0.1.0-rc.1 effect@4.0.0-rc.115`, aligning its other
-Effect dependencies with the same compatible runtime.
+versions are immutable. For a release containing the stable Effect migration,
+install it in Delimoov with `bun add @carere/renkin "effect@^4.0.0"`, aligning its
+other Effect dependencies with the same compatible runtime and committing the
+consumer lockfile. Earlier Renkin releases still require their documented Effect peer.
 
 ## Enable trusted publishing
 

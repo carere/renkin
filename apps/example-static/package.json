@@ -10,10 +10,10 @@
   "dependencies": {
     "@carere/renkin": "workspace:*",
     "astro": "^7.3.3",
-    "effect": "^4.0.0-rc.115 <4.0.0-rc.118"
+    "effect": "^4.0.0"
   },
   "devDependencies": {
-    "@effect/vitest": "^4.0.0-rc.115 <4.0.0-rc.118",
+    "@effect/vitest": "^4.0.0",
     "playwright": "^1.63.0",
     "vitest": "^5.0.0"
   }
